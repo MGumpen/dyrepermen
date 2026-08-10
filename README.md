@@ -155,7 +155,13 @@ brancher og pull requests; utrulling skjer kun fra `main`.
 MVP er fase 1, 1b og 2 i `docs/plan.md` kapittel 16. Akseptansekriteriene i
 samme kapittel er definisjonen av ferdig.
 
-**Fase 1 er i arbeid.** På plass: monorepo-oppsett, hele databaseskjemaet med
-query-filtre, isolasjonstest og filterprøve, Identity med 30 dagers vedvarende
-innlogging og Data Protection-nøkler i database, innlogging som eneste inngang,
-oppstartsskjerm og husstandsoppsett. Gjenstår: `Dyr`-CRUD.
+**Fase 1 er ferdig.** Monorepo-oppsett, hele databaseskjemaet med query-filtre,
+isolasjonstest og filterprøve, Identity med 30 dagers vedvarende innlogging og
+Data Protection-nøkler i database, innlogging som eneste inngang,
+oppstartsskjerm, husstandsoppsett og `Dyr`-CRUD med funksjonsbrytere.
+
+22 tester grønne. Alle akseptansekriteriene i kapittel 16 for fase 1 er
+verifisert mot kjørende app og ekte database.
+
+**Neste: fase 1b** — dashbord med dyrekort, tomtilstander og høyst fire
+databasespørringer.

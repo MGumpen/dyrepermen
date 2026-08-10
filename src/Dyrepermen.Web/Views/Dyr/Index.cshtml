@@ -1,0 +1,45 @@
+@using Dyrepermen.Application.Dtos
+@model IReadOnlyList<DyrListeElement>
+@{
+    ViewData["Tittel"] = "Dyrene";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0">Dyrene</h1>
+    <a asp-action="Ny" class="btn btn-primary">Nytt dyr</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    @* Tomtilstand skal spesifiseres, ikke improviseres. Plan kapittel 10.3. *@
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <img src="~/img/logo.svg" alt="" width="56" height="56" class="mb-3" />
+            <p class="mb-3">Ingen dyr registrert ennå.</p>
+            <a asp-action="Ny" class="btn btn-primary">Legg til ditt første dyr</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var dyr in Model)
+        {
+            <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+               asp-action="Detaljer" asp-route-dyrId="@dyr.Id">
+                <span>
+                    <strong>@dyr.Navn</strong>
+                    <span class="text-body-secondary small d-block">
+                        @dyr.Art@(dyr.Rase is null ? "" : $" · {dyr.Rase}")
+                    </span>
+                </span>
+                @if (dyr.Fodselsdato is { } f)
+                {
+                    <span class="text-body-secondary small">
+                        Født @f.ToString("d. MMMM yyyy")
+                    </span>
+                }
+            </a>
+        }
+    </div>
+}

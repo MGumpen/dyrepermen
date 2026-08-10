@@ -14,6 +14,7 @@ public static class TjenesteRegistrering
         this IServiceCollection tjenester)
     {
         tjenester.AddScoped<IHusstandService, HusstandService>();
+        tjenester.AddScoped<IDyrService, DyrService>();
         return tjenester;
     }
 }

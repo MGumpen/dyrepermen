@@ -1,0 +1,27 @@
+@model NyttDyrVm
+@{
+    ViewData["Tittel"] = "Nytt dyr";
+}
+
+<h1 class="h4 mb-3">Nytt dyr</h1>
+
+<div class="card" style="max-width: 40rem;">
+    <div class="card-body">
+        <form method="post" asp-action="Ny">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <partial name="_Felter" model="Model" />
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lagre</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Avbryt</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

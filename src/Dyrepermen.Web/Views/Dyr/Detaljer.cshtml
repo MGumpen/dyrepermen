@@ -1,0 +1,72 @@
+@using Dyrepermen.Application.Dtos
+@model DyrDetaljer
+@{
+    ViewData["Tittel"] = Model.Navn;
+
+    string Alder(DateOnly f)
+    {
+        var idag = DateOnly.FromDateTime(DateTime.Now);
+        var ar = idag.Year - f.Year;
+        if (f > idag.AddYears(-ar)) ar--;
+        return ar == 1 ? "1 år" : $"{ar} år";
+    }
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0">@Model.Navn</h1>
+    <a asp-action="Rediger" asp-route-dyrId="@Model.Id"
+       class="btn btn-outline-secondary btn-sm">Rediger</a>
+</div>
+
+<div class="card mb-3" style="max-width: 40rem;">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Art</dt>
+            <dd class="col-sm-8">@Model.Art</dd>
+
+            <dt class="col-sm-4">Kjønn</dt>
+            <dd class="col-sm-8">@Model.Kjonn</dd>
+
+            <dt class="col-sm-4">Rase</dt>
+            <dd class="col-sm-8">@(Model.Rase ?? "—")</dd>
+
+            <dt class="col-sm-4">Født</dt>
+            <dd class="col-sm-8">
+                @if (Model.Fodselsdato is { } f)
+                {
+                    @($"{f:d. MMMM yyyy} ({Alder(f)})")
+                }
+                else
+                {
+                    @:—
+                }
+            </dd>
+
+            <dt class="col-sm-4">Chipnummer</dt>
+            <dd class="col-sm-8">@(Model.ChipNr ?? "—")</dd>
+
+            <dt class="col-sm-4">NKK-regnummer</dt>
+            <dd class="col-sm-8">@(Model.RegNrNkk ?? "—")</dd>
+
+            <dt class="col-sm-4">Kastrert</dt>
+            <dd class="col-sm-8">@(Model.Kastrert ? "Ja" : "Nei")</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card" style="max-width: 40rem;">
+    <div class="card-body">
+        <h2 class="h6">Aktive funksjoner</h2>
+        <ul class="list-unstyled mb-0 small">
+            <li>Fôringslogg: <strong>@(Model.ForingsloggAktiv ? "på" : "av")</strong></li>
+            <li>Fôrplan: <strong>@(Model.ForplanAktiv ? "på" : "av")</strong></li>
+        </ul>
+        <p class="form-text mb-0">
+            Vekt, behandlinger og fôring kommer i senere faser.
+        </p>
+    </div>
+</div>
+
+<p class="mt-3">
+    <a asp-action="Index" class="text-body-secondary small">← Alle dyrene</a>
+</p>
