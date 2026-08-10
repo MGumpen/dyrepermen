@@ -5,6 +5,11 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
 
+  <!-- Domene. Identity-basetypene, uten EF Core. Se ADR 0005. -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Identity.Stores" Version="9.0.9" />
+  </ItemGroup>
+
   <!-- Applikasjon -->
   <ItemGroup>
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />

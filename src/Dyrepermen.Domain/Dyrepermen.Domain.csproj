@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Domenelaget refererer ingenting. Legges det en EF Core-avhengighet her,
-       er lagdelingen borte uten at noe feiler. Se plan kapittel 3.4. -->
+  <ItemGroup>
+    <!-- Eneste avhengighet i domenelaget. Gir IdentityUser<int>, som Bruker
+         arver fra (plan kapittel 4.2). Drar IKKE med seg EF Core - den kommer
+         fra Microsoft.AspNetCore.Identity.EntityFrameworkCore, som ligger i
+         Infrastructure. Se docs/beslutninger/0005-identity-basetype-i-domain.md -->
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" />
+  </ItemGroup>
 
 </Project>
