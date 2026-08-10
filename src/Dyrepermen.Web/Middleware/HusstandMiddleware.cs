@@ -51,12 +51,25 @@ public sealed class HusstandMiddleware
             return;
         }
 
-        // Ett indeksert primarnokkeloppslag per foresporsel. Ubetydelig
-        // sammenlignet med klassen av feil claim-varianten gir.
-        kontekst.HusstandId = await db.Users
+        // Ett indeksert primarnokkeloppslag per foresporsel. Sidemenyen far
+        // navn, e-post og husstandsnavn gratis her, framfor en egen sporring
+        // eller claims som blir foreldet.
+        var data = await db.Users
             .Where(u => u.Id == brukerId.Value)
-            .Select(u => u.HusstandId ?? 0)
+            .Select(u => new
+            {
+                u.HusstandId,
+                u.Visningsnavn,
+                u.Email,
+                HusstandNavn = u.Husstand == null ? null : u.Husstand.Navn
+            })
             .FirstOrDefaultAsync(ctx.RequestAborted);
+
+        kontekst.BrukerId = brukerId;
+        kontekst.HusstandId = data?.HusstandId ?? 0;
+        kontekst.Visningsnavn = data?.Visningsnavn ?? "";
+        kontekst.Epost = data?.Email ?? "";
+        kontekst.HusstandNavn = data?.HusstandNavn ?? "";
 
         var sti = ctx.Request.Path.Value ?? "/";
 

@@ -1,164 +1,182 @@
 @using Dyrepermen.Application.Dtos
 @using Dyrepermen.Application.Extensions
+@using Dyrepermen.Application.Interfaces
+@inject IGjeldendeBruker Meg
 @model Dashbord
 @{
-    ViewData["Tittel"] = "Dashbord";
+    ViewData["Tittel"] = "Oversikt";
     var idag = DateOnly.FromDateTime(DateTime.Now);
+    var forfalte = Model.Forfaller.Count(p => p.ErForfalt(idag));
 }
 
-<h1 class="h4 mb-3">Dashbord</h1>
+<div class="sidehode">
+    <div>
+        <h1>@Meg.HusstandNavn</h1>
+        <div class="undertittel">
+            @Model.Dyr.Count @(Model.Dyr.Count == 1 ? "dyr" : "dyr")
+            @if (forfalte > 0)
+            {
+                <span class="merkelapp forfalt ms-1">@forfalte forfalt</span>
+            }
+        </div>
+    </div>
+    <div class="handlinger">
+        <a asp-controller="Dyr" asp-action="Ny" class="btn btn-primary btn-sm">
+            <svg class="ikon" aria-hidden="true"><use href="#i-pluss" /></svg>
+            Nytt dyr
+        </a>
+    </div>
+</div>
 
-@* col-lg-8 / col-lg-4: dyrekort til venstre, forfaller til hoyre pa PC.
-   Under lg stables de. Se plan kapittel 10.3. *@
-<div class="row g-3">
-    <div class="col-lg-8">
-        @if (Model.Dyr.Count == 0)
-        {
-            <div class="card">
-                <div class="card-body text-center py-5">
-                    <img src="~/img/logo.svg" alt="" width="56" height="56" class="mb-3" />
+<div class="dp-kolonner">
+    <div class="kolonne">
+
+        @* --- Dyrene ---------------------------------------------------- *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+                <h2>Dyrene</h2>
+                @if (Model.Dyr.Count > 0)
+                {
+                    <span class="antall">@Model.Dyr.Count</span>
+                    <a class="se-alle" asp-controller="Dyr" asp-action="Index">Se alle</a>
+                }
+            </div>
+
+            @if (Model.Dyr.Count == 0)
+            {
+                <div class="tomt tomt-stor">
                     <p class="mb-3">Ingen dyr registrert ennå.</p>
-                    <a asp-controller="Dyr" asp-action="Ny" class="btn btn-primary">
+                    <a asp-controller="Dyr" asp-action="Ny" class="btn btn-primary btn-sm">
                         Legg til ditt første dyr
                     </a>
                 </div>
-            </div>
-        }
-        else
-        {
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-1 g-3">
-                @foreach (var dyr in Model.Dyr)
-                {
-                    <div class="col">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h2 class="h6 mb-1">
-                                            <a asp-controller="Dyr" asp-action="Detaljer"
-                                               asp-route-dyrId="@dyr.Id"
-                                               class="stretched-link text-decoration-none">
-                                                @dyr.Navn
-                                            </a>
-                                        </h2>
-                                        <p class="text-body-secondary small mb-2">
-                                            @dyr.Art@(dyr.Fodselsdato is { } f
-                                                ? $" · {Alderformat.Tekst(f, idag)}"
-                                                : "")
-                                        </p>
-                                    </div>
-                                </div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var dyr in Model.Dyr)
+                    {
+                        <li>
+                            <a class="rad-lenke" asp-controller="Dyr" asp-action="Detaljer"
+                               asp-route-dyrId="@dyr.Id">
+                                <span class="tittel">@dyr.Navn</span>
+                                <span class="under d-block">
+                                    @dyr.Art@(dyr.Fodselsdato is { } f
+                                        ? $" · {Alderformat.Tekst(f, idag)}" : "")
+                                </span>
 
-                                <dl class="row mb-0 small">
-                                    <dt class="col-5 fw-normal text-body-secondary">Siste vekt</dt>
-                                    <dd class="col-7 mb-0">
+                                <span class="dyrekort-tall">
+                                    <span>
                                         @if (dyr.SisteVektGram is { } gram)
                                         {
-                                            <strong>@Vektformat.TilKiloTekst(gram)</strong>
-                                            <span class="text-body-secondary">
-                                                @($"({dyr.SisteVektDato:d. MMM yyyy})")
+                                            <span class="verdi">@Vektformat.TilKiloTekst(gram)</span>
+                                            <span class="etikett">
+                                                målt @($"{dyr.SisteVektDato:d. MMM}")
                                             </span>
                                         }
                                         else
                                         {
-                                            @* Ikke "0 kg". Et tall uten dekning er verre
-                                               enn ingen tall. Se plan kapittel 10.3. *@
-                                            <span class="text-body-secondary">
+                                            @* Ikke "0 kg". Et tall uten dekning er
+                                               verre enn ingen tall. *@
+                                            <span class="verdi text-body-secondary">
                                                 Ingen vekt registrert
                                             </span>
+                                            <span class="etikett">siste vekt</span>
                                         }
-                                    </dd>
-
-                                    @if (dyr.ForingsloggAktiv)
-                                    {
-                                        <dt class="col-5 fw-normal text-body-secondary">Sist matet</dt>
-                                        <dd class="col-7 mb-0 text-body-secondary">
-                                            Kommer i fase 6b
-                                        </dd>
-                                    }
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
+                                    </span>
+                                </span>
+                            </a>
+                            <span class="hoyre">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-chevron" /></svg>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">Forfaller snart</h2>
+    <div class="kolonne">
 
-                @if (Model.Forfaller.Count == 0)
+        @* --- Forfaller snart -------------------------------------------- *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-klokke" /></svg>
+                <h2>Forfaller snart</h2>
+                @if (Model.Forfaller.Count > 0)
                 {
-                    <p class="text-body-secondary small mb-0">
-                        Ingenting forfaller de neste 14 dagene.
-                    </p>
-                }
-                else
-                {
-                    <ul class="list-unstyled mb-0 small">
-                        @* Forfalte oeverst og tydelig markert. Sorteringen
-                           kommer fra tjenesten. *@
-                        @foreach (var p in Model.Forfaller.OrderBy(p => p.Dato))
-                        {
-                            var forfalt = p.ErForfalt(idag);
-                            <li class="d-flex justify-content-between gap-2 py-1 border-bottom">
-                                <span>
-                                    <strong>@p.DyreNavn</strong>
-                                    <span class="d-block text-body-secondary">@p.Tekst</span>
-                                </span>
-                                <span class="@(forfalt ? "text-danger fw-semibold" : "text-body-secondary") text-nowrap">
-                                    @($"{p.Dato:d. MMM}")
-                                    @if (forfalt)
-                                    {
-                                        <span class="d-block small">forfalt</span>
-                                    }
-                                </span>
-                            </li>
-                        }
-                    </ul>
+                    <span class="antall @(forfalte > 0 ? "varsel" : "")">
+                        @Model.Forfaller.Count
+                    </span>
                 }
             </div>
-        </div>
 
-        <div class="card mt-3">
-            <div class="card-body">
-                <h2 class="h6">
-                    <a asp-controller="Handleliste" asp-action="Index"
-                       class="text-decoration-none">Handleliste</a>
-                </h2>
+            @if (Model.Forfaller.Count == 0)
+            {
+                <div class="tomt">Ingenting forfaller de neste 14 dagene.</div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @* Forfalte oeverst. Sorteringen kommer fra tjenesten:
+                       stigende dato gir eldste - altsa den forfalte - forst. *@
+                    @foreach (var p in Model.Forfaller)
+                    {
+                        var forfalt = p.ErForfalt(idag);
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@p.DyreNavn</span>
+                                <span class="under d-block">@p.Tekst</span>
+                            </span>
+                            <span class="hoyre">
+                                @if (forfalt)
+                                {
+                                    <span class="merkelapp forfalt">forfalt</span>
+                                }
+                                <span class="d-block">@($"{p.Dato:d. MMM}")</span>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
 
-                @if (Model.Handleliste.Count == 0)
+        @* --- Handleliste ------------------------------------------------ *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-handleliste" /></svg>
+                <h2>Handleliste</h2>
+                @if (Model.Handleliste.Count > 0)
                 {
-                    @* Tom liste: ingen tom boks, bare veien videre.
-                       Se plan kapittel 10.3. *@
-                    <a asp-controller="Handleliste" asp-action="Index"
-                       class="btn btn-outline-secondary btn-sm">Legg til noe</a>
+                    <span class="antall">@Model.Handleliste.Count</span>
                 }
-                else
-                {
-                    <ul class="list-unstyled mb-0 small">
-                        @foreach (var p in Model.Handleliste)
-                        {
-                            <li class="d-flex justify-content-between gap-2 py-1 border-bottom">
-                                <span>
-                                    @p.Tekst
-                                    @if (p.Antall > 1)
-                                    {
-                                        <span class="text-body-secondary">× @p.Antall</span>
-                                    }
-                                </span>
-                                @* Punkt uten dyr vises som "Felles". *@
-                                <span class="text-body-secondary text-nowrap">
-                                    @(p.DyreNavn ?? "Felles")
-                                </span>
-                            </li>
-                        }
-                    </ul>
-                }
+                <a class="se-alle" asp-controller="Handleliste" asp-action="Index">Se alle</a>
             </div>
-        </div>
+
+            @if (Model.Handleliste.Count == 0)
+            {
+                <div class="tomt">Handlelisten er tom.</div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var p in Model.Handleliste)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@p.Tekst</span>
+                                @if (p.Antall > 1)
+                                {
+                                    <span class="text-body-secondary">× @p.Antall</span>
+                                }
+                            </span>
+                            @* Punkt uten dyr vises som "Felles". *@
+                            <span class="hoyre">@(p.DyreNavn ?? "Felles")</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
     </div>
 </div>

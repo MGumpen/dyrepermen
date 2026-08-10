@@ -49,6 +49,8 @@ builder.Services.AddDbContext<DyrepermenDbContext>(opt =>
 builder.Services.AddScoped<Husstandskontekst>();
 builder.Services.AddScoped<IHusstandContext>(
     sp => sp.GetRequiredService<Husstandskontekst>());
+builder.Services.AddScoped<IGjeldendeBruker>(
+    sp => sp.GetRequiredService<Husstandskontekst>());
 
 // Implementasjonene bak grensesnittene i Application. Se ADR 0007.
 builder.Services.LeggTilInfrastruktur();

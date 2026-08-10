@@ -135,16 +135,16 @@
         </div>
     </div>
 
-    @* Faresonen skilles visuelt og ligger nederst. Ingen destruktiv handling
-       skal ligge ved siden av en lagre-knapp. Se plan kapittel 12.4. *@
-    <div class="card border-danger">
+    <div class="card mb-3">
         <div class="card-body">
-            <h2 class="h6 text-danger">Faresone</h2>
-            <p class="small text-body-secondary mb-2">
-                Slett kontoen din permanent.
+            <h2 class="h6">Dine innstillinger</h2>
+            <p class="small text-body-secondary">
+                Passord, e-post og sletting av egen konto ligger under
+                brukerkortet nederst i menyen — det er dine
+                personopplysninger, ikke husstandens delte data.
             </p>
             <a asp-controller="MinKonto" asp-action="Index"
-               class="btn btn-outline-danger btn-sm">Min konto</a>
+               class="btn btn-outline-secondary btn-sm">Min konto</a>
         </div>
     </div>
 </div>

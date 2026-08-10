@@ -1,0 +1,214 @@
+@using Dyrepermen.Application.Extensions
+@model InformasjonVm
+@{
+    ViewData["Tittel"] = "Informasjon";
+    var idag = DateOnly.FromDateTime(DateTime.Now);
+    var redigerer = Model.Ny.Id is not null;
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Informasjon</h1>
+        <div class="undertittel">
+            Alt om dyra på ett sted. Siden du viser fram til dyrepasseren.
+        </div>
+    </div>
+</div>
+
+<div class="dp-kolonner">
+    <div class="kolonne">
+
+        @if (Model.Dyr.Count == 0)
+        {
+            <section class="kort">
+                <div class="tomt tomt-stor">
+                    <p class="mb-3">Ingen dyr registrert ennå.</p>
+                    <a asp-controller="Dyr" asp-action="Ny" class="btn btn-primary btn-sm">
+                        Legg til ditt første dyr
+                    </a>
+                </div>
+            </section>
+        }
+
+        @foreach (var d in Model.Dyr)
+        {
+            <section class="kort">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+                    <h2>@d.Navn</h2>
+                    <a class="se-alle" asp-controller="Dyr" asp-action="Detaljer"
+                       asp-route-dyrId="@d.Id">Se alle</a>
+                </div>
+
+                <div class="kort-kropp">
+                    <div class="dyrekort-tall mb-2">
+                        <span>
+                            <span class="verdi">@d.Art</span>
+                            <span class="etikett">@(d.Rase ?? "ukjent rase")</span>
+                        </span>
+                        <span>
+                            <span class="verdi">
+                                @(d.Fodselsdato is { } f ? Alderformat.Tekst(f, idag) : "—")
+                            </span>
+                            <span class="etikett">alder</span>
+                        </span>
+                        <span>
+                            <span class="verdi">
+                                @(d.SisteVektGram is { } g
+                                    ? Vektformat.TilKiloTekst(g) : "—")
+                            </span>
+                            <span class="etikett">
+                                @(d.SisteVektDato is { } vd
+                                    ? $"målt {vd:d. MMM}" : "ingen vekt")
+                            </span>
+                        </span>
+                        <span>
+                            <span class="verdi">@(d.Kastrert ? "Ja" : "Nei")</span>
+                            <span class="etikett">kastrert</span>
+                        </span>
+                    </div>
+
+                    <dl class="row mb-0 small">
+                        <dt class="col-sm-3 fw-normal text-body-secondary">Chipnummer</dt>
+                        <dd class="col-sm-9">@(d.ChipNr ?? "—")</dd>
+
+                        @if (d.RegNrNkk is not null)
+                        {
+                            <dt class="col-sm-3 fw-normal text-body-secondary">NKK-regnr</dt>
+                            <dd class="col-sm-9">@d.RegNrNkk</dd>
+                        }
+
+                        <dt class="col-sm-3 fw-normal text-body-secondary">Fôr</dt>
+                        <dd class="col-sm-9">@(d.ForplanTekst ?? "Ingen fôrplan")</dd>
+
+                        <dt class="col-sm-3 fw-normal text-body-secondary">Medisin</dt>
+                        <dd class="col-sm-9 mb-0">
+                            @if (d.AktiveMedisiner.Count == 0)
+                            {
+                                @:Ingen aktive
+                            }
+                            else
+                            {
+                                @string.Join(", ", d.AktiveMedisiner)
+                            }
+                        </dd>
+                    </dl>
+                </div>
+
+                @if (d.Notater.Count > 0)
+                {
+                    <ul class="rad-liste">
+                        @foreach (var n in d.Notater)
+                        {
+                            <li>
+                                <span class="flex-grow-1 min-w-0">
+                                    <span class="tittel">@n.Tittel</span>
+                                    <span class="under d-block">@n.Tekst</span>
+                                </span>
+                                <span class="hoyre d-flex gap-2">
+                                    <a asp-action="Rediger" asp-route-id="@n.Id">Endre</a>
+                                    <form method="post" asp-action="Slett" asp-route-id="@n.Id"
+                                          onsubmit="return confirm('Slette notatet «@n.Tittel»?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-lenke-fare">Slett</button>
+                                    </form>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+
+        @if (Model.FellesNotater.Count > 0)
+        {
+            <section class="kort">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-informasjon" /></svg>
+                    <h2>Felles</h2>
+                    <span class="antall">@Model.FellesNotater.Count</span>
+                </div>
+                <ul class="rad-liste">
+                    @foreach (var n in Model.FellesNotater)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@n.Tittel</span>
+                                <span class="under d-block">@n.Tekst</span>
+                            </span>
+                            <span class="hoyre d-flex gap-2">
+                                <a asp-action="Rediger" asp-route-id="@n.Id">Endre</a>
+                                <form method="post" asp-action="Slett" asp-route-id="@n.Id"
+                                      onsubmit="return confirm('Slette notatet «@n.Tittel»?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-lenke-fare">Slett</button>
+                                </form>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    </div>
+
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+                <h2>@(redigerer ? "Endre notat" : "Nytt notat")</h2>
+            </div>
+
+            <div class="kort-kropp">
+                <p class="form-text mt-0">
+                    Det den andre trenger å vite når hun står der alene.
+                    «Spiser ikke før 07», «Redd for torden», «Vet: 37 00 00 00».
+                </p>
+
+                <form method="post" asp-action="Lagre">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Ny.Id" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Tittel" class="form-label"></label>
+                        <input asp-for="Ny.Tittel" class="form-control"
+                               placeholder="For eksempel «Fôrvaner»" />
+                        <span asp-validation-for="Ny.Tittel" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.DyrId" class="form-label"></label>
+                        <select asp-for="Ny.DyrId" class="form-select">
+                            <option value="">Felles for husstanden</option>
+                            @foreach (var d in Model.DyrValg)
+                            {
+                                <option value="@d.Value">@d.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Tekst" class="form-label"></label>
+                        <textarea asp-for="Ny.Tekst" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="Ny.Tekst" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            @(redigerer ? "Lagre endringer" : "Lagre notat")
+                        </button>
+                        @if (redigerer)
+                        {
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Avbryt</a>
+                        }
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}
