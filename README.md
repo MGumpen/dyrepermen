@@ -149,13 +149,17 @@ brancher og pull requests; utrulling skjer kun fra `main`.
 MVP er fase 1, 1b og 2 i `docs/plan.md` kapittel 16. Akseptansekriteriene i
 samme kapittel er definisjonen av ferdig.
 
-**Fase 1 er ferdig.** Monorepo-oppsett, hele databaseskjemaet med query-filtre,
+**Fase 1 og 1b er ferdige.** Monorepo-oppsett, hele databaseskjemaet med query-filtre,
 isolasjonstest og filterprøve, Identity med 30 dagers vedvarende innlogging og
 Data Protection-nøkler i database, innlogging som eneste inngang,
-oppstartsskjerm, husstandsoppsett og `Dyr`-CRUD med funksjonsbrytere.
+oppstartsskjerm, husstandsoppsett, `Dyr`-CRUD med funksjonsbrytere, og
+dashbord med dyrekort og tomtilstander.
 
-22 tester grønne. Alle akseptansekriteriene i kapittel 16 for fase 1 er
+Dashbordet gjør **to** databasespørringer uansett antall dyr — kravet i
+kapittel 16 er høyst fire. Målt med EF Core-logging på `Information`.
+
+40 tester grønne. Alle akseptansekriteriene i kapittel 16 for fase 1 og 1b er
 verifisert mot kjørende app og ekte database.
 
-**Neste: fase 1b** — dashbord med dyrekort, tomtilstander og høyst fire
-databasespørringer.
+**Neste: fase 2** — vekt og behandling.
+

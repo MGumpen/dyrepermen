@@ -1,13 +1,126 @@
+@using Dyrepermen.Application.Dtos
+@using Dyrepermen.Application.Extensions
+@model Dashbord
 @{
     ViewData["Tittel"] = "Dashbord";
+    var idag = DateOnly.FromDateTime(DateTime.Now);
 }
 
 <h1 class="h4 mb-3">Dashbord</h1>
 
-<div class="card">
-    <div class="card-body">
-        <p class="mb-0 text-body-secondary">
-            Dyrekort, «forfaller snart» og handleliste kommer i fase 1b.
-        </p>
+@* col-lg-8 / col-lg-4: dyrekort til venstre, forfaller til hoyre pa PC.
+   Under lg stables de. Se plan kapittel 10.3. *@
+<div class="row g-3">
+    <div class="col-lg-8">
+        @if (Model.Dyr.Count == 0)
+        {
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <img src="~/img/logo.svg" alt="" width="56" height="56" class="mb-3" />
+                    <p class="mb-3">Ingen dyr registrert ennå.</p>
+                    <a asp-controller="Dyr" asp-action="Ny" class="btn btn-primary">
+                        Legg til ditt første dyr
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-1 g-3">
+                @foreach (var dyr in Model.Dyr)
+                {
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h2 class="h6 mb-1">
+                                            <a asp-controller="Dyr" asp-action="Detaljer"
+                                               asp-route-dyrId="@dyr.Id"
+                                               class="stretched-link text-decoration-none">
+                                                @dyr.Navn
+                                            </a>
+                                        </h2>
+                                        <p class="text-body-secondary small mb-2">
+                                            @dyr.Art@(dyr.Fodselsdato is { } f
+                                                ? $" · {Alderformat.Tekst(f, idag)}"
+                                                : "")
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <dl class="row mb-0 small">
+                                    <dt class="col-5 fw-normal text-body-secondary">Siste vekt</dt>
+                                    <dd class="col-7 mb-0">
+                                        @if (dyr.SisteVektGram is { } gram)
+                                        {
+                                            <strong>@Vektformat.TilKiloTekst(gram)</strong>
+                                            <span class="text-body-secondary">
+                                                @($"({dyr.SisteVektDato:d. MMM yyyy})")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            @* Ikke "0 kg". Et tall uten dekning er verre
+                                               enn ingen tall. Se plan kapittel 10.3. *@
+                                            <span class="text-body-secondary">
+                                                Ingen vekt registrert
+                                            </span>
+                                        }
+                                    </dd>
+
+                                    @if (dyr.ForingsloggAktiv)
+                                    {
+                                        <dt class="col-5 fw-normal text-body-secondary">Sist matet</dt>
+                                        <dd class="col-7 mb-0 text-body-secondary">
+                                            Kommer i fase 6b
+                                        </dd>
+                                    }
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6">Forfaller snart</h2>
+
+                @if (Model.Forfaller.Count == 0)
+                {
+                    <p class="text-body-secondary small mb-0">
+                        Ingenting forfaller de neste 14 dagene.
+                    </p>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0 small">
+                        @* Forfalte oeverst og tydelig markert. Sorteringen
+                           kommer fra tjenesten. *@
+                        @foreach (var p in Model.Forfaller.OrderBy(p => p.Dato))
+                        {
+                            var forfalt = p.ErForfalt(idag);
+                            <li class="d-flex justify-content-between gap-2 py-1 border-bottom">
+                                <span>
+                                    <strong>@p.DyreNavn</strong>
+                                    <span class="d-block text-body-secondary">@p.Tekst</span>
+                                </span>
+                                <span class="@(forfalt ? "text-danger fw-semibold" : "text-body-secondary") text-nowrap">
+                                    @($"{p.Dato:d. MMM}")
+                                    @if (forfalt)
+                                    {
+                                        <span class="d-block small">forfalt</span>
+                                    }
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
     </div>
 </div>
