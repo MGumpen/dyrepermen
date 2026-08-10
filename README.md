@@ -71,15 +71,37 @@ Det er bevisst, og er den anbefalte arbeidsmåten i plan kapittel 14.2: med
 appen utenfor container beholder du hot reload, debugger og raske omstarter.
 Å bygge et Docker-image på nytt for hver kodeendring tar titalls sekunder.
 
-Vil du likevel kjøre **hele stakken** i container — den eneste måten å
-verifisere at `Dockerfile` faktisk virker før Render prøver den:
+## Hele appen i Docker
+
+Kjører app og database i hver sin container. Dette er eneste måte å
+verifisere at `Dockerfile` faktisk virker før Render prøver den.
 
 ```bash
-docker compose -f infra/compose.yaml --profile full up --build
+# Bygg og start alt. Uten -d blir terminalen stående med loggen.
+docker compose -f infra/compose.yaml --profile full up --build -d
+
+# Følg loggen
+docker compose -f infra/compose.yaml logs -f web
+
+# Stopp
+docker compose -f infra/compose.yaml --profile full down
 ```
 
-Da svarer appen på <http://localhost:8080>. Merk at migrasjoner ikke kjøres
-automatisk der heller.
+Appen ligger på **<http://localhost:8080>** — http, ikke https.
+
+**Skjemaet må finnes fra før.** Appen migrerer ikke ved oppstart, verken her
+eller lokalt. Har du kjørt `down -v` og slettet databasen, må du starte `db`
+alene og kjøre `dotnet ef database update` fra maskinen først.
+
+### Hvorfor http virker her, men ikke lokalt
+
+Innloggingskapselen krever normalt https. Containeren serverer http på 8080
+uten noen TLS-terminator foran, slik Render har — så `web`-tjenesten i
+`infra/compose.yaml` setter `Sikkerhet__KrevSikkerKapsel=false`.
+
+Standarden er sikker, avviket står ett sted du ser det, appen logger en
+advarsel ved oppstart, **og den nekter å starte med dette avslått i
+Production.** Det er ikke mulig å rulle ut med kapselen i klartekst.
 
 ### Nyttige kommandoer
 

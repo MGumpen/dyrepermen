@@ -74,6 +74,25 @@ builder.Services.AddDataProtection()
     .SetApplicationName("dyrepermen")
     .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
+// Sikker kapsel er standard. Eneste grunn til a sla den av er lokal
+// container-kjoring over http (docker compose --profile full), der det ikke
+// star noen TLS-terminator foran slik Render har. Med Always settes
+// innloggingskapselen aldri over http, og innlogging virker ikke i det hele
+// tatt - uten at noe sier fra om hvorfor.
+//
+// Valget er eksplisitt konfigurasjon, ikke en IsDevelopment()-sjekk, slik at
+// standarden er sikker og avviket ma skrives ned et sted man ser det.
+var krevSikkerKapsel =
+    builder.Configuration.GetValue("Sikkerhet:KrevSikkerKapsel", true);
+
+// Sikkerhetsnett: umulig a rulle ut med avslatt sikker kapsel.
+if (!krevSikkerKapsel && builder.Environment.IsProduction())
+{
+    throw new InvalidOperationException(
+        "Sikkerhet:KrevSikkerKapsel er slatt av i Production. Det sender "
+        + "innloggingskapselen i klartekst. Fjern innstillingen.");
+}
+
 builder.Services.ConfigureApplicationCookie(o =>
 {
     o.LoginPath = "/logg-inn";
@@ -85,7 +104,9 @@ builder.Services.ConfigureApplicationCookie(o =>
 
     o.Cookie.Name = "dyrepermen_auth";
     o.Cookie.HttpOnly = true;
-    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    o.Cookie.SecurePolicy = krevSikkerKapsel
+        ? CookieSecurePolicy.Always
+        : CookieSecurePolicy.SameAsRequest;
     o.Cookie.SameSite = SameSiteMode.Lax;
     o.Cookie.IsEssential = true;
 });
@@ -131,6 +152,12 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
 });
 
 var app = builder.Build();
+
+if (!krevSikkerKapsel)
+{
+    app.Logger.LogWarning(
+        "Sikker innloggingskapsel er AVSLATT. Kun for lokal kjoring over http.");
+}
 
 // Ma sta forst i pipelinen, for noe leser skjema eller klient-IP.
 app.UseForwardedHeaders();

@@ -42,6 +42,12 @@ services:
         Maximum Pool Size=10
       Jobb__Nokkel: ${JOBB_NOKKEL:-lokal-nokkel}
       TZ: Europe/Oslo
+
+      # KUN her. Containeren serverer http pa 8080, og det star ingen
+      # TLS-terminator foran slik Render har. Med sikker kapsel pakrevd
+      # settes innloggingskapselen aldri, og innlogging virker ikke.
+      # Applikasjonen nekter a starte med denne av i Production.
+      Sikkerhet__KrevSikkerKapsel: "false"
     ports:
       - "8080:8080"
     depends_on:
