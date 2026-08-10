@@ -1,6 +1,6 @@
 using Dyrepermen.Application.Interfaces;
 
-namespace Dyrepermen.Application.Husstander;
+namespace Dyrepermen.Application.Services;
 
 /// <summary>
 /// Scoped holder for gjeldende husstand.

@@ -1,4 +1,4 @@
-using Dyrepermen.Application.Husstander;
+using Dyrepermen.Application.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 

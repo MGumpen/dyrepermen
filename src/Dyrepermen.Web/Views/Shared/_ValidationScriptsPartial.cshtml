@@ -1,2 +1,7 @@
-﻿<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+@* jQuery MA lastes forst. jquery.validate er et jQuery-plugin og kaster
+   "jQuery is not defined" uten den. Standardtemplaten laster jQuery i
+   _Layout; her lastes den kun pa sider med skjema, siden resten av
+   applikasjonen klarer seg med Bootstrap. *@
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
 <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>

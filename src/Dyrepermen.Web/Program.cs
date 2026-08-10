@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Reflection;
-using Dyrepermen.Application.Husstander;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Application.Services;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Infrastructure;
 using Dyrepermen.Infrastructure.Persistence;
@@ -145,9 +145,15 @@ app.UseMiddleware<HusstandMiddleware>();
 
 app.UseAuthorization();
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Hjem}/{action=Index}/{id?}");
+// MapControllers, ikke MapControllerRoute. Alle controllere bruker
+// attributtruting med norske ruter (plan kapittel 9), og en konvensjonell
+// {controller}/{action}-rute ville aldri matchet noe - attributtrutede
+// handlinger er utelatt fra konvensjonell ruting. Den ville bare ligget der
+// og sett ut som om den gjorde noe.
+//
+// Bieffekten er ogsa onsket: en ny controller uten rutattributt blir
+// utilgjengelig i stedet for a dukke opp pa en URL ingen har bestemt.
+app.MapControllers();
 
 // Brukes av Render som helsesjekk og av utrullingsjobben som roykttest.
 // Skal IKKE treffe databasen - en helsesjekk som feiler fordi Neon sover,
