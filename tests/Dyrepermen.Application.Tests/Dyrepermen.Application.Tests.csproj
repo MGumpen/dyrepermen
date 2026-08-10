@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Dyrepermen.Application\Dyrepermen.Application.csproj" />
   </ItemGroup>
 
