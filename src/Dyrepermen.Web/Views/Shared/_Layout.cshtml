@@ -1,50 +1,149 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+@{
+    var innlogget = User.Identity?.IsAuthenticated == true;
+    var gjeldende = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    string Aktiv(string controller) =>
+        string.Equals(gjeldende, controller, StringComparison.OrdinalIgnoreCase)
+            ? "page" : "false";
+}
+<!DOCTYPE html>
+<html lang="no">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Dyrepermen.Web</title>
-    <script type="importmap"></script>
+    @* viewport-fit=cover kreves for at trygg sone pa iOS skal virke.
+       Uten den havner utloggingsknappen under hjemindikatoren. *@
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>@ViewData["Tittel"] – Dyrepermen</title>
+    <link rel="icon" href="~/img/logo.svg" />
+
+    @* Stilene for oppstartsskjermen MA ligge inline. Ligger de i en ekstern
+       fil, blinker det urenderte innholdet frem for overlegget far stil. *@
+    <style>
+        #oppstart {
+            position: fixed; inset: 0; z-index: 9999;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 1rem;
+            background: #fff;
+            transition: opacity .25s ease;
+        }
+        #oppstart.skjult { opacity: 0; pointer-events: none; }
+        #oppstart .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid #ddd; border-top-color: #555;
+            border-radius: 50%;
+            animation: snurr .8s linear infinite;
+        }
+        @@keyframes snurr { to { transform: rotate(360deg); } }
+        @@media (prefers-reduced-motion: reduce) {
+            #oppstart .spinner { animation: none; border-top-color: #ddd; }
+        }
+    </style>
+    <noscript>
+        <style>#oppstart { display: none; }</style>
+    </noscript>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Dyrepermen.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Dyrepermen.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+    <div id="oppstart" role="status" aria-live="polite">
+        <img src="~/img/logo.svg" alt="Dyrepermen" width="96" height="96" />
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Laster …</p>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Dyrepermen.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    @if (innlogget)
+    {
+        <nav class="navbar d-lg-none border-bottom sticky-top bg-body">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                    <img src="~/img/logo.svg" alt="" height="28" width="28" />
+                    <span>Dyrepermen</span>
+                </a>
+                <button class="navbar-toggler ms-auto" type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#hovedmeny"
+                        aria-controls="hovedmeny"
+                        aria-expanded="false"
+                        aria-label="Åpne meny">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="d-flex">
+            <div class="offcanvas-lg offcanvas-end sidemeny"
+                 tabindex="-1" id="hovedmeny"
+                 aria-labelledby="hovedmenyTittel">
+
+                <div class="offcanvas-header">
+                    <h2 class="offcanvas-title h6" id="hovedmenyTittel">Meny</h2>
+                    @* data-bs-target ma sta ogsa her. Utelates den pa
+                       lukkeknappen, lukkes ikke skuffen. *@
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="offcanvas"
+                            data-bs-target="#hovedmeny"
+                            aria-label="Lukk"></button>
+                </div>
+
+                <div class="offcanvas-body flex-column p-0">
+                    <a class="sidemeny-merke d-none d-lg-flex align-items-center gap-2"
+                       href="/">
+                        <img src="~/img/logo.svg" alt="" height="28" width="28" />
+                        <span>Dyrepermen</span>
+                    </a>
+
+                    <ul class="nav nav-pills flex-column px-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/" aria-current="@Aktiv("Hjem")">
+                                Dashbord
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dyr" aria-current="@Aktiv("Dyr")">
+                                Dyrene
+                            </a>
+                        </li>
+                    </ul>
+
+                    <form method="post" action="/logg-ut" class="mt-auto p-3">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn-outline-secondary w-100" type="submit">
+                            Logg ut
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <main class="flex-grow-1 p-3 p-lg-4">
+                @RenderBody()
+            </main>
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    }
+    else
+    {
+        <main class="apen-side">
+            @RenderBody()
+        </main>
+    }
+
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        (function () {
+            var o = document.getElementById('oppstart');
+            if (!o) return;
+
+            function skjul() {
+                o.classList.add('skjult');
+                setTimeout(function () { o.remove(); }, 300);
+            }
+
+            window.addEventListener('load', skjul);
+            // Overlegget ma aldri kunne bli hengende om noe feiler.
+            setTimeout(skjul, 8000);
+        })();
+    </script>
+    @await RenderSectionAsync("Skript", required: false)
 </body>
 </html>

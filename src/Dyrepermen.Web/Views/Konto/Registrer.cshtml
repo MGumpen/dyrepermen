@@ -1,0 +1,62 @@
+@model RegistrerVm
+@{
+    ViewData["Tittel"] = "Opprett konto";
+}
+
+<div class="apen-kort">
+    <div class="text-center mb-4">
+        <img src="~/img/logo.svg" alt="" width="72" height="72" />
+        <h1 class="h4 mt-3 mb-0">Opprett konto</h1>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" asp-action="Registrer">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Epost" class="form-label"></label>
+                    <input asp-for="Epost" class="form-control"
+                           autocomplete="username" inputmode="email" autofocus />
+                    <span asp-validation-for="Epost" class="text-danger small"></span>
+                    <div class="form-text">E-postadressen er brukernavnet ditt.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Visningsnavn" class="form-label"></label>
+                    <input asp-for="Visningsnavn" class="form-control"
+                           autocomplete="name" />
+                    <span asp-validation-for="Visningsnavn" class="text-danger small"></span>
+                    <div class="form-text">Vises for de andre i husstanden.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Passord" class="form-label"></label>
+                    <input asp-for="Passord" class="form-control"
+                           autocomplete="new-password" />
+                    <span asp-validation-for="Passord" class="text-danger small"></span>
+                    <div class="form-text">Minst 10 tegn.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="BekreftPassord" class="form-label"></label>
+                    <input asp-for="BekreftPassord" class="form-control"
+                           autocomplete="new-password" />
+                    <span asp-validation-for="BekreftPassord" class="text-danger small"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Opprett konto</button>
+            </form>
+        </div>
+    </div>
+
+    <p class="text-center text-body-secondary small mt-3 mb-0">
+        Har du konto? <a asp-action="LoggInn">Logg inn</a>
+    </p>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

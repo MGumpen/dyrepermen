@@ -1,31 +1,78 @@
 html {
-  font-size: 14px;
+    font-size: 14px;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    html {
+        font-size: 16px;
+    }
 }
 
 body {
-  margin-bottom: 60px;
+    min-height: 100svh;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+/* --- Sidemeny -------------------------------------------------------- */
+
+.sidemeny {
+    width: 260px;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+.sidemeny-merke {
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: inherit;
+}
+
+@media (min-width: 992px) {
+    .sidemeny {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        border-right: 1px solid var(--bs-border-color);
+        flex-shrink: 0;
+    }
+}
+
+/* Beroringsmal minst 44 x 44 px pa mobil. Standard nav-link-padding er
+   for lav, og skuffen brukes med tommelen. */
+@media (max-width: 991.98px) {
+    .sidemeny .nav-link {
+        padding: 0.75rem 1rem;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Trygg sone pa iOS - ellers havner utloggingsknappen under
+       hjemindikatoren. */
+    .sidemeny .offcanvas-body > form {
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    }
+}
+
+.nav-link[aria-current="page"] {
+    background-color: var(--bs-primary-bg-subtle);
+    color: var(--bs-emphasis-color);
+    font-weight: 600;
+}
+
+/* Uten denne star det en tom, rod boks pa hvert skjema for forste innsending.
+   ASP.NET Core setter klassen selv nar det ikke finnes feil. */
+.validation-summary-valid {
+    display: none;
+}
+
+/* --- Sider uten innlogging ------------------------------------------- */
+
+.apen-side {
+    display: grid;
+    place-items: center;
+    min-height: 100svh;
+    padding: 1.5rem;
+}
+
+.apen-kort {
+    width: min(26rem, 100%);
 }
