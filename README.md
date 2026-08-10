@@ -28,8 +28,8 @@ dotnet user-secrets set "ConnectionStrings:Postgres" \
   "Host=localhost;Port=5434;Database=dyrepermen;Username=dyrepermen;Password=utvikling;Maximum Pool Size=10" \
   --project src/Dyrepermen.Web
 
-# 3. Start databasen
-docker compose -f infra/compose.yaml up -d db
+# 3. Start databasen (eller "docker compose up -d" for hele appen)
+docker compose up -d db
 
 # 4. Opprett skjemaet. Migrasjoner kjøres aldri ved oppstart.
 dotnet ef database update \
@@ -44,12 +44,14 @@ kommandoen på nytt.
 
 ## Kjøre appen
 
-**To ting må kjøre: databasen i Docker, og selve appen.** Compose starter
-med vilje bare databasen — se «Hvorfor compose ikke starter appen» under.
+Vil du bare kjøre appen, hopp til «Hele appen i Docker» under — der er det
+én kommando. Avsnittet her er for **daglig utvikling**, der appen kjøres
+utenfor container så du beholder hot reload, debugger og raske omstarter.
+Å bygge et Docker-image på nytt for hver kodeendring tar titalls sekunder.
 
 ```bash
-# 1. Databasen (hvis den ikke alt kjører)
-docker compose -f infra/compose.yaml up -d db
+# 1. Kun databasen. Tjenesten navngis, ellers starter web-containeren også.
+docker compose up -d db
 
 # 2. Appen
 dotnet run --project src/Dyrepermen.Web
@@ -61,31 +63,23 @@ Appen ligger på **<https://localhost:7171>**.
 `CookieSecurePolicy.Always`, så innlogging virker ikke over `http://`.
 Derfor er `https` standardprofil i `launchSettings.json`.
 
-### Hvorfor compose ikke starter appen
-
-`docker compose up -d db` starter nøyaktig én tjeneste: `db`. `web`-tjenesten
-i `infra/compose.yaml` er merket `profiles: ["full"]`, og Compose hopper over
-tjenester med profil med mindre profilen er bedt om eksplisitt.
-
-Det er bevisst, og er den anbefalte arbeidsmåten i plan kapittel 14.2: med
-appen utenfor container beholder du hot reload, debugger og raske omstarter.
-Å bygge et Docker-image på nytt for hver kodeendring tar titalls sekunder.
-
 ## Hele appen i Docker
 
 Kjører app og database i hver sin container. Dette er eneste måte å
 verifisere at `Dockerfile` faktisk virker før Render prøver den.
 
 ```bash
-# Bygg og start alt. Uten -d blir terminalen stående med loggen.
-docker compose -f infra/compose.yaml --profile full up --build -d
-
-# Følg loggen
-docker compose -f infra/compose.yaml logs -f web
-
-# Stopp
-docker compose -f infra/compose.yaml --profile full down
+docker compose up -d            # start alt
+docker compose up -d --build    # bygg web-imaget på nytt etter kodeendring
+docker compose logs -f web      # følg loggen
+docker compose down             # stopp, behold data
+docker compose down -v          # stopp og slett databasen
 ```
+
+Rotfila `compose.yaml` peker på `infra/compose.yaml` med `include`, så du
+slipper flagg. Det finnes bare én definisjon — rotfila dupliserer ingenting.
+
+Vil du bare ha databasen, navngir du tjenesten: `docker compose up -d db`.
 
 Appen ligger på **<http://localhost:8080>** — http, ikke https.
 
@@ -106,10 +100,10 @@ Production.** Det er ikke mulig å rulle ut med kapselen i klartekst.
 ### Nyttige kommandoer
 
 ```bash
-docker compose -f infra/compose.yaml ps       # hva kjører?
-docker compose -f infra/compose.yaml logs db  # databaselogg
-docker compose -f infra/compose.yaml down     # stopp, behold data
-docker compose -f infra/compose.yaml down -v  # stopp, slett databasen
+docker compose ps        # hva kjører?
+docker compose logs db   # databaselogg
+docker compose down      # stopp, behold data
+docker compose down -v   # stopp, slett databasen
 ```
 
 ---

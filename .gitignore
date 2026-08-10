@@ -45,6 +45,19 @@ pnpm-debug.log*
 Thumbs.db
 desktop.ini
 
+# macOS og iCloud lager konfliktkopier med " 2"-suffiks: "DyrService 2.cs".
+# De er ekte .cs-filer for kompilatoren, sa de gir CS0101 "already contains a
+# definition" pa hver eneste type i prosjektet - en feil som peker pa den
+# riktige fila og ikke sier noe om kopien. Skjer repoet ligger i en synket
+# mappe. Sperren her hindrer at de blir committet og odelegger for andre.
+* [0-9].cs
+* [0-9].cshtml
+* [0-9].csproj
+* [0-9].json
+* [0-9].sh
+* [0-9].yaml
+*.icloud
+
 # ============================================
 # Prosjektspesifikt - les denne delen
 # ============================================
