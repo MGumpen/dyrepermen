@@ -143,7 +143,16 @@
 
             @if (Model.Forfaller.Count == 0)
             {
-                <div class="tomt">Ingenting forfaller de neste 14 dagene.</div>
+                @* En tomtilstand som bare sier "ingenting" forteller ikke hva
+                   som VILLE statt her. Da lurer man pa om funksjonen er i
+                   stykker. *@
+                <div class="tomt">
+                    <p class="mb-1">Ingenting forfaller de neste 14 dagene.</p>
+                    <p class="mb-0" style="font-size:.85em">
+                        Her dukker behandlinger opp når du fyller inn
+                        «neste gang» — vaksine, ormekur, flåttmiddel.
+                    </p>
+                </div>
             }
             else
             {
