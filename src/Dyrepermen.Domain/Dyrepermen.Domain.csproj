@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Domenelaget refererer ingenting. Legges det en EF Core-avhengighet her,
+       er lagdelingen borte uten at noe feiler. Se plan kapittel 3.4. -->
+
+</Project>

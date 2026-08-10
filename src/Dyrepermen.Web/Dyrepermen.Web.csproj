@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Dyrepermen.Application\Dyrepermen.Application.csproj" />
+    <!-- Refereres kun for DI-registrering i Program.cs. Se plan kapittel 3.4. -->
+    <ProjectReference Include="..\Dyrepermen.Infrastructure\Dyrepermen.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Startprosjekt for "dotnet ef". Verktoyet leser designtidsinformasjon herfra. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
