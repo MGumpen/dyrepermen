@@ -106,6 +106,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/handleliste"
+                               aria-current="@Aktiv("Handleliste")">
+                                Handleliste
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/innstillinger"
                                aria-current="@Aktiv("Innstilling")">
                                 Innstillinger
@@ -143,6 +149,19 @@
     }
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/htmx/dist/htmx.min.js"></script>
+    <script>
+        // Skuffen lukkes av seg selv ved vanlig sidelast, men htmx bytter kun
+        // en del av siden - da blir den staende apen over navigasjonen.
+        // Se plan kapittel 10.2.
+        document.body.addEventListener('htmx:afterOnLoad', function () {
+            var meny = document.getElementById('hovedmeny');
+            if (!meny) return;
+
+            var skuff = bootstrap.Offcanvas.getInstance(meny);
+            if (skuff) skuff.hide();
+        });
+    </script>
     <script>
         (function () {
             var o = document.getElementById('oppstart');

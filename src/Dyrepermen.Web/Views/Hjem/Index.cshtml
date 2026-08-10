@@ -122,5 +122,43 @@
                 }
             </div>
         </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <h2 class="h6">
+                    <a asp-controller="Handleliste" asp-action="Index"
+                       class="text-decoration-none">Handleliste</a>
+                </h2>
+
+                @if (Model.Handleliste.Count == 0)
+                {
+                    @* Tom liste: ingen tom boks, bare veien videre.
+                       Se plan kapittel 10.3. *@
+                    <a asp-controller="Handleliste" asp-action="Index"
+                       class="btn btn-outline-secondary btn-sm">Legg til noe</a>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0 small">
+                        @foreach (var p in Model.Handleliste)
+                        {
+                            <li class="d-flex justify-content-between gap-2 py-1 border-bottom">
+                                <span>
+                                    @p.Tekst
+                                    @if (p.Antall > 1)
+                                    {
+                                        <span class="text-body-secondary">× @p.Antall</span>
+                                    }
+                                </span>
+                                @* Punkt uten dyr vises som "Felles". *@
+                                <span class="text-body-secondary text-nowrap">
+                                    @(p.DyreNavn ?? "Felles")
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
     </div>
 </div>

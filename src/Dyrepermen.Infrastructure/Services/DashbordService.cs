@@ -10,9 +10,17 @@ public sealed class DashbordService : IDashbordService
 {
     private const int Varselvindu = 14;
 
-    private readonly DyrepermenDbContext _db;
+    private const int AntallPaHandleliste = 5;
 
-    public DashbordService(DyrepermenDbContext db) => _db = db;
+    private readonly DyrepermenDbContext _db;
+    private readonly IHandlelisteService _handleliste;
+
+    public DashbordService(
+        DyrepermenDbContext db, IHandlelisteService handleliste)
+    {
+        _db = db;
+        _handleliste = handleliste;
+    }
 
     public async Task<Dashbord> Hent(CancellationToken ct)
     {
@@ -76,7 +84,11 @@ public sealed class DashbordService : IDashbordService
                 b.Dato))
             .ToList();
 
-        return new Dashbord(dyr, forfaller);
+        // Sporring 3. De fem oeverste aktive punktene.
+        var handleliste = await _handleliste.HentAktive(AntallPaHandleliste, ct);
+
+        // Tre sporringer totalt, uansett antall dyr. Kravet er hoyst fire.
+        return new Dashbord(dyr, forfaller, handleliste);
     }
 
     private static string TypeTekst(BehandlingType type) => type switch

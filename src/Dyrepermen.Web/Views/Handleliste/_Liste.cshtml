@@ -1,0 +1,75 @@
+@model HandlelisteVm
+
+@* Dette delvise viewet returneres bade ved forste sidelast og som svar pa
+   htmx-kall. Da finnes markupen ett sted, og listen kan ikke komme i utakt
+   med seg selv. *@
+
+@if (Model.Punkter.Count == 0)
+{
+    @* Tom liste: kun inntastingsfeltet, ingen tom boks.
+       Se plan kapittel 10.3. *@
+    <p class="text-body-secondary small mb-0">Listen er tom.</p>
+}
+else
+{
+    <ul class="list-unstyled mb-0">
+        @foreach (var p in Model.Punkter)
+        {
+            var kjopt = p.Status == HandlelisteStatus.Kjopt;
+            <li class="d-flex align-items-center gap-2 py-2 border-bottom @(kjopt ? "opacity-50" : "")">
+
+                @* Hele avkryssingen er et skjema. Da folger antiforgery-tokenet
+                   med automatisk i htmx-kallet, uten hx-headers og uten at
+                   tokenet ma legges ut i markupen for hand. *@
+                <form method="post" asp-action="MarkerKjopt" asp-route-punktId="@p.Id"
+                      hx-post="@Url.Action("MarkerKjopt", new { punktId = p.Id })"
+                      hx-target="#liste" hx-swap="innerHTML"
+                      class="d-flex align-items-center">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="btn btn-sm p-0 border-0 bg-transparent lh-1"
+                            aria-label="@(kjopt ? $"Angre kjøp av {p.Tekst}" : $"Marker {p.Tekst} som kjøpt")">
+                        <span class="handleliste-boks @(kjopt ? "kjopt" : "")" aria-hidden="true">
+                            @(kjopt ? "✓" : "")
+                        </span>
+                    </button>
+                </form>
+
+                <span class="flex-grow-1 @(kjopt ? "text-decoration-line-through" : "")">
+                    @p.Tekst
+                    @if (p.Antall > 1)
+                    {
+                        <span class="text-body-secondary">× @p.Antall</span>
+                    }
+                    <span class="d-block small text-body-secondary">
+                        @* Punkt uten dyr vises som "Felles". *@
+                        @(p.DyreNavn ?? "Felles")
+                    </span>
+                </span>
+
+                <form method="post" asp-action="Slett" asp-route-punktId="@p.Id"
+                      hx-post="@Url.Action("Slett", new { punktId = p.Id })"
+                      hx-target="#liste" hx-swap="innerHTML"
+                      hx-confirm="Slette @p.Tekst?">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0">
+                        Slett
+                    </button>
+                </form>
+            </li>
+        }
+    </ul>
+
+    @if (Model.HarKjopte)
+    {
+        <form method="post" asp-action="RyddKjopte" class="mt-3"
+              hx-post="@Url.Action("RyddKjopte")"
+              hx-target="#liste" hx-swap="innerHTML"
+              hx-confirm="Fjerne alle kjøpte punkter?">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                Rydd bort kjøpte
+            </button>
+        </form>
+    }
+}

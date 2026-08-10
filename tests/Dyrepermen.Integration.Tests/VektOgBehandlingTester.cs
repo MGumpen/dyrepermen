@@ -1,5 +1,6 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Application.Services;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Domain.Enums;
 using Dyrepermen.Infrastructure.Services;
@@ -32,6 +33,12 @@ public sealed class VektOgBehandlingTester
         await db.SaveChangesAsync();
         return dyr.Id;
     }
+
+    private static DashbordService NyDashbord(
+        Dyrepermen.Infrastructure.Persistence.DyrepermenDbContext db,
+        int husstandId)
+        => new(db, new HandlelisteService(
+            db, new Husstandskontekst { HusstandId = husstandId }));
 
     [Fact]
     public async Task Vekt_lagres_i_gram_og_vises_i_synkende_datorekkefolge()
@@ -107,7 +114,7 @@ public sealed class VektOgBehandlingTester
             dyrId, BehandlingType.Tannrens, null,
             idag, idag.AddDays(200), null), default);
 
-        var dashbord = await new DashbordService(db).Hent(default);
+        var dashbord = await NyDashbord(db, h).Hent(default);
 
         Assert.Equal(2, dashbord.Forfaller.Count);
 
@@ -130,7 +137,7 @@ public sealed class VektOgBehandlingTester
         await vekt.Registrer(new NyVekt(dyrId, 27.4m, new DateOnly(2026, 8, 1), null), default);
         await vekt.Registrer(new NyVekt(dyrId, 28.1m, new DateOnly(2026, 8, 9), null), default);
 
-        var dashbord = await new DashbordService(db).Hent(default);
+        var dashbord = await NyDashbord(db, h).Hent(default);
 
         var kort = Assert.Single(dashbord.Dyr);
         Assert.Equal(28100, kort.SisteVektGram);

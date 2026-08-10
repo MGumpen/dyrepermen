@@ -64,6 +64,35 @@ body {
     display: none;
 }
 
+/* --- Handleliste ------------------------------------------------------ */
+
+/* Egen avkryssingsboks framfor en ekte checkbox: hele punktet postes som
+   skjema, og da ville en checkbox med name gitt dobbel tilstand. */
+.handleliste-boks {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--bs-border-color);
+    border-radius: 0.25rem;
+    color: var(--bs-success);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.handleliste-boks.kjopt {
+    border-color: var(--bs-success);
+}
+
+/* Beroringsmal pa mobil, jf. samme krav som for menyen. */
+@media (max-width: 991.98px) {
+    #liste form button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
 /* --- Sider uten innlogging ------------------------------------------- */
 
 .apen-side {
