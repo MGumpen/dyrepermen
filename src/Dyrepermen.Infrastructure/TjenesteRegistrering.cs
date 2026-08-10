@@ -15,6 +15,7 @@ public static class TjenesteRegistrering
     {
         tjenester.AddScoped<IHusstandService, HusstandService>();
         tjenester.AddScoped<IDyrService, DyrService>();
+        tjenester.AddScoped<IDashbordService, DashbordService>();
         return tjenester;
     }
 }

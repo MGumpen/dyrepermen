@@ -27,7 +27,8 @@ services:
       retries: 10
 
   web:
-    profiles: ["full"]
+    # Ingen profil. "docker compose up" skal starte hele appen.
+    # Vil du kun ha databasen, navngir du tjenesten: "docker compose up -d db".
     build:
       # context peker pa repo-roten, dockerfile er relativ til den.
       # Med "context: ." leter bygget etter .csproj inne i infra/ og feiler.
