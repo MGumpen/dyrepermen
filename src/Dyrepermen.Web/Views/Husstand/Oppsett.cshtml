@@ -1,0 +1,66 @@
+@model OppsettVm
+@{
+    ViewData["Tittel"] = "Kom i gang";
+}
+
+<div class="container-fluid px-0" style="max-width: 40rem;">
+    <h1 class="h4 mb-1">Kom i gang</h1>
+    <p class="text-body-secondary">
+        Du er logget inn, men er ikke knyttet til en husstand ennå.
+    </p>
+
+    <div class="row g-3 mt-1">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h6">Opprett ny husstand</h2>
+                    <p class="text-body-secondary small">
+                        Husstanden er der dyrene og all loggingen hører hjemme.
+                    </p>
+
+                    <form method="post" asp-action="Opprett">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Navn" class="form-label"></label>
+                            <input asp-for="Navn" class="form-control"
+                                   placeholder="For eksempel «Hjemme»" autofocus />
+                            <span asp-validation-for="Navn" class="text-danger small"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            Opprett husstand
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @* Likestilt presentert, men uten skjema - det finnes ingen kode a
+           taste inn. Se plan kapittel 12.1. *@
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h6">Bli med i en eksisterende</h2>
+                    <p class="text-body-secondary small mb-0">
+                        Er du lagt til av noen andre, skjer det automatisk.
+                        Be dem legge til e-postadressen din.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="/logg-ut" class="mt-4">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-link btn-sm px-0 text-body-secondary">
+            Logg ut
+        </button>
+    </form>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

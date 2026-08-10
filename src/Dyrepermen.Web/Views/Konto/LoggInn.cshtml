@@ -1,0 +1,53 @@
+@model LoggInnVm
+@{
+    ViewData["Tittel"] = "Logg inn";
+}
+
+@* Minimal side: logo, e-post, passord, husk meg, knapp og en diskret lenke
+   til registrering. Ingen markedsforing, ingen navigasjonsmeny.
+   Se plan kapittel 11.2. *@
+<div class="apen-kort">
+    <div class="text-center mb-4">
+        <img src="~/img/logo.svg" alt="" width="72" height="72" />
+        <h1 class="h4 mt-3 mb-0">Dyrepermen</h1>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" asp-action="LoggInn">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Epost" class="form-label"></label>
+                    <input asp-for="Epost" class="form-control"
+                           autocomplete="username" inputmode="email" autofocus />
+                    <span asp-validation-for="Epost" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Passord" class="form-label"></label>
+                    <input asp-for="Passord" class="form-control"
+                           autocomplete="current-password" />
+                    <span asp-validation-for="Passord" class="text-danger small"></span>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input asp-for="HuskMeg" class="form-check-input" />
+                    <label asp-for="HuskMeg" class="form-check-label"></label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Logg inn</button>
+            </form>
+        </div>
+    </div>
+
+    <p class="text-center text-body-secondary small mt-3 mb-0">
+        Ny her? <a asp-action="Registrer">Opprett konto</a>
+    </p>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

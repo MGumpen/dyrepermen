@@ -1,0 +1,18 @@
+@{
+    ViewData["Tittel"] = "Noe gikk galt";
+    var kode = ViewData["Kode"] as int?;
+}
+
+@* Ingen stakksporing, ingen melding fra databasen. *@
+<div class="apen-kort text-center">
+    <img src="~/img/logo.svg" alt="" width="64" height="64" />
+    <h1 class="h4 mt-3">
+        @(kode == 404 ? "Fant ikke siden" : "Noe gikk galt")
+    </h1>
+    <p class="text-body-secondary">
+        @(kode == 404
+            ? "Siden finnes ikke, eller du har ikke tilgang til den."
+            : "Prøv igjen. Vedvarer det, gi beskjed.")
+    </p>
+    <a href="/" class="btn btn-outline-secondary">Til forsiden</a>
+</div>

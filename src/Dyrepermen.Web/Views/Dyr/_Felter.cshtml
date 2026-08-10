@@ -1,0 +1,54 @@
+@model NyttDyrVm
+
+@* Delt mellom Ny og Rediger. RedigerDyrVm arver NyttDyrVm, sa samme partial
+   dekker begge - feltnavnene og dermed ModelState-noklene blir like. *@
+
+<div class="mb-3">
+    <label asp-for="Navn" class="form-label"></label>
+    <input asp-for="Navn" class="form-control" autofocus />
+    <span asp-validation-for="Navn" class="text-danger small"></span>
+</div>
+
+<div class="row g-3">
+    <div class="col-sm-6 mb-3">
+        <label asp-for="Art" class="form-label"></label>
+        <select asp-for="Art" class="form-select"
+                asp-items="Html.GetEnumSelectList<Art>()"></select>
+    </div>
+    <div class="col-sm-6 mb-3">
+        <label asp-for="Kjonn" class="form-label"></label>
+        <select asp-for="Kjonn" class="form-select"
+                asp-items="Html.GetEnumSelectList<Kjonn>()"></select>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-sm-6 mb-3">
+        <label asp-for="Rase" class="form-label"></label>
+        <input asp-for="Rase" class="form-control" />
+        <span asp-validation-for="Rase" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6 mb-3">
+        <label asp-for="Fodselsdato" class="form-label"></label>
+        <input asp-for="Fodselsdato" class="form-control" />
+        <span asp-validation-for="Fodselsdato" class="text-danger small"></span>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="ChipNr" class="form-label"></label>
+    <input asp-for="ChipNr" class="form-control" inputmode="numeric" />
+    <span asp-validation-for="ChipNr" class="text-danger small"></span>
+    <div class="form-text">15 siffer. Norske chip starter på 578. Kan stå tomt.</div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="RegNrNkk" class="form-label"></label>
+    <input asp-for="RegNrNkk" class="form-control" />
+    <span asp-validation-for="RegNrNkk" class="text-danger small"></span>
+</div>
+
+<div class="form-check mb-3">
+    <input asp-for="Kastrert" class="form-check-input" />
+    <label asp-for="Kastrert" class="form-check-label"></label>
+</div>

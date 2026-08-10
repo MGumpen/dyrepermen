@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: dyrepermen
+    runtime: docker
+    plan: free
+    region: frankfurt
+
+    # Byggekonteksten er repo-roten, ikke infra/. Se plan kapittel 3.5.
+    dockerfilePath: infra/Dockerfile
+    dockerContext: .
+
+    healthCheckPath: /helse
+
+    # Bevisst av. Utrulling skjer fra .github/workflows/rull-ut.yml, etter at
+    # testene er gronne og migrasjonene er kjort - ikke ved hver push.
+    # Rulles appen ut for migrasjonene, moter ny kode et gammelt skjema.
+    autoDeploy: false
+
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+      # Sammen med InvariantGlobalization=false er dette det som gjor at
+      # tidspunkter vises riktig lokalt. Mangler en av dem, kaster
+      # tidssonekonverteringen i containeren.
+      - key: TZ
+        value: Europe/Oslo
+
+      # sync: false betyr at verdien settes manuelt i Render-dashbordet og
+      # aldri havner i repoet. Npgsql-format (nokkel/verdi), ikke postgres://.
+      - key: ConnectionStrings__Postgres
+        sync: false
+
+      # Delt hemmelighet for POST /jobb/paminnelser. Samme verdi ma legges
+      # inn som JOBB_NOKKEL i GitHub-hemmelighetene.
+      - key: Jobb__Nokkel
+        generateValue: true

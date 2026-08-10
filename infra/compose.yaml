@@ -1,0 +1,58 @@
+name: dyrepermen
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: dyrepermen
+      POSTGRES_USER: dyrepermen
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-utvikling}
+    ports:
+      # Vertsporten er 5434, ikke 5432. En lokalt installert PostgreSQL binder
+      # 127.0.0.1:5432, som er mer spesifikt enn Dockers *:5432 - da gar
+      # localhost:5432 til den lokale serveren og ikke til containeren.
+      # Symptomet er 'role "dyrepermen" does not exist'. Verre variant: har den
+      # lokale serveren tilfeldigvis samme rolle, migrerer du feil database
+      # uten at noe sier fra. Se docs/beslutninger/0006-lokal-databaseport.md
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Ikke valgfritt. Uten den starter appen for Postgres tar imot
+      # tilkoblinger, og forste foresporsel feiler pa noe som ser ut
+      # som feil konfigurasjon.
+      test: ["CMD-SHELL", "pg_isready -U dyrepermen -d dyrepermen"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    profiles: ["full"]
+    build:
+      # context peker pa repo-roten, dockerfile er relativ til den.
+      # Med "context: ." leter bygget etter .csproj inne i infra/ og feiler.
+      context: ..
+      dockerfile: infra/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Host=db - tjenestenavnet er vertsnavnet i compose-nettverket.
+      ConnectionStrings__Postgres: >-
+        Host=db;Port=5432;Database=dyrepermen;
+        Username=dyrepermen;Password=${POSTGRES_PASSWORD:-utvikling};
+        Maximum Pool Size=10
+      Jobb__Nokkel: ${JOBB_NOKKEL:-lokal-nokkel}
+      TZ: Europe/Oslo
+
+      # KUN her. Containeren serverer http pa 8080, og det star ingen
+      # TLS-terminator foran slik Render har. Med sikker kapsel pakrevd
+      # settes innloggingskapselen aldri, og innlogging virker ikke.
+      # Applikasjonen nekter a starte med denne av i Production.
+      Sikkerhet__KrevSikkerKapsel: "false"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,0 +1,157 @@
+@{
+    var innlogget = User.Identity?.IsAuthenticated == true;
+    var gjeldende = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    string Aktiv(string controller) =>
+        string.Equals(gjeldende, controller, StringComparison.OrdinalIgnoreCase)
+            ? "page" : "false";
+}
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="utf-8" />
+    @* viewport-fit=cover kreves for at trygg sone pa iOS skal virke.
+       Uten den havner utloggingsknappen under hjemindikatoren. *@
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>@ViewData["Tittel"] – Dyrepermen</title>
+    <link rel="icon" href="~/img/logo.svg" />
+
+    @* Stilene for oppstartsskjermen MA ligge inline. Ligger de i en ekstern
+       fil, blinker det urenderte innholdet frem for overlegget far stil. *@
+    <style>
+        #oppstart {
+            position: fixed; inset: 0; z-index: 9999;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 1rem;
+            background: #fff;
+            transition: opacity .25s ease;
+        }
+        #oppstart.skjult { opacity: 0; pointer-events: none; }
+        #oppstart .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid #ddd; border-top-color: #555;
+            border-radius: 50%;
+            animation: snurr .8s linear infinite;
+        }
+        @@keyframes snurr { to { transform: rotate(360deg); } }
+        @@media (prefers-reduced-motion: reduce) {
+            #oppstart .spinner { animation: none; border-top-color: #ddd; }
+        }
+    </style>
+    <noscript>
+        <style>#oppstart { display: none; }</style>
+    </noscript>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div id="oppstart" role="status" aria-live="polite">
+        <img src="~/img/logo.svg" alt="Dyrepermen" width="96" height="96" />
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Laster …</p>
+    </div>
+
+    @if (innlogget)
+    {
+        <nav class="navbar d-lg-none border-bottom sticky-top bg-body">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                    <img src="~/img/logo.svg" alt="" height="28" width="28" />
+                    <span>Dyrepermen</span>
+                </a>
+                <button class="navbar-toggler ms-auto" type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#hovedmeny"
+                        aria-controls="hovedmeny"
+                        aria-expanded="false"
+                        aria-label="Åpne meny">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="d-flex">
+            <div class="offcanvas-lg offcanvas-end sidemeny"
+                 tabindex="-1" id="hovedmeny"
+                 aria-labelledby="hovedmenyTittel">
+
+                <div class="offcanvas-header">
+                    <h2 class="offcanvas-title h6" id="hovedmenyTittel">Meny</h2>
+                    @* data-bs-target ma sta ogsa her. Utelates den pa
+                       lukkeknappen, lukkes ikke skuffen. *@
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="offcanvas"
+                            data-bs-target="#hovedmeny"
+                            aria-label="Lukk"></button>
+                </div>
+
+                <div class="offcanvas-body flex-column p-0">
+                    <a class="sidemeny-merke d-none d-lg-flex align-items-center gap-2"
+                       href="/">
+                        <img src="~/img/logo.svg" alt="" height="28" width="28" />
+                        <span>Dyrepermen</span>
+                    </a>
+
+                    <ul class="nav nav-pills flex-column px-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/" aria-current="@Aktiv("Hjem")">
+                                Dashbord
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dyr" aria-current="@Aktiv("Dyr")">
+                                Dyrene
+                            </a>
+                        </li>
+                    </ul>
+
+                    <form method="post" action="/logg-ut" class="mt-auto p-3">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn-outline-secondary w-100" type="submit">
+                            Logg ut
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <main class="flex-grow-1 p-3 p-lg-4">
+                @if (TempData["Melding"] is string melding)
+                {
+                    <div class="alert alert-success" role="status">@melding</div>
+                }
+                @if (TempData["Feil"] is string feilmelding)
+                {
+                    <div class="alert alert-danger" role="alert">@feilmelding</div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    }
+    else
+    {
+        <main class="apen-side">
+            @RenderBody()
+        </main>
+    }
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            var o = document.getElementById('oppstart');
+            if (!o) return;
+
+            function skjul() {
+                o.classList.add('skjult');
+                setTimeout(function () { o.remove(); }, 300);
+            }
+
+            window.addEventListener('load', skjul);
+            // Overlegget ma aldri kunne bli hengende om noe feiler.
+            setTimeout(skjul, 8000);
+        })();
+    </script>
+    @await RenderSectionAsync("Skript", required: false)
+</body>
+</html>
