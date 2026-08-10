@@ -1,0 +1,108 @@
+@using Dyrepermen.Application.Extensions
+@model VektSideVm
+@{
+    ViewData["Tittel"] = $"Vekt – {Model.DyrNavn}";
+}
+
+<h1 class="h4 mb-1">Vekt</h1>
+<p class="text-body-secondary mb-3">
+    <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
+        @Model.DyrNavn
+    </a>
+</p>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6">Registrer vekt</h2>
+
+                <form method="post" asp-action="Registrer" asp-route-dyrId="@Model.DyrId">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Kilo" class="form-label"></label>
+                        @* inputmode decimal, ikke type=number. Et talltastatur
+                           pa mobil viser komma pa norsk oppsett; type=number
+                           tvinger punktum i noen nettlesere. *@
+                        <input asp-for="Ny.Kilo" class="form-control"
+                               inputmode="decimal" autocomplete="off" autofocus
+                               placeholder="kg" />
+                        <span asp-validation-for="Ny.Kilo" class="text-danger small"></span>
+                        <div class="form-text">Bruk komma: 27,4</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Dato" class="form-label"></label>
+                        <input asp-for="Ny.Dato" class="form-control" />
+                        <span asp-validation-for="Ny.Dato" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Lagre</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6">Historikk</h2>
+
+                @if (Model.Historikk.Count == 0)
+                {
+                    <p class="text-body-secondary small mb-0">
+                        Ingen vekt registrert ennå.
+                    </p>
+                }
+                else
+                {
+                    @* Synkende datorekkefolge - nyeste maling forst. *@
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Dato</th>
+                                    <th scope="col">Vekt</th>
+                                    <th scope="col">Registrert av</th>
+                                    <th scope="col"><span class="visually-hidden">Slett</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var rad in Model.Historikk)
+                                {
+                                    <tr>
+                                        <td>@($"{rad.Dato:d. MMM yyyy}")</td>
+                                        <td><strong>@Vektformat.TilKiloTekst(rad.VektGram)</strong></td>
+                                        <td class="text-body-secondary small">
+                                            @* Nullbar fordi brukeren kan vaere slettet. *@
+                                            @(rad.RegistrertAv ?? "slettet bruker")
+                                        </td>
+                                        <td class="text-end">
+                                            <form method="post" asp-action="Slett"
+                                                  asp-route-dyrId="@Model.DyrId"
+                                                  asp-route-vektId="@rad.Id"
+                                                  onsubmit="return confirm('Slette denne målingen?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="btn btn-link btn-sm text-danger p-0">
+                                                    Slett
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,154 @@
+@model InnstillingerVm
+@{
+    ViewData["Tittel"] = "Innstillinger";
+    var o = Model.Oversikt;
+}
+
+<h1 class="h4 mb-3">Innstillinger</h1>
+
+<div style="max-width: 44rem;">
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6">Husstand</h2>
+
+            <form method="post" asp-action="Lagre">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Husstandsnavn" class="form-label"></label>
+                    <input asp-for="Husstandsnavn" class="form-control" />
+                    <span asp-validation-for="Husstandsnavn" class="text-danger small"></span>
+                </div>
+
+                <h3 class="h6 mt-4">Standardverdier for nye dyr</h3>
+                <p class="form-text mt-0">
+                    Dette er maler som kopieres inn når du oppretter et dyr.
+                    De overstyrer aldri en bryter som allerede står på et dyr.
+                </p>
+
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="ForingsloggStandard" class="form-check-input" role="switch" />
+                    <label asp-for="ForingsloggStandard" class="form-check-label"></label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input asp-for="ForplanStandard" class="form-check-input" role="switch" />
+                    <label asp-for="ForplanStandard" class="form-check-label"></label>
+                </div>
+
+                <h3 class="h6 mt-4">Varsler</h3>
+                <div class="form-check form-switch mb-3">
+                    <input asp-for="VarslerAktiv" class="form-check-input" role="switch" />
+                    <label asp-for="VarslerAktiv" class="form-check-label"></label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Lagre</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6">Medlemmer</h2>
+
+            <ul class="list-unstyled">
+                @foreach (var m in o.Medlemmer)
+                {
+                    <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span>
+                            <strong>@m.Visningsnavn</strong>
+                            @if (m.ErDegSelv)
+                            {
+                                <span class="badge text-bg-secondary ms-1">deg</span>
+                            }
+                            <span class="d-block small text-body-secondary">@m.Epost</span>
+                        </span>
+                        @* Alle medlemmer er likestilte i v1. Hvem som helst kan
+                           fjerne hvem som helst - en bevisst begrensning, ikke
+                           noe som er glemt. Se plan kapittel 12.6. *@
+                        @if (o.Medlemmer.Count > 1)
+                        {
+                            <form method="post" asp-action="FjernMedlem"
+                                  asp-route-brukerId="@m.BrukerId"
+                                  onsubmit="return confirm('@(m.ErDegSelv ? "Forlate husstanden?" : $"Fjerne {m.Visningsnavn}?")');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">
+                                    @(m.ErDegSelv ? "Forlat" : "Fjern")
+                                </button>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+
+            @if (o.Ventende.Count > 0)
+            {
+                <h3 class="h6 mt-3">Venter på registrering</h3>
+                <ul class="list-unstyled">
+                    @foreach (var v in o.Ventende)
+                    {
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span class="small">
+                                @v.Epost
+                                <span class="d-block text-body-secondary">
+                                    lagt til @($"{v.OpprettetDato:d. MMM yyyy}")
+                                </span>
+                            </span>
+                            <form method="post" asp-action="AngreInvitasjon"
+                                  asp-route-invitasjonId="@v.Id">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">
+                                    Angre
+                                </button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <h3 class="h6 mt-3">Legg til medlem</h3>
+            <p class="form-text mt-0">
+                Personen blir med automatisk. Har de ikke konto ennå, skjer det
+                når de registrerer seg med denne adressen.
+            </p>
+            <form method="post" asp-action="LeggTilMedlem" class="d-flex gap-2">
+                @Html.AntiForgeryToken()
+                <input type="email" name="nyttMedlemEpost" class="form-control"
+                       placeholder="navn@@eksempel.no" required />
+                <button type="submit" class="btn btn-outline-primary text-nowrap">
+                    Legg til
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6">Data</h2>
+            <p class="small text-body-secondary">
+                Alt husstanden eier — @o.AntallDyr dyr med vekt, behandlinger,
+                medisiner og fôrplaner — som JSON.
+            </p>
+            <a asp-controller="MinKonto" asp-action="LastNedData"
+               class="btn btn-outline-secondary btn-sm">Last ned alle data</a>
+        </div>
+    </div>
+
+    @* Faresonen skilles visuelt og ligger nederst. Ingen destruktiv handling
+       skal ligge ved siden av en lagre-knapp. Se plan kapittel 12.4. *@
+    <div class="card border-danger">
+        <div class="card-body">
+            <h2 class="h6 text-danger">Faresone</h2>
+            <p class="small text-body-secondary mb-2">
+                Slett kontoen din permanent.
+            </p>
+            <a asp-controller="MinKonto" asp-action="Index"
+               class="btn btn-outline-danger btn-sm">Min konto</a>
+        </div>
+    </div>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}
