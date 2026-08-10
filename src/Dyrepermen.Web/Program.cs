@@ -20,9 +20,26 @@ var norsk = new CultureInfo("nb-NO");
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 
+// Lokalt kommer denne fra "dotnet user-secrets", i produksjon fra
+// miljovariabelen ConnectionStrings__Postgres. Aldri fra appsettings.
+//
+// Feil raskt og forstaelig. Uten sjekken kaster Npgsql lenger nede med
+// "Host can't be null", og feilmeldingen sier ingenting om hva du skal gjore.
+var tilkobling = builder.Configuration.GetConnectionString("Postgres");
+if (string.IsNullOrWhiteSpace(tilkobling))
+{
+    throw new InvalidOperationException(
+        "Tilkoblingsstrengen 'Postgres' mangler. Lokalt settes den med:\n\n" +
+        "  dotnet user-secrets set \"ConnectionStrings:Postgres\" \\\n" +
+        "    \"Host=localhost;Port=5434;Database=dyrepermen;" +
+        "Username=dyrepermen;Password=utvikling;Maximum Pool Size=10\" \\\n" +
+        "    --project src/Dyrepermen.Web\n\n" +
+        "I produksjon settes miljovariabelen ConnectionStrings__Postgres.");
+}
+
 builder.Services.AddDbContext<DyrepermenDbContext>(opt =>
     opt.UseNpgsql(
-           builder.Configuration.GetConnectionString("Postgres"),
+           tilkobling,
            npg => npg.MigrationsAssembly("Dyrepermen.Infrastructure"))
        .UseSnakeCaseNamingConvention());
 

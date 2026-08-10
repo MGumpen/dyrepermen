@@ -51,11 +51,42 @@ slik at neste person som møter feilmeldingen finner svaret der de leter.
 
 - Prosjektet kolliderer ikke med en lokalt installert PostgreSQL. Det er en
   vanlig situasjon, ikke et særtilfelle for denne maskinen.
-- Tilkoblingsstrengen finnes nå to steder lokalt: `appsettings.Development.json`
-  og reservestrengen i fabrikken. Endres porten, må begge endres.
-  **Dette bør ryddes** når `Program.cs` registrerer `AddDbContext` — da kan
-  design-time-fabrikken fjernes, og `dotnet ef` leser appens konfigurasjon.
+- Tilkoblingsstrengen finnes **ett sted**: `dotnet user-secrets`, utenfor
+  repoet. Se oppdateringen under.
 - Ingen påvirkning på Docker-nettverket, CI eller produksjon. Der brukes
   tjenestenavnet `db:5432` og `ConnectionStrings__Postgres` som miljøvariabel.
 - Har du ingen lokal PostgreSQL, kan du sette `POSTGRES_PORT=5432` i
   `infra/.env` og endre tilkoblingsstrengen tilsvarende.
+
+---
+
+## Oppdatering 2026-08-10 — én kilde til tilkoblingsstrengen
+
+Den første implementasjonen la strengen i `appsettings.Development.json`, som
+ligger i repoet, og i en hardkodet reservestreng i
+`DyrepermenDbContextFactory`. To steder å endre, og et brudd på regelen i
+CLAUDE.md: «Hemmeligheter i `infra/.env` lokalt … Aldri i `appsettings.json`».
+
+Passordet var `utvikling` — samme verdi som i `infra/.env.example`, altså
+ingen reell hemmelighet. Regelen er likevel verdt å følge bokstavelig, fordi
+unntaket «denne ene er ufarlig» er nøyaktig slik ekte hemmeligheter havner i
+repoer.
+
+**Nå gjelder:**
+
+| Miljø | Kilde |
+|---|---|
+| Lokalt | `dotnet user-secrets`, lagret utenfor repoet |
+| CI og produksjon | Miljøvariabelen `ConnectionStrings__Postgres` |
+
+`DyrepermenDbContextFactory` er **fjernet**. `dotnet ef` bygger i stedet
+webverten fra `--startup-project` og leser dens konfigurasjon — samme kilde
+som applikasjonen selv. Verifisert: `dotnet ef migrations list` finner
+port 5434, som etter endringen kun finnes i user-secrets.
+
+`Program.cs` feiler nå raskt og forståelig hvis strengen mangler, med
+kommandoen som setter den. Uten den sjekken kaster Npgsql lenger nede med
+«Host can't be null» — en melding som ikke sier hva man skal gjøre.
+
+**Konsekvens:** hver utvikler må kjøre `dotnet user-secrets set` én gang.
+Steget er dokumentert i README.
