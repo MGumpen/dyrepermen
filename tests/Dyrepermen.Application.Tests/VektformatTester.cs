@@ -8,13 +8,24 @@ namespace Dyrepermen.Application.Tests;
 public sealed class VektformatTester
 {
     [Theory]
-    [InlineData(27400, "27,4 kg")]
-    [InlineData(4200, "4,2 kg")]
-    [InlineData(5000, "5 kg")]
-    [InlineData(500, "0,5 kg")]
-    public void Gram_vises_i_kilo_med_komma(int gram, string forventet)
+    [InlineData(27400, "27,40 kg")]
+    [InlineData(4200, "4,20 kg")]
+    [InlineData(5000, "5,00 kg")]
+    [InlineData(500, "0,50 kg")]
+    public void Gram_vises_i_kilo_med_komma_og_minst_to_desimaler(
+        int gram, string forventet)
     {
         // Komma, ikke punktum. En engelsk nettleser skal ikke kunne endre det.
+        Assert.Equal(forventet, Vektformat.TilKiloTekst(gram));
+    }
+
+    [Theory]
+    [InlineData(3150, "3,15 kg")]
+    [InlineData(3155, "3,155 kg")]
+    [InlineData(1, "0,001 kg")]
+    public void Visningen_avrunder_aldri_bort_presisjon(int gram, string forventet)
+    {
+        // 3150 gram vist som "3,2 kg" er et tall brukeren aldri skrev inn.
         Assert.Equal(forventet, Vektformat.TilKiloTekst(gram));
     }
 
