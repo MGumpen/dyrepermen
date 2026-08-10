@@ -3,11 +3,20 @@
     ViewData["Tittel"] = "Handleliste";
 }
 
-<h1 class="h4 mb-3">Handleliste</h1>
+<div class="sidehode">
+    <div>
+        <h1>Handleliste</h1>
+        <div class="undertittel">Delt med hele husstanden.</div>
+    </div>
+</div>
 
-<div style="max-width: 40rem;">
-    <div class="card mb-3">
-        <div class="card-body">
+<div style="max-width: 38rem;">
+    <section class="kort">
+        <div class="kort-hode">
+            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+            <h2>Legg til</h2>
+        </div>
+        <div class="kort-kropp">
             @* hx-on::after-request tommer feltet etter vellykket innsending.
                Uten det star teksten igjen og neste punkt blir lett en dublett. *@
             <form method="post" asp-action="Legg" class="row g-2 align-items-end"
@@ -41,19 +50,20 @@
                 </div>
 
                 <div class="col-12 col-sm-auto">
-                    <button type="submit" class="btn btn-primary w-100">Legg til</button>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Legg til</button>
                 </div>
             </form>
         </div>
-    </div>
+    </section>
 
-    <div class="card">
-        <div class="card-body">
-            <h2 class="h6">På listen</h2>
-            @* htmx bytter kun innholdet i denne. *@
-            <div id="liste">
-                <partial name="_Liste" model="Model" />
-            </div>
+    <section class="kort">
+        <div class="kort-hode">
+            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-handleliste" /></svg>
+            <h2>På listen</h2>
         </div>
-    </div>
+        @* htmx bytter kun innholdet i denne. *@
+        <div id="liste">
+            <partial name="_Liste" model="Model" />
+        </div>
+    </section>
 </div>

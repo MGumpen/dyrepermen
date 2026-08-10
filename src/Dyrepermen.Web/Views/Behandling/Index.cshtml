@@ -18,50 +18,112 @@
         typer.First(x => x.Value == t.ToString()).Text;
 }
 
-<h1 class="h4 mb-1">Behandlinger</h1>
-<p class="text-body-secondary mb-3">
-    <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
-        @Model.DyrNavn
-    </a>
-</p>
+<div class="sidehode">
+    <div>
+        <h1>Behandlinger</h1>
+        <div class="undertittel">
+            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
+                @Model.DyrNavn
+            </a>
+        </div>
+    </div>
+</div>
 
-<div class="row g-3">
-    <div class="col-lg-5">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">Registrer behandling</h2>
+<div class="dp-kolonner">
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
+                <h2>Historikk</h2>
+                @if (Model.Historikk.Count > 0)
+                {
+                    <span class="antall">@Model.Historikk.Count</span>
+                }
+            </div>
 
+            @if (Model.Historikk.Count == 0)
+            {
+                <div class="tomt">Ingen behandlinger registrert ennå.</div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var rad in Model.Historikk)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">
+                                    @TypeTekst(rad.Type)@(rad.Preparat is null ? "" : $" – {rad.Preparat}")
+                                </span>
+                                <span class="under d-block">
+                                    @($"{rad.Dato:d. MMMM yyyy}")
+                                    @if (rad.Notat is not null)
+                                    {
+                                        <span class="d-block">@rad.Notat</span>
+                                    }
+                                </span>
+                            </span>
+                            <span class="hoyre">
+                                @if (rad.NesteDato is { } neste)
+                                {
+                                    @if (neste < idag)
+                                    {
+                                        <span class="merkelapp forfalt">forfalt</span>
+                                    }
+                                    <span class="d-block">neste @($"{neste:d. MMM yyyy}")</span>
+                                }
+                                <form method="post" asp-action="Slett"
+                                      asp-route-dyrId="@Model.DyrId"
+                                      asp-route-behandlingId="@rad.Id"
+                                      onsubmit="return confirm('Slette denne behandlingen?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-lenke-fare">Slett</button>
+                                </form>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+                <h2>Registrer behandling</h2>
+            </div>
+            <div class="kort-kropp">
                 <form method="post" asp-action="Ny" asp-route-dyrId="@Model.DyrId">
                     @Html.AntiForgeryToken()
 
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.Type" class="form-label"></label>
                         <select asp-for="Ny.Type" class="form-select" asp-items="typer"></select>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.Preparat" class="form-label"></label>
                         <input asp-for="Ny.Preparat" class="form-control"
                                placeholder="For eksempel «Milbemax»" />
                         <span asp-validation-for="Ny.Preparat" class="text-danger small"></span>
                     </div>
 
-                    <div class="mb-3">
-                        <label asp-for="Ny.Dato" class="form-label"></label>
-                        <input asp-for="Ny.Dato" class="form-control" />
-                        <span asp-validation-for="Ny.Dato" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Ny.NesteDato" class="form-label"></label>
-                        <input asp-for="Ny.NesteDato" class="form-control" />
-                        <span asp-validation-for="Ny.NesteDato" class="text-danger small"></span>
-                        <div class="form-text">
-                            Settes denne, dukker behandlingen opp på dashbordet
-                            14 dager før forfall.
+                    <div class="row g-2">
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.Dato" class="form-label"></label>
+                            <input asp-for="Ny.Dato" class="form-control" />
                         </div>
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.NesteDato" class="form-label"></label>
+                            <input asp-for="Ny.NesteDato" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="form-text mb-2">
+                        Settes «neste gang», dukker behandlingen opp på
+                        oversikten 14 dager før forfall.
                     </div>
 
                     <div class="mb-3">
@@ -70,67 +132,10 @@
                         <span asp-validation-for="Ny.Notat" class="text-danger small"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Lagre</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
                 </form>
             </div>
-        </div>
-    </div>
-
-    <div class="col-lg-7">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">Historikk</h2>
-
-                @if (Model.Historikk.Count == 0)
-                {
-                    <p class="text-body-secondary small mb-0">
-                        Ingen behandlinger registrert ennå.
-                    </p>
-                }
-                else
-                {
-                    <ul class="list-unstyled mb-0">
-                        @foreach (var rad in Model.Historikk)
-                        {
-                            <li class="py-2 border-bottom">
-                                <div class="d-flex justify-content-between gap-2">
-                                    <div>
-                                        <strong>@TypeTekst(rad.Type)</strong>
-                                        @if (rad.Preparat is not null)
-                                        {
-                                            <span class="text-body-secondary">– @rad.Preparat</span>
-                                        }
-                                        <div class="small text-body-secondary">
-                                            @($"{rad.Dato:d. MMM yyyy}")
-                                            @if (rad.NesteDato is { } neste)
-                                            {
-                                                <span class="@(neste < idag ? "text-danger fw-semibold" : "")">
-                                                    · neste @($"{neste:d. MMM yyyy}")@(neste < idag ? " (forfalt)" : "")
-                                                </span>
-                                            }
-                                        </div>
-                                        @if (rad.Notat is not null)
-                                        {
-                                            <div class="small mt-1">@rad.Notat</div>
-                                        }
-                                    </div>
-                                    <form method="post" asp-action="Slett"
-                                          asp-route-dyrId="@Model.DyrId"
-                                          asp-route-behandlingId="@rad.Id"
-                                          onsubmit="return confirm('Slette denne behandlingen?');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit"
-                                                class="btn btn-link btn-sm text-danger p-0 text-nowrap">
-                                            Slett
-                                        </button>
-                                    </form>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
-        </div>
+        </section>
     </div>
 </div>
 

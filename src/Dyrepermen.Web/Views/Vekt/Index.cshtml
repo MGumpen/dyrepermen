@@ -4,25 +4,77 @@
     ViewData["Tittel"] = $"Vekt – {Model.DyrNavn}";
 }
 
-<h1 class="h4 mb-1">Vekt</h1>
-<p class="text-body-secondary mb-3">
-    <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
-        @Model.DyrNavn
-    </a>
-</p>
+<div class="sidehode">
+    <div>
+        <h1>Vekt</h1>
+        <div class="undertittel">
+            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
+                @Model.DyrNavn
+            </a>
+        </div>
+    </div>
+</div>
 
-<div class="row g-3">
-    <div class="col-lg-5">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">Registrer vekt</h2>
+<div class="dp-kolonner">
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vekt" /></svg>
+                <h2>Historikk</h2>
+                @if (Model.Historikk.Count > 0)
+                {
+                    <span class="antall">@Model.Historikk.Count</span>
+                }
+            </div>
 
+            @if (Model.Historikk.Count == 0)
+            {
+                <div class="tomt">Ingen vekt registrert ennå.</div>
+            }
+            else
+            {
+                @* Synkende datorekkefolge - nyeste maling forst. *@
+                <ul class="rad-liste">
+                    @foreach (var rad in Model.Historikk)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@Vektformat.TilKiloTekst(rad.VektGram)</span>
+                                <span class="under d-block">
+                                    @($"{rad.Dato:d. MMMM yyyy}") ·
+                                    @* Nullbar fordi brukeren kan vaere slettet. *@
+                                    @(rad.RegistrertAv ?? "slettet bruker")
+                                </span>
+                            </span>
+                            <span class="hoyre">
+                                <form method="post" asp-action="Slett"
+                                      asp-route-dyrId="@Model.DyrId"
+                                      asp-route-vektId="@rad.Id"
+                                      onsubmit="return confirm('Slette denne målingen?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-lenke-fare">Slett</button>
+                                </form>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+                <h2>Registrer vekt</h2>
+            </div>
+            <div class="kort-kropp">
                 <form method="post" asp-action="Registrer" asp-route-dyrId="@Model.DyrId">
                     @Html.AntiForgeryToken()
 
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.Kilo" class="form-label"></label>
                         @* inputmode decimal, ikke type=number. Et talltastatur
                            pa mobil viser komma pa norsk oppsett; type=number
@@ -40,66 +92,10 @@
                         <span asp-validation-for="Ny.Dato" class="text-danger small"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Lagre</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
                 </form>
             </div>
-        </div>
-    </div>
-
-    <div class="col-lg-7">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">Historikk</h2>
-
-                @if (Model.Historikk.Count == 0)
-                {
-                    <p class="text-body-secondary small mb-0">
-                        Ingen vekt registrert ennå.
-                    </p>
-                }
-                else
-                {
-                    @* Synkende datorekkefolge - nyeste maling forst. *@
-                    <div class="table-responsive">
-                        <table class="table table-sm align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Dato</th>
-                                    <th scope="col">Vekt</th>
-                                    <th scope="col">Registrert av</th>
-                                    <th scope="col"><span class="visually-hidden">Slett</span></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rad in Model.Historikk)
-                                {
-                                    <tr>
-                                        <td>@($"{rad.Dato:d. MMM yyyy}")</td>
-                                        <td><strong>@Vektformat.TilKiloTekst(rad.VektGram)</strong></td>
-                                        <td class="text-body-secondary small">
-                                            @* Nullbar fordi brukeren kan vaere slettet. *@
-                                            @(rad.RegistrertAv ?? "slettet bruker")
-                                        </td>
-                                        <td class="text-end">
-                                            <form method="post" asp-action="Slett"
-                                                  asp-route-dyrId="@Model.DyrId"
-                                                  asp-route-vektId="@rad.Id"
-                                                  onsubmit="return confirm('Slette denne målingen?');">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit"
-                                                        class="btn btn-link btn-sm text-danger p-0">
-                                                    Slett
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-        </div>
+        </section>
     </div>
 </div>
 

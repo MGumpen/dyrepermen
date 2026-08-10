@@ -79,12 +79,41 @@
                                         {
                                             @* Ikke "0 kg". Et tall uten dekning er
                                                verre enn ingen tall. *@
-                                            <span class="verdi text-body-secondary">
-                                                Ingen vekt registrert
-                                            </span>
-                                            <span class="etikett">siste vekt</span>
+                                            <span class="verdi text-body-secondary">—</span>
+                                            <span class="etikett">ingen vekt</span>
                                         }
                                     </span>
+
+                                    @if (dyr.ForplanTekst is { } plan)
+                                    {
+                                        <span>
+                                            <span class="verdi">@plan</span>
+                                            <span class="etikett">fôr per dag</span>
+                                        </span>
+                                    }
+
+                                    @if (dyr.NesteBehandlingDato is { } nb)
+                                    {
+                                        <span>
+                                            <span class="verdi @(nb < idag ? "text-danger" : "")">
+                                                @($"{nb:d. MMM}")
+                                            </span>
+                                            <span class="etikett">@dyr.NesteBehandlingTekst</span>
+                                        </span>
+                                    }
+
+                                    @if (dyr.AktiveMedisiner.Count > 0)
+                                    {
+                                        <span>
+                                            <span class="verdi">
+                                                @string.Join(", ", dyr.AktiveMedisiner)
+                                            </span>
+                                            <span class="etikett">
+                                                @(dyr.AktiveMedisiner.Count == 1
+                                                    ? "medisin" : "medisiner")
+                                            </span>
+                                        </span>
+                                    }
                                 </span>
                             </a>
                             <span class="hoyre">

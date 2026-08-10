@@ -4,79 +4,97 @@
     var o = Model.Oversikt;
 }
 
-<h1 class="h4 mb-3">Innstillinger</h1>
-
-<div style="max-width: 44rem;">
-
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">Husstand</h2>
-
-            <form method="post" asp-action="Lagre">
-                @Html.AntiForgeryToken()
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
-
-                <div class="mb-3">
-                    <label asp-for="Husstandsnavn" class="form-label"></label>
-                    <input asp-for="Husstandsnavn" class="form-control" />
-                    <span asp-validation-for="Husstandsnavn" class="text-danger small"></span>
-                </div>
-
-                <h3 class="h6 mt-4">Standardverdier for nye dyr</h3>
-                <p class="form-text mt-0">
-                    Dette er maler som kopieres inn når du oppretter et dyr.
-                    De overstyrer aldri en bryter som allerede står på et dyr.
-                </p>
-
-                <div class="form-check form-switch mb-2">
-                    <input asp-for="ForingsloggStandard" class="form-check-input" role="switch" />
-                    <label asp-for="ForingsloggStandard" class="form-check-label"></label>
-                </div>
-                <div class="form-check form-switch mb-3">
-                    <input asp-for="ForplanStandard" class="form-check-input" role="switch" />
-                    <label asp-for="ForplanStandard" class="form-check-label"></label>
-                </div>
-
-                <h3 class="h6 mt-4">Varsler</h3>
-                <div class="form-check form-switch mb-3">
-                    <input asp-for="VarslerAktiv" class="form-check-input" role="switch" />
-                    <label asp-for="VarslerAktiv" class="form-check-label"></label>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Lagre</button>
-            </form>
+<div class="sidehode">
+    <div>
+        <h1>Innstillinger</h1>
+        <div class="undertittel">
+            Husstanden og det som deles. Dine egne innstillinger ligger under
+            brukerkortet nederst i menyen.
         </div>
     </div>
+</div>
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">Medlemmer</h2>
+<div class="dp-kolonner">
+    <div class="kolonne">
 
-            <ul class="list-unstyled">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-hjem" /></svg>
+                <h2>Husstand</h2>
+            </div>
+            <div class="kort-kropp">
+                <form method="post" asp-action="Lagre">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Husstandsnavn" class="form-label"></label>
+                        <input asp-for="Husstandsnavn" class="form-control" />
+                        <span asp-validation-for="Husstandsnavn" class="text-danger small"></span>
+                    </div>
+
+                    <h3 class="h6 mt-3">Standardverdier for nye dyr</h3>
+                    <p class="form-text mt-0">
+                        Maler som kopieres inn når du oppretter et dyr. De
+                        overstyrer aldri en bryter som allerede står på et dyr.
+                    </p>
+
+                    <div class="form-check form-switch mb-2">
+                        <input asp-for="ForingsloggStandard" class="form-check-input" role="switch" />
+                        <label asp-for="ForingsloggStandard" class="form-check-label"></label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input asp-for="ForplanStandard" class="form-check-input" role="switch" />
+                        <label asp-for="ForplanStandard" class="form-check-label"></label>
+                    </div>
+
+                    <h3 class="h6 mt-3">Varsler</h3>
+                    <div class="form-check form-switch mb-3">
+                        <input asp-for="VarslerAktiv" class="form-check-input" role="switch" />
+                        <label asp-for="VarslerAktiv" class="form-check-label"></label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-medlemmer" /></svg>
+                <h2>Medlemmer</h2>
+                <span class="antall">@o.Medlemmer.Count</span>
+            </div>
+
+            <ul class="rad-liste">
                 @foreach (var m in o.Medlemmer)
                 {
-                    <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                        <span>
-                            <strong>@m.Visningsnavn</strong>
-                            @if (m.ErDegSelv)
-                            {
-                                <span class="badge text-bg-secondary ms-1">deg</span>
-                            }
-                            <span class="d-block small text-body-secondary">@m.Epost</span>
+                    <li>
+                        <span class="flex-grow-1 min-w-0">
+                            <span class="tittel">
+                                @m.Visningsnavn
+                                @if (m.ErDegSelv)
+                                {
+                                    <span class="merkelapp ms-1">deg</span>
+                                }
+                            </span>
+                            <span class="under d-block">@m.Epost</span>
                         </span>
                         @* Alle medlemmer er likestilte i v1. Hvem som helst kan
                            fjerne hvem som helst - en bevisst begrensning, ikke
                            noe som er glemt. Se plan kapittel 12.6. *@
                         @if (o.Medlemmer.Count > 1)
                         {
-                            <form method="post" asp-action="FjernMedlem"
-                                  asp-route-brukerId="@m.BrukerId"
-                                  onsubmit="return confirm('@(m.ErDegSelv ? "Forlate husstanden?" : $"Fjerne {m.Visningsnavn}?")');">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">
-                                    @(m.ErDegSelv ? "Forlat" : "Fjern")
-                                </button>
-                            </form>
+                            <span class="hoyre">
+                                <form method="post" asp-action="FjernMedlem"
+                                      asp-route-brukerId="@m.BrukerId"
+                                      onsubmit="return confirm('@(m.ErDegSelv ? "Forlate husstanden?" : $"Fjerne {m.Visningsnavn}?")');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-lenke-fare">
+                                        @(m.ErDegSelv ? "Forlat" : "Fjern")
+                                    </button>
+                                </form>
+                            </span>
                         }
                     </li>
                 }
@@ -84,68 +102,94 @@
 
             @if (o.Ventende.Count > 0)
             {
-                <h3 class="h6 mt-3">Venter på registrering</h3>
-                <ul class="list-unstyled">
+                <div class="kort-kropp tett border-top">
+                    <h3 class="h6 mb-0 mt-2">Venter på registrering</h3>
+                </div>
+                <ul class="rad-liste">
                     @foreach (var v in o.Ventende)
                     {
-                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="small">
-                                @v.Epost
-                                <span class="d-block text-body-secondary">
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@v.Epost</span>
+                                <span class="under d-block">
                                     lagt til @($"{v.OpprettetDato:d. MMM yyyy}")
                                 </span>
                             </span>
-                            <form method="post" asp-action="AngreInvitasjon"
-                                  asp-route-invitasjonId="@v.Id">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">
-                                    Angre
-                                </button>
-                            </form>
+                            <span class="hoyre">
+                                <form method="post" asp-action="AngreInvitasjon"
+                                      asp-route-invitasjonId="@v.Id">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-lenke-fare">Angre</button>
+                                </form>
+                            </span>
                         </li>
                     }
                 </ul>
             }
 
-            <h3 class="h6 mt-3">Legg til medlem</h3>
-            <p class="form-text mt-0">
-                Personen blir med automatisk. Har de ikke konto ennå, skjer det
-                når de registrerer seg med denne adressen.
-            </p>
-            <form method="post" asp-action="LeggTilMedlem" class="d-flex gap-2">
-                @Html.AntiForgeryToken()
-                <input type="email" name="nyttMedlemEpost" class="form-control"
-                       placeholder="navn@@eksempel.no" required />
-                <button type="submit" class="btn btn-outline-primary text-nowrap">
-                    Legg til
-                </button>
-            </form>
-        </div>
+            <div class="kort-kropp border-top">
+                <h3 class="h6">Legg til medlem</h3>
+                <p class="form-text mt-0">
+                    Personen blir med automatisk. Har de ikke konto ennå, skjer
+                    det når de registrerer seg med denne adressen.
+                </p>
+                <form method="post" asp-action="LeggTilMedlem" class="d-flex gap-2">
+                    @Html.AntiForgeryToken()
+                    <input type="email" name="nyttMedlemEpost" class="form-control"
+                           placeholder="navn@@eksempel.no" required />
+                    <button type="submit" class="btn btn-outline-secondary btn-sm text-nowrap">
+                        Legg til
+                    </button>
+                </form>
+            </div>
+        </section>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">Data</h2>
-            <p class="small text-body-secondary">
-                Alt husstanden eier — @o.AntallDyr dyr med vekt, behandlinger,
-                medisiner og fôrplaner — som JSON.
-            </p>
-            <a asp-controller="MinKonto" asp-action="LastNedData"
-               class="btn btn-outline-secondary btn-sm">Last ned alle data</a>
-        </div>
-    </div>
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+                <h2>Dyrene</h2>
+                <span class="antall">@o.AntallDyr</span>
+                <a class="se-alle" asp-controller="Dyr" asp-action="Index">Se alle</a>
+            </div>
+            <div class="kort-kropp">
+                <p class="small text-body-secondary mb-2">
+                    Opplysninger og funksjonsbrytere redigeres på hvert dyr.
+                </p>
+                <a asp-controller="Dyr" asp-action="Index"
+                   class="btn btn-outline-secondary btn-sm">Rediger dyr</a>
+            </div>
+        </section>
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">Dine innstillinger</h2>
-            <p class="small text-body-secondary">
-                Passord, e-post og sletting av egen konto ligger under
-                brukerkortet nederst i menyen — det er dine
-                personopplysninger, ikke husstandens delte data.
-            </p>
-            <a asp-controller="MinKonto" asp-action="Index"
-               class="btn btn-outline-secondary btn-sm">Min konto</a>
-        </div>
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-informasjon" /></svg>
+                <h2>Data</h2>
+            </div>
+            <div class="kort-kropp">
+                <p class="small text-body-secondary mb-2">
+                    Alt husstanden eier, som JSON.
+                </p>
+                <a asp-controller="MinKonto" asp-action="LastNedData"
+                   class="btn btn-outline-secondary btn-sm">Last ned alle data</a>
+            </div>
+        </section>
+
+        <section class="kort">
+            <div class="kort-hode">
+                <h2>Dine innstillinger</h2>
+            </div>
+            <div class="kort-kropp">
+                <p class="small text-body-secondary mb-2">
+                    Passord, e-post og sletting av egen konto ligger under
+                    brukerkortet nederst i menyen — det er dine
+                    personopplysninger, ikke husstandens delte data.
+                </p>
+                <a asp-controller="MinKonto" asp-action="Index"
+                   class="btn btn-outline-secondary btn-sm">Min konto</a>
+            </div>
+        </section>
     </div>
 </div>
 

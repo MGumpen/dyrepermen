@@ -12,6 +12,11 @@ public interface IDyrService
 
     Task<DyrDetaljer?> HentDetaljer(int dyrId, CancellationToken ct);
 
+    /// <summary>
+    /// Tall og forste linje for hver seksjon pa detaljsiden. En sporring.
+    /// </summary>
+    Task<DyrSammendrag?> HentSammendrag(int dyrId, CancellationToken ct);
+
     Task<DyrResultat> Opprett(NyttDyr input, CancellationToken ct);
 
     Task<DyrResultat> Oppdater(RedigerDyr input, CancellationToken ct);

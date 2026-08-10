@@ -24,7 +24,18 @@ public sealed class DyrController : Controller
     public async Task<IActionResult> Detaljer(int dyrId, CancellationToken ct)
     {
         var dyr = await _dyr.HentDetaljer(dyrId, ct);
-        return dyr is null ? NotFound() : View(dyr);
+        if (dyr is null)
+        {
+            return NotFound();
+        }
+
+        var sammendrag = await _dyr.HentSammendrag(dyrId, ct);
+        if (sammendrag is null)
+        {
+            return NotFound();
+        }
+
+        return View(new DyrDetaljerVm { Dyr = dyr, Sammendrag = sammendrag });
     }
 
     [HttpGet("ny")]

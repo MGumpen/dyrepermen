@@ -3,24 +3,33 @@
     ViewData["Tittel"] = "Nytt dyr";
 }
 
-<h1 class="h4 mb-3">Nytt dyr</h1>
+<div class="sidehode">
+    <div>
+        <h1>Nytt dyr</h1>
+        <div class="undertittel">Chipnummer og regnummer kan stå tomt.</div>
+    </div>
+</div>
 
-<div class="card" style="max-width: 40rem;">
-    <div class="card-body">
+<section class="kort" style="max-width: 34rem;">
+    <div class="kort-hode">
+        <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+        <h2>Opplysninger</h2>
+    </div>
+    <div class="kort-kropp">
         <form method="post" asp-action="Ny">
             @Html.AntiForgeryToken()
 
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
 
             <partial name="_Felter" model="Model" />
 
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Lagre</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Avbryt</a>
+                <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Avbryt</a>
             </div>
         </form>
     </div>
-</div>
+</section>
 
 @section Skript {
     <partial name="_ValidationScriptsPartial" />
