@@ -54,6 +54,18 @@
     </div>
 </div>
 
+<div class="card mb-3" style="max-width: 40rem;">
+    <div class="card-body">
+        <h2 class="h6">Logg</h2>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-controller="Vekt" asp-action="Index" asp-route-dyrId="@Model.Id"
+               class="btn btn-outline-primary btn-sm">Vekt</a>
+            <a asp-controller="Behandling" asp-action="Index" asp-route-dyrId="@Model.Id"
+               class="btn btn-outline-primary btn-sm">Behandlinger</a>
+        </div>
+    </div>
+</div>
+
 <div class="card" style="max-width: 40rem;">
     <div class="card-body">
         <h2 class="h6">Aktive funksjoner</h2>
@@ -62,7 +74,7 @@
             <li>Fôrplan: <strong>@(Model.ForplanAktiv ? "på" : "av")</strong></li>
         </ul>
         <p class="form-text mb-0">
-            Vekt, behandlinger og fôring kommer i senere faser.
+            Medisin, fôrplan og fôringslogg kommer i senere faser.
         </p>
     </div>
 </div>
