@@ -62,6 +62,15 @@
                class="btn btn-outline-primary btn-sm">Vekt</a>
             <a asp-controller="Behandling" asp-action="Index" asp-route-dyrId="@Model.Id"
                class="btn btn-outline-primary btn-sm">Behandlinger</a>
+            <a asp-controller="Medisin" asp-action="Index" asp-route-dyrId="@Model.Id"
+               class="btn btn-outline-primary btn-sm">Medisin</a>
+            @* Fanen skjules nar bryteren er av - og controlleren gir 404,
+               slik at et bokmerke heller ikke slipper inn. *@
+            @if (Model.ForplanAktiv)
+            {
+                <a asp-controller="Forplan" asp-action="Index" asp-route-dyrId="@Model.Id"
+                   class="btn btn-outline-primary btn-sm">Fôrplan</a>
+            }
         </div>
     </div>
 </div>

@@ -18,6 +18,8 @@ public static class TjenesteRegistrering
         tjenester.AddScoped<IDashbordService, DashbordService>();
         tjenester.AddScoped<IVektService, VektService>();
         tjenester.AddScoped<IBehandlingService, BehandlingService>();
+        tjenester.AddScoped<IForplanService, ForplanService>();
+        tjenester.AddScoped<IMedisinService, MedisinService>();
         return tjenester;
     }
 }

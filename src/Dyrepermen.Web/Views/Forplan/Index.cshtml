@@ -1,0 +1,189 @@
+@using Dyrepermen.Application.Extensions
+@model ForplanSideVm
+@{
+    ViewData["Tittel"] = $"Fôrplan – {Model.DyrNavn}";
+    var r = Model.Resultat;
+}
+
+<h1 class="h4 mb-1">Fôrplan</h1>
+<p class="text-body-secondary mb-3">
+    <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
+        @Model.DyrNavn
+    </a>
+</p>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6">I dag</h2>
+
+                @* Fire tilstander, spesifisert i plan kapittel 8.1.
+                   Ingen av dem skal vises som "0 gram". *@
+                @if (!r.HarPlan)
+                {
+                    <p class="text-body-secondary mb-0">
+                        Ingen fôrplan lagt inn. Legg inn regelen du bruker,
+                        så regner appen ut mengden.
+                    </p>
+                }
+                else if (r.ManglerVekt)
+                {
+                    <div class="alert alert-warning mb-0" role="status">
+                        <strong>Registrer en vekt for å regne ut mengden.</strong>
+                        <div class="small mt-1">
+                            Planen er prosentbasert, og da trengs en
+                            vektregistrering å regne fra.
+                        </div>
+                        <a asp-controller="Vekt" asp-action="Index"
+                           asp-route-dyrId="@Model.DyrId"
+                           class="btn btn-sm btn-outline-secondary mt-2">
+                            Registrer vekt
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <p class="display-6 mb-1">@r.GramPerDag g</p>
+                    <p class="text-body-secondary small">per dag</p>
+
+                    @if (r.GrunnlagVektGram is { } grunnlag)
+                    {
+                        @* Vektgrunnlaget skal alltid vises sammen med
+                           resultatet. Et tall uten synlig grunnlag er et tall
+                           ingen tor stole pa. *@
+                        <p class="small text-body-secondary">
+                            Regnet fra @Vektformat.TilKiloTekst(grunnlag),
+                            målt @($"{r.GrunnlagDato:d. MMM yyyy}")
+                        </p>
+                    }
+
+                    <hr />
+
+                    <h3 class="h6">Fordeling</h3>
+                    <ul class="list-unstyled mb-0">
+                        @for (var i = 0; i < Model.Maltider.Length; i++)
+                        {
+                            <li class="d-flex justify-content-between border-bottom py-1">
+                                <span>Måltid @(i + 1)</span>
+                                <strong>@Model.Maltider[i] g</strong>
+                            </li>
+                        }
+                        <li class="d-flex justify-content-between pt-2">
+                            <span class="text-body-secondary">Sum</span>
+                            <span class="text-body-secondary">
+                                @Model.Maltider.Sum() g
+                            </span>
+                        </li>
+                    </ul>
+                }
+            </div>
+        </div>
+
+        @if (Model.Aktiv is { } plan)
+        {
+            <div class="card border-danger mt-3">
+                <div class="card-body">
+                    <h2 class="h6 text-danger">Deaktiver planen</h2>
+                    <p class="small text-body-secondary">
+                        Planen beholdes som historikk, men brukes ikke lenger.
+                    </p>
+                    <form method="post" asp-action="Deaktiver" asp-route-dyrId="@Model.DyrId"
+                          onsubmit="return confirm('Deaktivere fôrplanen?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            Deaktiver
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h6">@(Model.Aktiv is null ? "Ny fôrplan" : "Erstatt fôrplanen")</h2>
+                <p class="small text-body-secondary">
+                    Appen anbefaler ikke mengde. Den regner ut regelen du
+                    legger inn.
+                </p>
+
+                <form method="post" asp-action="Ny" asp-route-dyrId="@Model.DyrId">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Metode" class="form-label"></label>
+                        <select asp-for="Ny.Metode" class="form-select" id="metode">
+                            <option value="Gram">Fast mengde i gram</option>
+                            <option value="Prosent">Prosent av kroppsvekt</option>
+                        </select>
+                        <div class="form-text">
+                            Prosentmetoden er levende: mengden følger vekten
+                            automatisk. Fast mengde står stille til du endrer den.
+                        </div>
+                    </div>
+
+                    <div class="mb-3" data-metode="Gram">
+                        <label asp-for="Ny.GramPerDag" class="form-label"></label>
+                        <input asp-for="Ny.GramPerDag" class="form-control"
+                               inputmode="numeric" placeholder="gram" />
+                        <span asp-validation-for="Ny.GramPerDag" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3" data-metode="Prosent">
+                        <label asp-for="Ny.Prosent" class="form-label"></label>
+                        <input asp-for="Ny.Prosent" class="form-control"
+                               inputmode="decimal" placeholder="%" />
+                        <span asp-validation-for="Ny.Prosent" class="text-danger small"></span>
+                        <div class="form-text">Bruk komma: 5,0</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.AntallMaltider" class="form-label"></label>
+                        <input asp-for="Ny.AntallMaltider" class="form-control"
+                               inputmode="numeric" />
+                        <span asp-validation-for="Ny.AntallMaltider" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Fornavn" class="form-label"></label>
+                        <input asp-for="Ny.Fornavn" class="form-control" />
+                        <span asp-validation-for="Ny.Fornavn" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Notat" class="form-label"></label>
+                        <textarea asp-for="Ny.Notat" class="form-control" rows="2"></textarea>
+                        <span asp-validation-for="Ny.Notat" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Lagre plan</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Viser kun feltet som hoerer til valgt metode. Serveren nuller ut
+        // det andre uansett, sa dette er ren opprydding i skjemaet.
+        (function () {
+            var velger = document.getElementById('metode');
+            if (!velger) return;
+
+            function oppdater() {
+                document.querySelectorAll('[data-metode]').forEach(function (rad) {
+                    rad.hidden = rad.dataset.metode !== velger.value;
+                });
+            }
+
+            velger.addEventListener('change', oppdater);
+            oppdater();
+        })();
+    </script>
+}
