@@ -36,8 +36,10 @@ public sealed class VektController : Controller
             return vm is null ? NotFound() : View(nameof(Index), vm);
         }
 
+        // Kilo er nullbar for at feltet skal starte tomt. Required og Range
+        // har allerede kjort, sa verdien finnes her.
         var ok = await _vekt.Registrer(
-            new NyVekt(dyrId, ny.Kilo, ny.Dato, User.BrukerId()), ct);
+            new NyVekt(dyrId, ny.Kilo!.Value, ny.Dato, User.BrukerId()), ct);
 
         if (!ok)
         {
