@@ -1,3 +1,4 @@
+using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -17,15 +18,18 @@ public sealed class KontoController : Controller
 {
     private readonly SignInManager<Bruker> _paalogging;
     private readonly UserManager<Bruker> _brukere;
+    private readonly IHusstandService _husstand;
     private readonly ILogger<KontoController> _log;
 
     public KontoController(
         SignInManager<Bruker> paalogging,
         UserManager<Bruker> brukere,
+        IHusstandService husstand,
         ILogger<KontoController> log)
     {
         _paalogging = paalogging;
         _brukere = brukere;
+        _husstand = husstand;
         _log = log;
     }
 
@@ -89,7 +93,7 @@ public sealed class KontoController : Controller
     [AllowAnonymous]
     [HttpPost("/registrer")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Registrer(RegistrerVm vm)
+    public async Task<IActionResult> Registrer(RegistrerVm vm, CancellationToken ct)
     {
         if (!ModelState.IsValid)
         {
@@ -121,11 +125,16 @@ public sealed class KontoController : Controller
 
         _log.LogInformation("Ny bruker registrert: {BrukerId}", bruker.Id);
 
+        // Er adressen forhandsgodkjent av en husstand, knyttes brukeren til
+        // den her - uten a taste noen kode. Da hopper de over oppsettsiden og
+        // lander rett pa dashbordet. Se plan kapittel 12.3.
+        var lagtTil = await _husstand.LosInnInvitasjon(bruker.Id, epost, ct);
+
         await _paalogging.SignInAsync(bruker, isPersistent: true);
 
-        // Brukeren har ingen husstand enna. Middlewaren sender dem til
-        // /husstand/oppsett ved neste sidevisning.
-        return RedirectToAction("Oppsett", "Husstand");
+        return lagtTil
+            ? RedirectToAction("Index", "Hjem")
+            : RedirectToAction("Oppsett", "Husstand");
     }
 
     [HttpPost("/logg-ut")]
