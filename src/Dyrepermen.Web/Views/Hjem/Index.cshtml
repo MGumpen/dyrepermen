@@ -102,6 +102,26 @@
                                         </span>
                                     }
 
+                                    @if (dyr.SistMatet is { } matet)
+                                    {
+                                        <span>
+                                            <span class="verdi">
+                                                @Tidssone.NaerTid(matet.Tidspunkt, DateTimeOffset.UtcNow)
+                                            </span>
+                                            <span class="etikett">
+                                                sist matet@(matet.GittAv is null
+                                                    ? "" : $" av {matet.GittAv}")
+                                            </span>
+                                        </span>
+                                    }
+                                    else if (dyr.ForingsloggAktiv)
+                                    {
+                                        <span>
+                                            <span class="verdi text-body-secondary">—</span>
+                                            <span class="etikett">ikke matet ennå</span>
+                                        </span>
+                                    }
+
                                     @if (dyr.AktiveMedisiner.Count > 0)
                                     {
                                         <span>

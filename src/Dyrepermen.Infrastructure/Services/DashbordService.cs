@@ -73,7 +73,17 @@ public sealed class DashbordService : IDashbordService
                     .Where(m => m.SluttDato == null || m.SluttDato >= idag)
                     .OrderBy(m => m.Navn)
                     .Select(m => m.Navn)
-                    .ToList()
+                    .ToList(),
+
+                // Korrelert undersporring - siste foring i samme rundtur.
+                SisteForing = d.Foringer
+                    .OrderByDescending(f => f.Tidspunkt)
+                    .Select(f => new
+                    {
+                        f.Tidspunkt,
+                        Navn = f.GittAv == null ? null : f.GittAv.Visningsnavn
+                    })
+                    .FirstOrDefault()
             })
             .ToListAsync(ct);
 
@@ -96,7 +106,12 @@ public sealed class DashbordService : IDashbordService
                 : null,
             d.Neste is null ? null : TypeTekst(d.Neste.Type, d.Neste.Preparat),
             d.Neste?.Dato,
-            d.Medisiner))
+            d.Medisiner,
+            // Kortet vises kun nar bryteren er pa for dyret. Er den av,
+            // skal "sist matet" ikke dukke opp i det hele tatt.
+            d.ForingsloggAktiv && d.SisteForing is not null
+                ? new SistMatet(d.SisteForing.Tidspunkt, d.SisteForing.Navn)
+                : null))
             .ToList();
 
         // Sporring 2. Behandlinger som forfaller innen vinduet.

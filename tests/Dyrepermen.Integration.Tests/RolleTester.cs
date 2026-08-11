@@ -33,9 +33,11 @@ public sealed class RolleTester
         $"{nameof(HusstandController)}.Opprett",
         $"{nameof(HusstandController)}.Bytt",
 
-        // Daglig logging
+        // Daglig logging. Foringen er selve grunnen til at gjesterollen
+        // finnes: passer du hunden, ma du kunne notere at du ga mat.
         $"{nameof(VektController)}.Registrer",
         $"{nameof(MedisinController)}.LoggDose",
+        $"{nameof(ForingController)}.Registrer",
 
         // Handlelisten er felles og lavterskel
         $"{nameof(HandlelisteController)}.Legg",

@@ -23,4 +23,7 @@ public sealed record DyrKort(
     string? ForplanTekst,
     string? NesteBehandlingTekst,
     DateOnly? NesteBehandlingDato,
-    IReadOnlyList<string> AktiveMedisiner);
+    IReadOnlyList<string> AktiveMedisiner,
+
+    /// <summary>Kun nar foringsloggen er pa for dyret.</summary>
+    SistMatet? SistMatet);
