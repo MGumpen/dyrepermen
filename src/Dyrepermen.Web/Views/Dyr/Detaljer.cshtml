@@ -49,8 +49,13 @@
                     <dt class="col-5 fw-normal text-body-secondary">Chipnummer</dt>
                     <dd class="col-7">@(d.ChipNr ?? "—")</dd>
 
-                    <dt class="col-5 fw-normal text-body-secondary">NKK-regnr</dt>
-                    <dd class="col-7">@(d.RegNrNkk ?? "—")</dd>
+                    @* Kun hund. En katt har ingen NKK-registrering, og en rad
+                       som star tom for alltid leser som noe du har glemt. *@
+                    @if (d.Art == Art.Hund)
+                    {
+                        <dt class="col-5 fw-normal text-body-secondary">NKK-regnr</dt>
+                        <dd class="col-7">@(d.RegNrNkk ?? "—")</dd>
+                    }
 
                     <dt class="col-5 fw-normal text-body-secondary">Kastrert</dt>
                     <dd class="col-7 mb-0">@(d.Kastrert ? "Ja" : "Nei")</dd>
