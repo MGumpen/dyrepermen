@@ -131,9 +131,10 @@
                             </svg>
                         </button>
 
+                        @* Kun husstandene. Opprett og innstillinger ligger i
+                           menyen, og hoerer ikke hjemme i en velger - den skal
+                           svare pa ett sporsmal: hvilken husstand ser jeg pa. *@
                         <ul class="dropdown-menu w-100">
-                            <li><h6 class="dropdown-header">Dine husstander</h6></li>
-
                             @foreach (var h in Meg.Husstander)
                             {
                                 <li>
@@ -143,27 +144,22 @@
                                         <input type="hidden" name="retur"
                                                value="@Context.Request.Path" />
                                         <button type="submit"
-                                                class="dropdown-item d-flex justify-content-between align-items-center gap-2 @(h.ErAktiv ? "active" : "")">
-                                            <span class="min-w-0 text-truncate">@h.Navn</span>
-                                            <span class="small opacity-75 text-nowrap">
-                                                @(h.Rolle == Husstandsrolle.Beboer ? "Bor her" : "Gjest")
+                                                class="dropdown-item husstandsvalg @(h.ErAktiv ? "aktiv" : "")">
+                                            <span class="merke">
+                                                <svg class="ikon" aria-hidden="true">
+                                                    <use href="#i-hjem" />
+                                                </svg>
+                                            </span>
+                                            <span class="min-w-0">
+                                                <span class="navn d-block text-truncate">@h.Navn</span>
+                                                <span class="under">
+                                                    @(h.Rolle == Husstandsrolle.Beboer ? "Bor her" : "Gjest")
+                                                </span>
                                             </span>
                                         </button>
                                     </form>
                                 </li>
                             }
-
-                            <li><hr class="dropdown-divider" /></li>
-                            <li>
-                                <a class="dropdown-item" href="/husstand/oppsett">
-                                    Opprett ny husstand
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="/innstillinger">
-                                    Innstillinger for @Meg.HusstandNavn
-                                </a>
-                            </li>
                         </ul>
                     </div>
 

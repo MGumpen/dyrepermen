@@ -645,3 +645,49 @@ h1, h2, h3, h4 {
     background: var(--dp-flate-2);
     cursor: pointer;
 }
+
+/* Radene i husstandsvelgeren speiler selve kortet: ikon, navn, rolle under.
+   Da ser listen ut som det man valgte fra, ikke som en fremmed meny. */
+.husstandsvalg {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem .6rem;
+    border-radius: var(--dp-radius-sm);
+}
+
+.husstandsvalg .merke {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    border-radius: var(--dp-radius-sm);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent);
+}
+
+.husstandsvalg .navn {
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.husstandsvalg .under {
+    font-size: .78rem;
+    color: var(--dp-tekst-svak);
+}
+
+.husstandsvalg.aktiv {
+    background: var(--dp-aksent-svak);
+}
+
+.husstandsvalg.aktiv .navn {
+    color: var(--dp-aksent-mork);
+}
+
+.husstandsvelger .dropdown-menu {
+    padding: .35rem;
+    border-color: var(--dp-kant);
+    border-radius: var(--dp-radius);
+    box-shadow: 0 4px 16px rgba(26, 29, 25, .08);
+}
