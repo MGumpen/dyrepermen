@@ -1,0 +1,157 @@
+@using Dyrepermen.Web.ViewModels
+@model VetbesokSkjemaVm
+@{
+    var ny = Model.Ny;
+    var erNy = ny.Id is null;
+    ViewData["Tittel"] = erNy ? "Ny time" : "Rediger time";
+}
+
+<div class="sidehode">
+    <div>
+        <h1>@(erNy ? "Ny time" : "Rediger time")</h1>
+        <div class="undertittel">
+            En time i framtiden er «kommende». Har datoen passert, flyttes den
+            til tidligere besøk av seg selv.
+        </div>
+    </div>
+</div>
+
+<section class="kort">
+    <div class="kort-kropp">
+    <form method="post" asp-action="LagreTime">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Ny.Id" />
+
+        <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-5">
+                <label asp-for="Ny.DyrId" class="form-label"></label>
+                <select asp-for="Ny.DyrId" class="form-select"
+                        asp-items="Model.DyrValg">
+                    <option value="">Velg dyr</option>
+                </select>
+                <span asp-validation-for="Ny.DyrId" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <label asp-for="Ny.Dato" class="form-label"></label>
+                <input asp-for="Ny.Dato" class="form-control" type="date" />
+                <span asp-validation-for="Ny.Dato" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label asp-for="Ny.Klokkeslett" class="form-label"></label>
+                <input asp-for="Ny.Klokkeslett" class="form-control" type="time" />
+                <div class="form-text">Valgfritt</div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="Ny.VeterinarId" class="form-label"></label>
+                <select asp-for="Ny.VeterinarId" class="form-select"
+                        asp-items="Model.StedValg">
+                    <option value="">— ikke valgt —</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="Ny.Klinikk" class="form-label"></label>
+                @* For steder som ikke star i listen - pa reise, eller den ene
+                   gangen det hastet. Star begge, vinner det valgte stedet. *@
+                <input asp-for="Ny.Klinikk" class="form-control"
+                       placeholder="Brukes hvis stedet ikke står i lista" />
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Ny.Arsak" class="form-label"></label>
+                <input asp-for="Ny.Arsak" class="form-control"
+                       placeholder="Årskontroll og vaksine" />
+                <span asp-validation-for="Ny.Arsak" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="Ny.Diagnose" class="form-label"></label>
+                <input asp-for="Ny.Diagnose" class="form-control" />
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="Ny.NesteKontrollDato" class="form-label"></label>
+                <input asp-for="Ny.NesteKontrollDato" class="form-control" type="date" />
+                <div class="form-text">Dukker opp i «Forfaller snart».</div>
+            </div>
+        </div>
+
+        <h3 class="h6 mt-4">Økonomi</h3>
+        <p class="form-text mt-0">
+            Fylles ut etter besøket. En kommende time har ingen pris ennå.
+        </p>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <label asp-for="Ny.KostnadKr" class="form-label"></label>
+                <div class="input-group">
+                    <input asp-for="Ny.KostnadKr" class="form-control"
+                           type="number" inputmode="numeric" min="0" step="1" />
+                    <span class="input-group-text">kr</span>
+                </div>
+                <span asp-validation-for="Ny.KostnadKr" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 col-md-8 d-flex align-items-end">
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="Ny.ForsikringKrevd" class="form-check-input"
+                           role="switch" />
+                    <label asp-for="Ny.ForsikringKrevd" class="form-check-label"></label>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <label asp-for="Ny.RefundertKr" class="form-label"></label>
+                <div class="input-group">
+                    <input asp-for="Ny.RefundertKr" class="form-control"
+                           type="number" inputmode="numeric" min="0" step="1" />
+                    <span class="input-group-text">kr</span>
+                </div>
+                @* Databasen har et CHECK-vilkar som avviser refusjon uten
+                   krav. Tjenesten nuller feltet framfor a kaste. *@
+                <div class="form-text">Krever at forsikring er huket av.</div>
+                <span asp-validation-for="Ny.RefundertKr" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Ny.Notat" class="form-label"></label>
+                <textarea asp-for="Ny.Notat" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary btn-sm">
+                @(erNy ? "Legg inn" : "Lagre")
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Avbryt</a>
+        </div>
+    </form>
+    </div>
+</section>
+
+@if (!erNy)
+{
+    <section class="kort" style="max-width: 34rem;">
+        <div class="kort-hode">
+            <h2>Slett timen</h2>
+        </div>
+        <div class="kort-kropp">
+            <form method="post" asp-action="SlettTime" asp-route-id="@ny.Id">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Slette denne timen?')">
+                    Slett timen
+                </button>
+            </form>
+        </div>
+    </section>
+}
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

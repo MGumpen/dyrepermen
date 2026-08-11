@@ -37,6 +37,7 @@ public sealed class DyrepermenDbContext
     public DbSet<Forplan> Forplan => Set<Forplan>();
     public DbSet<Foring> Foring => Set<Foring>();
     public DbSet<Vetbesok> Vetbesok => Set<Vetbesok>();
+    public DbSet<Veterinar> Veterinar => Set<Veterinar>();
     public DbSet<Forsikring> Forsikring => Set<Forsikring>();
     public DbSet<Dokument> Dokument => Set<Dokument>();
     public DbSet<Handleliste> Handleliste => Set<Handleliste>();
@@ -98,6 +99,11 @@ public sealed class DyrepermenDbContext
 
         b.Entity<Vetbesok>()
          .HasQueryFilter(x => x.Dyr.HusstandId == _husstand.HusstandId);
+
+        // Filtreres pa egen kolonne, ikke via dyret. En veterinaer horer til
+        // husstanden - man bruker samme klinikk til hunden og katten.
+        b.Entity<Veterinar>()
+         .HasQueryFilter(v => v.HusstandId == _husstand.HusstandId);
 
         b.Entity<Forsikring>()
          .HasQueryFilter(f => f.Dyr.HusstandId == _husstand.HusstandId);

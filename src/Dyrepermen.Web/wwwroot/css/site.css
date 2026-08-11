@@ -1031,3 +1031,72 @@ h1, h2, h3, h4 {
 .graf-enhet {
     opacity: .7;
 }
+
+/* --- Veterinaer ----------------------------------------------------------- */
+
+/* Nummeret er lagret nettopp for a kunne ringes. Da skal ett trykk holde -
+   ikke lesing og tasting inn i telefonappen. */
+.ringknapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 44px;
+    padding: .4rem .8rem;
+    border: 1px solid var(--dp-aksent);
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent-mork);
+    font-size: .875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ringknapp:hover,
+.ringknapp:focus-visible {
+    background: var(--dp-aksent);
+    color: var(--dp-tekst-hvit);
+}
+
+/* Typen skiller stedene fra hverandre. Vakta skal vaere til a se pa avstand
+   nar noe har skjedd - derfor egen farge, ikke bare en ekstra tekstlinje. */
+.merkelapp.type-vakt {
+    background: #fdf0e3;
+    color: #8a4b12;
+}
+
+.merkelapp.type-sykehus {
+    background: #fdeaea;
+    color: #8f2323;
+}
+
+.merkelapp.type-annet {
+    background: var(--dp-flate-2);
+    color: var(--dp-tekst-svak);
+}
+
+.merkelapp.forsikring {
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent-mork);
+}
+
+/* Aret sa langt, oeverst i besokslisten. */
+.sammendrag {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--dp-kant);
+    background: var(--dp-flate-2);
+}
+
+.sammendrag .verdi {
+    display: block;
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.sammendrag .etikett {
+    display: block;
+    font-size: .8rem;
+    color: var(--dp-tekst-svak);
+}

@@ -24,6 +24,7 @@ public static class TjenesteRegistrering
         tjenester.AddScoped<IHandlelisteService, HandlelisteService>();
         tjenester.AddScoped<IInformasjonService, InformasjonService>();
         tjenester.AddScoped<IForsikringService, ForsikringService>();
+        tjenester.AddScoped<IVeterinarService, VeterinarService>();
         tjenester.AddScoped<IForingService, ForingService>();
         return tjenester;
     }

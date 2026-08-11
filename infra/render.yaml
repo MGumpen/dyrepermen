@@ -1,9 +1,48 @@
+# To web-tjenester paa Render, en per branch. Samme image, samme Dockerfile -
+# forskjellen er hvilken branch som bygges og hvilken Neon-branch de peker paa.
+#
+# Denne fila er foreloepig dokumentasjon, ikke en aktiv Render-blueprint.
+# Tjenestene opprettes manuelt i Render-dashbordet, fordi main ennaa ikke
+# inneholder kildekoden - en blueprint ville forsokt aa bygge produksjon fra
+# en branch uten Dockerfile og feilet. Naar main har koden, kan fila kobles
+# opp som blueprint og overta styringen.
+
 services:
+  # Testmiljo paa dev.dyrepermen.no. Bygges fra dev-branchen og peker paa
+  # Neon-branchen "dev". Kjorer med ASPNETCORE_ENVIRONMENT=Production med
+  # vilje: et testmiljo som oppforer seg annerledes enn produksjon tester
+  # ikke produksjon. Utviklerfeilsiden hoerer hjemme lokalt.
+  - type: web
+    name: dyrepermen-dev
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: dev
+
+    dockerfilePath: infra/Dockerfile
+    dockerContext: .
+
+    healthCheckPath: /helse
+    autoDeploy: false
+
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: TZ
+        value: Europe/Oslo
+      - key: ConnectionStrings__Postgres
+        sync: false
+      - key: Jobb__Nokkel
+        generateValue: true
+
+  # Produksjon paa dyrepermen.no. Bygges fra main og peker paa Neon-branchen
+  # "production".
   - type: web
     name: dyrepermen
     runtime: docker
     plan: free
     region: frankfurt
+    branch: main
 
     # Byggekonteksten er repo-roten, ikke infra/. Se plan kapittel 3.5.
     dockerfilePath: infra/Dockerfile

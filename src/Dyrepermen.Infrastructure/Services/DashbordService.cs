@@ -174,6 +174,26 @@ public sealed class DashbordService : IDashbordService
             })
             .ToListAsync(ct);
 
+        // Sporring 4. Veterinaertimer: bade kommende timer og avtalt
+        // oppfolging, hentet i SAMME rundtur. To sporringer mot samme tabell
+        // ville vaert en rundtur for mye for det som er ett sporsmal - hva
+        // skjer hos veterinaeren de neste ukene.
+        var vetbesok = await _db.Vetbesok
+            .Where(v => (v.Dato >= idag && v.Dato <= grense)
+                     || (v.NesteKontrollDato != null
+                         && v.NesteKontrollDato >= idag
+                         && v.NesteKontrollDato <= grense))
+            .Select(v => new
+            {
+                DyreNavn = v.Dyr.Navn,
+                v.Dato,
+                v.Klokkeslett,
+                v.Arsak,
+                v.NesteKontrollDato,
+                Sted = v.Veterinar == null ? v.Klinikk : v.Veterinar.Navn
+            })
+            .ToListAsync(ct);
+
         // Teksten bygges etter materialisering. En switch over enum lar seg
         // ikke oversette til SQL, og det er unodvendig a prove.
         var forfaller = forfallerRaa
@@ -187,6 +207,27 @@ public sealed class DashbordService : IDashbordService
                 Kilde.Forsikring,
                 $"Fornyelse {f.Selskap}",
                 f.Dato)))
+            // Selve timen. Klokkeslettet tas med nar det finnes - "torsdag"
+            // er ubrukelig hvis timen er 08:15 og du ma ta fri.
+            .Concat(vetbesok
+                .Where(v => v.Dato >= idag && v.Dato <= grense)
+                .Select(v => new Paminnelse(
+                    v.DyreNavn,
+                    Kilde.Vetbesok,
+                    v.Klokkeslett is { } kl
+                        ? $"Vet. kl. {kl:HH}:{kl:mm} – {v.Arsak}"
+                        : $"Veterinær – {v.Arsak}",
+                    v.Dato)))
+            // Avtalt oppfolging fra et gjennomfort besok. En egen rad, fordi
+            // den forfaller pa en annen dato enn timen den kom fra.
+            .Concat(vetbesok
+                .Where(v => v.NesteKontrollDato is { } d
+                            && d >= idag && d <= grense)
+                .Select(v => new Paminnelse(
+                    v.DyreNavn,
+                    Kilde.Vetbesok,
+                    $"Kontroll{(v.Sted is null ? "" : $" hos {v.Sted}")}",
+                    v.NesteKontrollDato!.Value)))
             // Sortert stigende gir forfalte forst - de har eldst dato.
             .OrderBy(p => p.Dato)
             .ToList();
@@ -194,7 +235,7 @@ public sealed class DashbordService : IDashbordService
         // Sporring 4. De fem oeverste aktive punktene pa handlelisten.
         var handleliste = await _handleliste.HentAktive(AntallPaHandleliste, ct);
 
-        // Sporring 5. Husstandsbryteren for godbitloggen.
+        // Sporring 6. Husstandsbryteren for godbitloggen.
         //
         // Forslagene til dialogen hentes IKKE her. De ville vaert en sjette
         // rundtur pa hver eneste sidelast, for en liste de fleste aldri ser -
@@ -203,9 +244,11 @@ public sealed class DashbordService : IDashbordService
             .Select(i => (bool?)i.GodbitloggAktiv)
             .FirstOrDefaultAsync(ct) ?? true;
 
-        // Fem sporringer, uansett antall dyr. Taket i kapittel 16 handler om
-        // at ingenting skal vokse med antall dyr - flere kilder ma slas
-        // sammen med de eksisterende, ikke legges til per rad.
+        // Seks sporringer, og tallet star stille uansett hvor mange dyr
+        // husstanden har. Det er det taket i kapittel 16 handler om: en ny
+        // kilde koster en fast rundtur, aldri en per rad. Trengs en kilde
+        // til, skal den slas sammen med en eksisterende sporring - slik
+        // vetbesok henter bade timer og oppfolging i samme kall.
         return new Dashbord(dyr, forfaller, handleliste, godbit);
     }
 

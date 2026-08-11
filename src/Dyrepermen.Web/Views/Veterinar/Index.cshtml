@@ -1,0 +1,263 @@
+@using Dyrepermen.Application.Dtos
+@using Dyrepermen.Application.Interfaces
+@using Dyrepermen.Domain.Enums
+@using Dyrepermen.Web.ViewModels
+@inject IGjeldendeBruker Meg
+@model VeterinarSideVm
+@{
+    ViewData["Tittel"] = "Veterinær";
+    var idag = DateOnly.FromDateTime(DateTime.Now);
+
+    string Typenavn(Veterinartype t) => t switch
+    {
+        Veterinartype.Vakt => "Vakt",
+        Veterinartype.Sykehus => "Dyresykehus",
+        Veterinartype.Annet => "Annet",
+        _ => "Fast veterinær"
+    };
+
+    string Tid(Vetbesokrad b) => b.Klokkeslett is { } kl
+        ? $"{b.Dato:d. MMM} kl. {kl:HH\\:mm}"
+        : $"{b.Dato:d. MMM yyyy}";
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Veterinær</h1>
+        <div class="undertittel">
+            @Model.Steder.Count @(Model.Steder.Count == 1 ? "sted" : "steder")
+            @if (Model.Kommende.Count > 0)
+            {
+                <span class="merkelapp ms-1">@Model.Kommende.Count kommende</span>
+            }
+        </div>
+    </div>
+    @if (Meg.KanEndre)
+    {
+        <div class="handlinger">
+            <a asp-action="NyTime" class="btn btn-outline-secondary btn-sm">
+                <svg class="ikon" aria-hidden="true"><use href="#i-klokke" /></svg>
+                Ny time
+            </a>
+            <a asp-action="Ny" class="btn btn-primary btn-sm">
+                <svg class="ikon" aria-hidden="true"><use href="#i-pluss" /></svg>
+                Nytt sted
+            </a>
+        </div>
+    }
+</div>
+
+<div class="dp-kolonner">
+    <div class="kolonne">
+
+        @* --- Stedene ---------------------------------------------------- *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-veterinar" /></svg>
+                <h2>Steder</h2>
+                @if (Model.Steder.Count > 0)
+                {
+                    <span class="antall">@Model.Steder.Count</span>
+                }
+            </div>
+
+            @if (Model.Steder.Count == 0)
+            {
+                @* En tomtilstand som bare sier "ingenting" forteller ikke hva
+                   som VILLE statt her. *@
+                <div class="tomt tomt-stor">
+                    <p class="mb-1">Ingen steder registrert ennå.</p>
+                    <p class="mb-3" style="font-size:.85em">
+                        Legg inn fastveterinæren, vakta utenom åpningstid og
+                        nærmeste dyresykehus. Da er nummeret å finne når det
+                        haster.
+                    </p>
+                    @if (Meg.KanEndre)
+                    {
+                        <a asp-action="Ny" class="btn btn-primary btn-sm">
+                            Legg til det første stedet
+                        </a>
+                    }
+                </div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var sted in Model.Steder)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@sted.Navn</span>
+                                <span class="under d-block">
+                                    <span class="merkelapp type-@sted.Type.ToString().ToLowerInvariant()">
+                                        @Typenavn(sted.Type)
+                                    </span>
+                                    @if (sted.Apningstider is { } tider)
+                                    {
+                                        <span class="ms-1">@tider</span>
+                                    }
+                                </span>
+
+                                @if (sted.Adresse is { } adr)
+                                {
+                                    <span class="under d-block">@adr</span>
+                                }
+                                @if (sted.AntallBesok > 0)
+                                {
+                                    <span class="under d-block">
+                                        @sted.AntallBesok @(sted.AntallBesok == 1
+                                            ? "besøk" : "besøk") registrert
+                                    </span>
+                                }
+                            </span>
+
+                            <span class="hoyre radhandlinger">
+                                @if (sted.TelefonLenke is { } nr)
+                                {
+                                    @* tel:-lenke. Nummeret er lagret for a
+                                       kunne ringes - da skal ett trykk holde,
+                                       ikke lesing og tasting. *@
+                                    <a class="btn ringknapp" href="tel:@nr"
+                                       aria-label="Ring @sted.Navn på @sted.Telefon">
+                                        <svg class="ikon" aria-hidden="true">
+                                            <use href="#i-telefon" />
+                                        </svg>
+                                        <span class="d-none d-sm-inline">@sted.Telefon</span>
+                                    </a>
+                                }
+                                @if (Meg.KanEndre)
+                                {
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       asp-action="Rediger" asp-route-id="@sted.Id">Endre</a>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="kolonne">
+
+        @* --- Kommende timer --------------------------------------------- *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-klokke" /></svg>
+                <h2>Kommende timer</h2>
+                @if (Model.Kommende.Count > 0)
+                {
+                    <span class="antall">@Model.Kommende.Count</span>
+                }
+            </div>
+
+            @if (Model.Kommende.Count == 0)
+            {
+                <div class="tomt">Ingen timer avtalt.</div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var b in Model.Kommende)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@b.DyreNavn</span>
+                                <span class="under d-block">@b.Arsak</span>
+                                @if (b.Sted is { } sted)
+                                {
+                                    <span class="under d-block">@sted</span>
+                                }
+                            </span>
+                            <span class="hoyre">
+                                <span class="d-block">@Tid(b)</span>
+                                @if (Meg.KanEndre)
+                                {
+                                    <a asp-action="RedigerTime" asp-route-id="@b.Id"
+                                       class="small">Endre</a>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        @* --- Tidligere besok -------------------------------------------- *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
+                <h2>Tidligere besøk</h2>
+                @if (Model.Tidligere.Count > 0)
+                {
+                    <span class="antall">@Model.Tidligere.Count</span>
+                }
+            </div>
+
+            @if (Model.Tidligere.Count == 0)
+            {
+                <div class="tomt">Ingen besøk registrert.</div>
+            }
+            else
+            {
+                @if (Model.BetaltIArKr > 0 || Model.RefundertIArKr > 0)
+                {
+                    <div class="sammendrag">
+                        <span>
+                            <span class="verdi">@Model.BetaltIArKr kr</span>
+                            <span class="etikett">betalt selv i @idag.Year</span>
+                        </span>
+                        @if (Model.RefundertIArKr > 0)
+                        {
+                            <span>
+                                <span class="verdi">@Model.RefundertIArKr kr</span>
+                                <span class="etikett">refundert</span>
+                            </span>
+                        }
+                    </div>
+                }
+
+                <ul class="rad-liste">
+                    @foreach (var b in Model.Tidligere)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@b.DyreNavn</span>
+                                <span class="under d-block">
+                                    @b.Arsak@(b.Diagnose is { } d ? $" · {d}" : "")
+                                </span>
+                                <span class="under d-block">
+                                    @Tid(b)@(b.Sted is { } s ? $" · {s}" : "")
+                                </span>
+                            </span>
+                            <span class="hoyre">
+                                @if (b.KostnadKr is { } kr)
+                                {
+                                    <span class="d-block">@kr kr</span>
+                                    @if (b.ForsikringKrevd)
+                                    {
+                                        <span class="merkelapp forsikring">
+                                            @(b.RefundertKr is { } r
+                                                ? $"−{r} kr dekket" : "forsikring")
+                                        </span>
+                                    }
+                                }
+                                else
+                                {
+                                    @* Ikke "0 kr". Et tall uten dekning er
+                                       verre enn ingen tall. *@
+                                    <span class="d-block text-body-secondary">—</span>
+                                }
+                                @if (Meg.KanEndre)
+                                {
+                                    <a asp-action="RedigerTime" asp-route-id="@b.Id"
+                                       class="small d-block">Endre</a>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+</div>
