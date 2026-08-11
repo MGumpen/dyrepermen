@@ -42,7 +42,7 @@ public sealed class InnstillingController : Controller
 
         await _husstand.LagreInnstillinger(
             inn.Husstandsnavn, inn.ForingsloggStandard,
-            inn.ForplanStandard, inn.VarslerAktiv, ct);
+            inn.ForplanStandard, inn.VarslerAktiv, inn.GodbitloggAktiv, ct);
 
         TempData["Melding"] = "Innstillingene er lagret.";
         return RedirectToAction(nameof(Index));
@@ -147,7 +147,8 @@ public sealed class InnstillingController : Controller
             Husstandsnavn = oversikt.Navn,
             ForingsloggStandard = oversikt.ForingsloggStandard,
             ForplanStandard = oversikt.ForplanStandard,
-            VarslerAktiv = oversikt.VarslerAktiv
+            VarslerAktiv = oversikt.VarslerAktiv,
+            GodbitloggAktiv = oversikt.GodbitloggAktiv
         };
     }
 }

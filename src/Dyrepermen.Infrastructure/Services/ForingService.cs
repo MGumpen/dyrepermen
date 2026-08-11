@@ -2,6 +2,7 @@ using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Entities;
+using Dyrepermen.Domain.Enums;
 using Dyrepermen.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,13 +39,22 @@ public sealed class ForingService : IForingService
             return false;
         }
 
+        // Godbitloggen har sin egen bryter, pa husstandsniva. Samme regel:
+        // den skjuler knappen OG stenger endepunktet.
+        if (input.Type == Foringstype.Godbit && !await GodbitErPa(ct))
+        {
+            return false;
+        }
+
         _db.Foring.Add(new Foring
         {
             DyrId = input.DyrId,
             // Tidspunktet settes HER, pa serveren. Det er ikke en parameter,
             // sa klienten kan ikke pavirke det.
             Tidspunkt = DateTimeOffset.UtcNow,
+            Type = input.Type,
             MengdeGram = input.MengdeGram,
+            Fornavn = input.Fornavn.TomTilNull(),
             Kommentar = input.Kommentar.TomTilNull(),
             GittAvBrukerId = input.GittAvBrukerId
         });
@@ -52,6 +62,21 @@ public sealed class ForingService : IForingService
         await _db.SaveChangesAsync(ct);
         return true;
     }
+
+    /// <summary>
+    /// Navn som allerede er brukt i husstanden, nyeste forst. Grunnlaget for
+    /// forslagene i dialogen - da holder stavematen seg stabil uten at noen
+    /// ma vedlikeholde et register.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> HentFornavn(
+        Foringstype type, CancellationToken ct)
+        => await _db.Foring
+            .Where(f => f.Type == type && f.Fornavn != null)
+            .GroupBy(f => f.Fornavn!)
+            .OrderByDescending(g => g.Max(f => f.Tidspunkt))
+            .Select(g => g.Key)
+            .Take(15)
+            .ToListAsync(ct);
 
     public async Task<bool> RedigerTid(
         int dyrId, int foringId, DateTimeOffset tidspunkt, CancellationToken ct)
@@ -101,4 +126,14 @@ public sealed class ForingService : IForingService
     /// </summary>
     private Task<bool> ForingErPa(int dyrId, CancellationToken ct)
         => _db.Dyr.AnyAsync(d => d.Id == dyrId && d.ForingsloggAktiv, ct);
+
+    /// <summary>
+    /// Mangler innstillingsraden, gjelder standardverdien fra Domain - altsa
+    /// pa. En manglende rad skal ikke stenge en funksjon brukeren aldri har
+    /// slatt av.
+    /// </summary>
+    private async Task<bool> GodbitErPa(CancellationToken ct)
+        => await _db.HusstandInnstilling
+            .Select(i => (bool?)i.GodbitloggAktiv)
+            .FirstOrDefaultAsync(ct) ?? true;
 }

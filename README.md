@@ -146,20 +146,39 @@ brancher og pull requests; utrulling skjer kun fra `main`.
 
 ## Status
 
-MVP er fase 1, 1b og 2 i `docs/plan.md` kapittel 16. Akseptansekriteriene i
-samme kapittel er definisjonen av ferdig.
+**Hele funksjonsomfanget skal bygges før utrulling.** Det finnes ingen
+MVP-avgrensning — utrulling er fase 8, helt til slutt. Akseptansekriteriene i
+`docs/plan.md` kapittel 16 er definisjonen av ferdig.
 
-**Fase 1 og 1b er ferdige.** Monorepo-oppsett, hele databaseskjemaet med query-filtre,
-isolasjonstest og filterprøve, Identity med 30 dagers vedvarende innlogging og
-Data Protection-nøkler i database, innlogging som eneste inngang,
-oppstartsskjerm, husstandsoppsett, `Dyr`-CRUD med funksjonsbrytere, og
-dashbord med dyrekort og tomtilstander.
+### Ferdig
 
-Dashbordet gjør **to** databasespørringer uansett antall dyr — kravet i
-kapittel 16 er høyst fire. Målt med EF Core-logging på `Information`.
+| Fase | Innhold |
+|---|---|
+| 1 og 1b | Monorepo, hele skjemaet med query-filtre, isolasjonstest og filterprøve, Identity med 30 dagers innlogging, Data Protection-nøkler i database, `Dyr`-CRUD, dashbord |
+| 2 | Vekt og behandling, med vektgraf |
+| 3 | Medisiner og doser |
+| 5a | Forsikring med selskap, premie, egenandeler og forsikringsbeløp |
+| 6 | Handleliste |
+| 6b | Fôringslogg bak funksjonsbryter |
+| 6c | Husstand og konto, dataeksport, kontosletting |
+| 6d | Handlinger direkte på dashbordet: porsjon for neste måltid, gi mat, godbit, avkryssing av handleliste |
+| — | Flere husstander per bruker med gjesterolle, informasjonssider, designgjennomgang |
 
-40 tester grønne. Alle akseptansekriteriene i kapittel 16 for fase 1 og 1b er
-verifisert mot kjørende app og ekte database.
+Dashbordet gjør **fem** databasespørringer uansett antall dyr. Kravet i
+kapittel 16 er at ingenting skal vokse med antall dyr; nye kilder slås sammen
+med de eksisterende framfor å legges til per rad.
 
-**Neste: fase 2** — vekt og behandling.
+**133 tester grønne.** Enhetstester for ren logikk, integrasjonstester mot
+ekte PostgreSQL via Testcontainers. Aldri EF Core InMemory.
 
+To fail-closed prøver holder sikkerheten på plass av seg selv:
+`Modellfullstendighet` sammenligner `IHusstandsbundet`-typene i Domain mot
+EF-modellen, og `RolleTester` går gjennom hver eneste `POST`-handling og
+feiler hvis en mangler `[KreverEier]` uten å stå på den bevisste gjestelisten.
+
+### Gjenstår
+
+- **Fase 5b** — dokumenter med filopplasting
+- **Fase 4** — påminnelser på e-post
+- **Fase 7** — resten av poleringen, sikkerhetskopi-jobb
+- **Fase 8** — utrulling til Render mot Neon

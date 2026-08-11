@@ -1,6 +1,8 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Domain.Enums;
 using Dyrepermen.Infrastructure.Services;
+using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Dyrepermen.Web.Controllers;
@@ -73,7 +75,80 @@ public sealed class HjemController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        return PartialView("_Dyreliste", (await _dashbord.Hent(ct)).Dyr);
+        return PartialView("_Dyreliste", Dyreliste(await _dashbord.Hent(ct)));
+    }
+
+    /// <summary>
+    /// Innholdet i foringsdialogen. Hentes forst nar dialogen apnes, ikke
+    /// pa hver sidelast - forslagslisten er en rundtur de fleste aldri
+    /// trenger, og den skal ikke belaste dashbordet.
+    /// </summary>
+    [HttpGet("/dashbord/foring/{dyrId:int}")]
+    public async Task<IActionResult> Foringsdialog(
+        int dyrId, Foringstype type, CancellationToken ct)
+    {
+        var kort = (await _dashbord.Hent(ct)).Dyr.SingleOrDefault(d => d.Id == dyrId);
+
+        // Query-filteret gjor at et dyr i en annen husstand ikke finnes her.
+        if (kort is null || !kort.ForingsloggAktiv)
+        {
+            return NotFound();
+        }
+
+        var vm = new ForingsdialogVm(
+            kort.Id,
+            kort.Navn,
+            type,
+            // Maltid forhandsvelger porsjonen planen sier. En godbit har
+            // ingen planlagt mengde, sa det feltet star tomt.
+            type == Foringstype.Godbit ? null : kort.PorsjonGram,
+            type == Foringstype.Godbit ? null : kort.Fornavn,
+            await _foring.HentFornavn(type, ct));
+
+        return ErHtmx ? PartialView("_Foringsdialog", vm) : View("Foringsdialog", vm);
+    }
+
+    /// <summary>Registrerer et maltid eller en godbit med valgt mengde.</summary>
+    [HttpPost("/dashbord/foring/{dyrId:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RegistrerForing(
+        int dyrId, RegistrerForingVm vm, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+        {
+            // Skjemaet tegnes pa nytt med feilmeldingene i behold. Uten
+            // forslagene ville nedtrekkslisten forsvunnet ved forste feil.
+            var kort = (await _dashbord.Hent(ct)).Dyr.SingleOrDefault(d => d.Id == dyrId);
+
+            if (kort is null)
+            {
+                return NotFound();
+            }
+
+            // Skjemaet peker pa #dyreliste, fordi det er dit svaret skal nar
+            // registreringen lykkes. Feiler valideringen, ma svaret i stedet
+            // tilbake i dialogen - ellers ville feilmeldingene erstattet hele
+            // dyrelisten.
+            Response.Headers["HX-Retarget"] = "#foringsdialog-innhold";
+            Response.Headers["HX-Reswap"] = "innerHTML";
+
+            return PartialView("_Foringsdialog", new ForingsdialogVm(
+                dyrId, kort.Navn, vm.Type, vm.MengdeGram, vm.Fornavn,
+                await _foring.HentFornavn(vm.Type, ct)));
+        }
+
+        await _foring.Registrer(
+            new NyForing(
+                dyrId, vm.MengdeGram, vm.Kommentar, _meg.BrukerId,
+                vm.Type, vm.Fornavn),
+            ct);
+
+        if (!ErHtmx)
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        return PartialView("_Dyreliste", Dyreliste(await _dashbord.Hent(ct)));
     }
 
     /// <summary>Veksler mellom kjopt og aktiv, som pa handlelistesiden.</summary>
@@ -102,4 +177,7 @@ public sealed class HjemController : Controller
     /// Skjemaene har derfor bade asp-action og hx-post.
     /// </summary>
     private bool ErHtmx => Request.Headers.ContainsKey("HX-Request");
+
+    private static DyrelisteVm Dyreliste(Dashbord d)
+        => new(d.Dyr, d.GodbitloggAktiv);
 }

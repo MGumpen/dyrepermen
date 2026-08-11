@@ -42,6 +42,7 @@ public interface IHusstandService
         bool foringsloggStandard,
         bool forplanStandard,
         bool varslerAktiv,
+        bool godbitloggAktiv,
         CancellationToken ct);
 
     /// <summary>

@@ -1,6 +1,7 @@
-@using Dyrepermen.Application.Dtos
 @using Dyrepermen.Application.Extensions
-@model IReadOnlyList<DyrKort>
+@using Dyrepermen.Domain.Enums
+@using Dyrepermen.Web.ViewModels
+@model DyrelisteVm
 @{
     var idag = DateOnly.FromDateTime(DateTime.Now);
     var naa = DateTimeOffset.UtcNow;
@@ -9,7 +10,7 @@
 @* id-en star her, ikke i Index. Da kan htmx bytte ut hele lista med
    outerHTML og feste blir med i det som byttes. *@
 <ul class="rad-liste" id="dyreliste">
-    @foreach (var dyr in Model)
+    @foreach (var dyr in Model.Dyr)
     {
         <li>
             @* Lenka dekker teksten. Foringsknappen ma sta UTENFOR den - en
@@ -90,6 +91,16 @@
                         </span>
                     }
 
+                    @if (dyr.GodbiterIDag > 0)
+                    {
+                        <span>
+                            <span class="verdi">@dyr.GodbiterIDag</span>
+                            <span class="etikett">
+                                @(dyr.GodbiterIDag == 1 ? "godbit" : "godbiter") i dag
+                            </span>
+                        </span>
+                    }
+
                     @if (dyr.AktiveMedisiner.Count > 0)
                     {
                         <span>
@@ -102,26 +113,61 @@
                 </span>
             </a>
 
-            <span class="hoyre">
+            <span class="hoyre radhandlinger">
                 @if (dyr.ForingsloggAktiv)
                 {
-                    @* Skjema, ikke bar knapp: da folger antiforgery-tokenet
-                       med i htmx-kallet, og handlingen virker ogsa hvis
-                       skriptet ikke lastes. Samme monster som handlelisten. *@
-                    <form method="post" asp-action="GiMat" asp-route-dyrId="@dyr.Id"
-                          hx-post="@Url.Action("GiMat", new { dyrId = dyr.Id })"
-                          hx-target="#dyreliste" hx-swap="outerHTML"
-                          hx-disabled-elt="find button">
-                        @Html.AntiForgeryToken()
-                        <button type="submit"
-                                class="btn matknapp @(dyr.AlleMaltiderGitt ? "ferdig" : "")"
-                                aria-label="@(dyr.PorsjonGram is { } p
-                                    ? $"Registrer at {dyr.Navn} fikk {p} gram"
-                                    : $"Registrer at {dyr.Navn} fikk mat")">
+                    @if (Model.GodbitloggAktiv)
+                    {
+                        @* Lenke, ikke knapp: href-en apner skjemaet som egen
+                           side hvis skriptet ikke lastes. hx-get er
+                           forbedringen, ikke forutsetningen. *@
+                        <a class="btn godbitknapp"
+                           asp-controller="Hjem" asp-action="Foringsdialog"
+                           asp-route-dyrId="@dyr.Id" asp-route-type="@Foringstype.Godbit"
+                           hx-get="@Url.Action("Foringsdialog", "Hjem",
+                               new { dyrId = dyr.Id, type = Foringstype.Godbit })"
+                           hx-target="#foringsdialog-innhold" hx-swap="innerHTML"
+                           aria-label="Registrer godbit til @dyr.Navn">
+                            <svg class="ikon" aria-hidden="true"><use href="#i-godbit" /></svg>
+                            <span class="d-none d-sm-inline">Godbit</span>
+                        </a>
+                    }
+
+                    @if (dyr.AlleMaltiderGitt)
+                    {
+                        @* Alle maltider gitt: da er en ekstra porsjon et
+                           bevisst valg, og mengden bor velges - ikke gjentas
+                           fra planen. *@
+                        <a class="btn matknapp ferdig"
+                           asp-controller="Hjem" asp-action="Foringsdialog"
+                           asp-route-dyrId="@dyr.Id" asp-route-type="@Foringstype.Maltid"
+                           hx-get="@Url.Action("Foringsdialog", "Hjem",
+                               new { dyrId = dyr.Id, type = Foringstype.Maltid })"
+                           hx-target="#foringsdialog-innhold" hx-swap="innerHTML"
+                           aria-label="Gi @dyr.Navn mer mat">
                             <svg class="ikon" aria-hidden="true"><use href="#i-forplan" /></svg>
-                            <span>@(dyr.AlleMaltiderGitt ? "Gi mer" : "Gi mat")</span>
-                        </button>
-                    </form>
+                            <span>Gi mer</span>
+                        </a>
+                    }
+                    else
+                    {
+                        @* Skjema, ikke bar knapp: da folger antiforgery-tokenet
+                           med i htmx-kallet, og handlingen virker ogsa hvis
+                           skriptet ikke lastes. Samme monster som handlelisten. *@
+                        <form method="post" asp-action="GiMat" asp-route-dyrId="@dyr.Id"
+                              hx-post="@Url.Action("GiMat", new { dyrId = dyr.Id })"
+                              hx-target="#dyreliste" hx-swap="outerHTML"
+                              hx-disabled-elt="find button">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn matknapp"
+                                    aria-label="@(dyr.PorsjonGram is { } p
+                                        ? $"Registrer at {dyr.Navn} fikk {p} gram"
+                                        : $"Registrer at {dyr.Navn} fikk mat")">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-forplan" /></svg>
+                                <span>Gi mat</span>
+                            </button>
+                        </form>
+                    }
                 }
                 else
                 {

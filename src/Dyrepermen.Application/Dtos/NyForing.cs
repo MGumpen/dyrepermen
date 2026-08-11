@@ -1,3 +1,5 @@
+using Dyrepermen.Domain.Enums;
+
 namespace Dyrepermen.Application.Dtos;
 
 /// <summary>
@@ -8,4 +10,8 @@ public sealed record NyForing(
     int DyrId,
     int? MengdeGram,
     string? Kommentar,
-    int? GittAvBrukerId);
+    int? GittAvBrukerId,
+    Foringstype Type = Foringstype.Maltid,
+
+    /// <summary>Hva som ble gitt. Fritekst, med forslag fra tidligere rader.</summary>
+    string? Fornavn = null);

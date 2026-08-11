@@ -42,7 +42,16 @@ public sealed record DyrKort(
     /// Foringer registrert siden midnatt NORSK tid. Sammen med
     /// AntallMaltider gir det "maltid 2 av 3" pa dashbordet.
     /// </summary>
-    int MaltiderIDag)
+    int MaltiderIDag,
+
+    /// <summary>Foret planen sier, som forhandsvalg i dialogen.</summary>
+    string? Fornavn,
+
+    /// <summary>
+    /// Godbiter siden midnatt. Talt for seg - en godbit er ikke et maltid,
+    /// og skal aldri fa telleren til a si at middagen er gitt.
+    /// </summary>
+    int GodbiterIDag)
 {
     /// <summary>
     /// Nummeret pa maltidet som star for tur. Er alle gitt, peker det forbi

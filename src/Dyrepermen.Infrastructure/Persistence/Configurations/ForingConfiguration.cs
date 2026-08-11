@@ -1,4 +1,5 @@
 using Dyrepermen.Domain.Entities;
+using Dyrepermen.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,6 +13,19 @@ public sealed class ForingConfiguration : IEntityTypeConfiguration<Foring>
         b.Property(f => f.Id).UseIdentityAlwaysColumn();
 
         b.Property(f => f.Kommentar).HasMaxLength(200);
+        b.Property(f => f.Fornavn).HasMaxLength(80);
+
+        // Ingen HasDefaultValue her, med vilje. Settes en standardverdi i
+        // modellen, utelater EF kolonnen nar verdien er lik CLR-standarden -
+        // og da hviler riktigheten pa at de to alltid er like. Det var
+        // nettopp den fellen HusstandInvitasjon.Rolle gikk i. Uten
+        // standardverdi sender EF alltid typen eksplisitt.
+        b.Property(f => f.Type)
+         .HasConversion(
+             v => v == Foringstype.Godbit ? 'G' : 'M',
+             v => v == 'G' ? Foringstype.Godbit : Foringstype.Maltid)
+         .HasColumnType("char(1)")
+         .IsRequired();
 
         b.Property(f => f.Tidspunkt)
          .HasDefaultValueSql("now()")
@@ -31,7 +45,12 @@ public sealed class ForingConfiguration : IEntityTypeConfiguration<Foring>
          .IsDescending(false, true)
          .HasDatabaseName("ix_foring_dyr_tid");
 
-        b.ToTable(t => t.HasCheckConstraint(
-            "ck_foring_mengde", "mengde_gram IS NULL OR mengde_gram > 0"));
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint(
+                "ck_foring_mengde", "mengde_gram IS NULL OR mengde_gram > 0");
+
+            t.HasCheckConstraint("ck_foring_type", "type IN ('M','G')");
+        });
     }
 }

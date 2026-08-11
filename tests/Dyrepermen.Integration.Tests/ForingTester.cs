@@ -291,6 +291,117 @@ public sealed class ForingTester
     }
 
     [Fact]
+    public async Task Godbit_teller_ikke_som_maltid()
+    {
+        // Selve grunnen til at typen finnes. Uten skillet ville dashbordet
+        // sagt "maltid 3 av 3" fordi noen ga hunden en ostebit, og den som
+        // kommer hjem vet ikke om middagen er gitt.
+        var h = await _fixture.OpprettHusstand("Godbit teller ikke");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h, foringPa: true);
+
+        var tjeneste = new ForingService(db);
+        await tjeneste.Registrer(new NyForing(dyrId, 100, null, null), default);
+        await tjeneste.Registrer(
+            new NyForing(dyrId, 10, null, null, Foringstype.Godbit, "Tyggebein"),
+            default);
+
+        var kort = (await HentDashbord(db, h)).Dyr.Single();
+
+        Assert.Equal(1, kort.MaltiderIDag);
+        Assert.Equal(1, kort.GodbiterIDag);
+    }
+
+    [Fact]
+    public async Task Godbit_avvises_nar_husstandsbryteren_er_av()
+    {
+        // Bryteren skjuler knappen OG stenger endepunktet. Uten sjekken i
+        // tjenesten kan et bokmerke skrive til en avslatt funksjon.
+        // Se plan kapittel 8.2.
+        var h = await _fixture.OpprettHusstand("Godbit av");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h, foringPa: true);
+
+        db.HusstandInnstilling.Add(new HusstandInnstilling
+        {
+            HusstandId = h,
+            GodbitloggAktiv = false
+        });
+        await db.SaveChangesAsync();
+
+        var tjeneste = new ForingService(db);
+
+        Assert.False(await tjeneste.Registrer(
+            new NyForing(dyrId, 10, null, null, Foringstype.Godbit, "Ost"),
+            default));
+
+        // Maltider skal fortsatt ga gjennom - bryteren gjelder kun godbiter.
+        Assert.True(await tjeneste.Registrer(
+            new NyForing(dyrId, 100, null, null), default));
+
+        Assert.Equal(1, await db.Foring.CountAsync());
+    }
+
+    [Fact]
+    public async Task Bryteren_lar_seg_faktisk_skru_av()
+    {
+        // EF utelater en verdi som er lik CLR-standarden nar egenskapen har
+        // lagringsstandard. For en bool er CLR-standarden false - og med
+        // HasDefaultValue(true) ville raden blitt lagret som PA uansett.
+        // Denne testen ville feilet for konfigurasjonen ble rettet.
+        var h = await _fixture.OpprettHusstand("Bryter av ved innsetting");
+        await using var db = _fixture.LagContext(h);
+
+        db.HusstandInnstilling.Add(new HusstandInnstilling
+        {
+            HusstandId = h,
+            GodbitloggAktiv = false,
+            VarslerAktiv = false
+        });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var lagret = await db.HusstandInnstilling.SingleAsync();
+
+        Assert.False(lagret.GodbitloggAktiv);
+        Assert.False(lagret.VarslerAktiv);
+    }
+
+    [Fact]
+    public async Task Fornavn_foreslas_fra_husstandens_egne_rader()
+    {
+        var a = await _fixture.OpprettHusstand("Forslag egne");
+        var b = await _fixture.OpprettHusstand("Forslag fremmed");
+
+        await using (var eier = _fixture.LagContext(a))
+        {
+            var dyrId = await NyttDyr(eier, a, foringPa: true);
+            await new ForingService(eier).Registrer(
+                new NyForing(dyrId, 100, null, null,
+                    Foringstype.Maltid, "Royal Canin Maxi"),
+                default);
+        }
+
+        await using var fremmed = _fixture.LagContext(b);
+
+        // Query-filteret gjor jobben: en annen husstands foernavn skal ikke
+        // lekke inn i forslagslisten.
+        Assert.Empty(await new ForingService(fremmed)
+            .HentFornavn(Foringstype.Maltid, default));
+
+        await using var eget = _fixture.LagContext(a);
+
+        Assert.Equal(
+            ["Royal Canin Maxi"],
+            await new ForingService(eget).HentFornavn(Foringstype.Maltid, default));
+
+        // Godbiter og maltider har hver sin liste. "Tyggebein" hoerer ikke
+        // hjemme blant forslagene til middag.
+        Assert.Empty(await new ForingService(eget)
+            .HentFornavn(Foringstype.Godbit, default));
+    }
+
+    [Fact]
     public async Task Uten_foringslogg_telles_ingen_maltider()
     {
         // Er loggen av, ville "0 av 2" lest som et etterslep for et dyr som

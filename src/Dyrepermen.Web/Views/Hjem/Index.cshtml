@@ -1,6 +1,7 @@
 @using Dyrepermen.Application.Dtos
 @using Dyrepermen.Application.Extensions
 @using Dyrepermen.Application.Interfaces
+@using Dyrepermen.Web.ViewModels
 @inject IGjeldendeBruker Meg
 @model Dashbord
 @{
@@ -54,7 +55,8 @@
             }
             else
             {
-                <partial name="_Dyreliste" model="Model.Dyr" />
+                <partial name="_Dyreliste"
+                         model="new DyrelisteVm(Model.Dyr, Model.GodbitloggAktiv)" />
             }
         </section>
     </div>

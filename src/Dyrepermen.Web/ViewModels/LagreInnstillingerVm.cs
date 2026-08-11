@@ -28,4 +28,7 @@ public sealed class LagreInnstillingerVm
 
     [Display(Name = "Send varsler på e-post")]
     public bool VarslerAktiv { get; set; }
+
+    [Display(Name = "Vis godbitknapp")]
+    public bool GodbitloggAktiv { get; set; }
 }

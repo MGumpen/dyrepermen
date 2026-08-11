@@ -65,7 +65,8 @@ public sealed class DashbordService : IDashbordService
                         f.Metode,
                         f.ProsentTidels,
                         f.GramPerDag,
-                        f.AntallMaltider
+                        f.AntallMaltider,
+                        f.Fornavn
                     })
                     .FirstOrDefault(),
 
@@ -91,8 +92,13 @@ public sealed class DashbordService : IDashbordService
                     })
                     .FirstOrDefault(),
 
-                // Enda en korrelert undersporring, ikke en femte rundtur.
-                MaltiderIDag = d.Foringer.Count(f => f.Tidspunkt >= dagStart)
+                // Enda to korrelerte undersporringer, ikke to nye rundturer.
+                // Godbiter telles for seg: en ostebit er ikke middag.
+                MaltiderIDag = d.Foringer.Count(f =>
+                    f.Tidspunkt >= dagStart && f.Type == Foringstype.Maltid),
+
+                GodbiterIDag = d.Foringer.Count(f =>
+                    f.Tidspunkt >= dagStart && f.Type == Foringstype.Godbit)
             })
             .ToListAsync(ct);
 
@@ -134,7 +140,9 @@ public sealed class DashbordService : IDashbordService
                 // Telles bare nar loggen er pa. Er den av, finnes det ingen
                 // maltider a telle, og "0 av 2" ville vaert et falskt
                 // etterslep for et dyr som ikke skal foringsloggfores.
-                d.ForingsloggAktiv ? d.MaltiderIDag : 0);
+                d.ForingsloggAktiv ? d.MaltiderIDag : 0,
+                d.Forplan?.Fornavn,
+                d.ForingsloggAktiv ? d.GodbiterIDag : 0);
         }).ToList();
 
         // Sporring 2. Behandlinger som forfaller innen vinduet.
@@ -186,9 +194,19 @@ public sealed class DashbordService : IDashbordService
         // Sporring 4. De fem oeverste aktive punktene pa handlelisten.
         var handleliste = await _handleliste.HentAktive(AntallPaHandleliste, ct);
 
-        // Fire sporringer totalt, uansett antall dyr. Det er taket i
-        // kapittel 16 - flere kilder ma slas sammen med de eksisterende.
-        return new Dashbord(dyr, forfaller, handleliste);
+        // Sporring 5. Husstandsbryteren for godbitloggen.
+        //
+        // Forslagene til dialogen hentes IKKE her. De ville vaert en sjette
+        // rundtur pa hver eneste sidelast, for en liste de fleste aldri ser -
+        // dialogen henter sitt eget innhold nar den apnes.
+        var godbit = await _db.HusstandInnstilling
+            .Select(i => (bool?)i.GodbitloggAktiv)
+            .FirstOrDefaultAsync(ct) ?? true;
+
+        // Fem sporringer, uansett antall dyr. Taket i kapittel 16 handler om
+        // at ingenting skal vokse med antall dyr - flere kilder ma slas
+        // sammen med de eksisterende, ikke legges til per rad.
+        return new Dashbord(dyr, forfaller, handleliste, godbit);
     }
 
     private static string TypeTekst(BehandlingType type, string? preparat)

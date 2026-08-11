@@ -49,6 +49,17 @@
                         <label asp-for="ForplanStandard" class="form-check-label"></label>
                     </div>
 
+                    <h3 class="h6 mt-3">Fôringslogg</h3>
+                    <p class="form-text mt-0">
+                        Gjelder alle dyr med en gang. Ikke alle bryr seg om å
+                        telle godbiter — er den av, forsvinner knappen fra
+                        oversikten.
+                    </p>
+                    <div class="form-check form-switch mb-3">
+                        <input asp-for="GodbitloggAktiv" class="form-check-input" role="switch" />
+                        <label asp-for="GodbitloggAktiv" class="form-check-label"></label>
+                    </div>
+
                     <h3 class="h6 mt-3">Varsler</h3>
                     <div class="form-check form-switch mb-3">
                         <input asp-for="VarslerAktiv" class="form-check-input" role="switch" />
