@@ -43,8 +43,12 @@
 </div>
 
 @* NKK-registeret er Norsk Kennel Klub og gjelder hund. Feltet skjules for
-   katt - og tjenesten nuller det ut uansett hva som postes. *@
-<div class="mb-3" data-kun-hund>
+   katt - og tjenesten nuller det ut uansett hva som postes.
+
+   Verdien som betyr "hund" skrives ut HER, av Razor. Skriptet under leste
+   den for som teksten 'Hund', men GetEnumSelectList sender TALLET. Da var
+   sammenligningen alltid usann, og feltet ble skjult for hunder ogsa. *@
+<div class="mb-3" data-kun-hund="@((int)Art.Hund)">
     <label asp-for="RegNrNkk" class="form-label"></label>
     <input asp-for="RegNrNkk" class="form-control" />
     <span asp-validation-for="RegNrNkk" class="text-danger small"></span>
@@ -65,7 +69,9 @@
 
         function oppdater() {
             document.querySelectorAll('[data-kun-hund]').forEach(function (rad) {
-                rad.hidden = art.value !== 'Hund';
+                // Verdien hentes fra elementet selv, ikke skrevet inn her.
+                // Da kan ikke markupen og skriptet komme i utakt.
+                rad.hidden = art.value !== rad.dataset.kunHund;
             });
         }
 
