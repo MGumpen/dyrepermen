@@ -116,6 +116,18 @@ public sealed class DashbordService : IDashbordService
             })
             .ToListAsync(ct);
 
+        // Sporring 3. Forsikringer som skal fornyes innen vinduet.
+        var forsikringer = await _db.Forsikring
+            .Where(f => f.FornyesDato != null && f.FornyesDato <= grense)
+            .OrderBy(f => f.FornyesDato)
+            .Select(f => new
+            {
+                DyreNavn = f.Dyr.Navn,
+                f.Selskap,
+                Dato = f.FornyesDato!.Value
+            })
+            .ToListAsync(ct);
+
         // Teksten bygges etter materialisering. En switch over enum lar seg
         // ikke oversette til SQL, og det er unodvendig a prove.
         var forfaller = forfallerRaa
@@ -124,12 +136,20 @@ public sealed class DashbordService : IDashbordService
                 Kilde.Behandling,
                 TypeTekst(b.Type, b.Preparat),
                 b.Dato))
+            .Concat(forsikringer.Select(f => new Paminnelse(
+                f.DyreNavn,
+                Kilde.Forsikring,
+                $"Fornyelse {f.Selskap}",
+                f.Dato)))
+            // Sortert stigende gir forfalte forst - de har eldst dato.
+            .OrderBy(p => p.Dato)
             .ToList();
 
-        // Sporring 3. De fem oeverste aktive punktene.
+        // Sporring 4. De fem oeverste aktive punktene pa handlelisten.
         var handleliste = await _handleliste.HentAktive(AntallPaHandleliste, ct);
 
-        // Tre sporringer totalt, uansett antall dyr. Kravet er hoyst fire.
+        // Fire sporringer totalt, uansett antall dyr. Det er taket i
+        // kapittel 16 - flere kilder ma slas sammen med de eksisterende.
         return new Dashbord(dyr, forfaller, handleliste);
     }
 

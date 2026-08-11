@@ -26,20 +26,36 @@ Familien har hund og katt. Eksisterende apper på markedet dekker delvis behovet
 
 **Målet** er én applikasjon der to brukere i samme husstand har full, delt tilgang til alle data om alle dyrene, med automatiske påminnelser om det som forfaller.
 
-### MVP — hva som skal bygges først
+### Omfang — alle funksjoner før utrulling
 
-**MVP er fase 1, 1b og 2 i kapittel 16. Ingenting annet.** En fungerende MVP betyr:
+> **Endret 11. august 2026.** Dokumentet definerte opprinnelig MVP som fase 1,
+> 1b og 2, og alt annet som utenfor. Den avgrensningen er **opphevet**. Hele
+> funksjonsomfanget skal være på plass før appen rulles ut på server.
 
-- To brukere i samme husstand kan logge inn og forblir innlogget over en utrulling
+Begrunnelsen er at dette er en familieapp for to voksne, ikke et produkt som
+skal valideres i et marked. Det finnes ingen tidlige brukere å lære av, og
+dermed ingen gevinst ved å rulle ut noe halvferdig. Til gjengjeld koster hvert
+utrullingsoppsett — Neon, Render, hemmeligheter, migrasjonsjobb, røyktest —
+tid som ikke gir funksjonalitet.
+
+Fundamentet er likevel det samme, og bygges først:
+
+- To brukere i samme husstand kan logge inn og forblir innlogget over en omstart av containeren
 - De ser de samme dyrene, og kan opprette, redigere og deaktivere dyr
 - De kan registrere vekt og se historikken
 - De kan registrere behandlinger med neste dato, og se hva som forfaller
 - Dashbordet viser dyrekort, forfallende behandlinger og tomtilstander
-- Appen kjører i Docker lokalt og er rullet ut på Render mot Neon
+- Appen kjører i Docker lokalt
 
-Alt annet — fôrplan, fôringslogg, medisiner, veterinærbesøk, forsikring, dokumenter, handleliste, dataeksport, kontosletting — er **utenfor MVP**. Skjemaet i kapittel 5 beskriver hele modellen fordi migrasjonene skal være riktige fra start, men tabellene uten tilhørende MVP-funksjon får ingen controller, ingen view og ingen tjeneste før sin fase.
+**At alt skal med, betyr ikke at alt bygges samtidig.** Fasene i kapittel 16
+bygges én om gangen, og akseptansekriteriene der er fortsatt definisjonen av
+ferdig for hver enkelt. Skjemaet i kapittel 5 beskriver hele modellen fordi
+migrasjonene skal være riktige fra start, men en tabell får ingen controller,
+ingen view og ingen tjeneste før sin egen fase.
 
-Bygg ikke videre til neste fase før akseptansekriteriene for gjeldende fase er oppfylt og testene er grønne.
+Utrulling til Render og Neon er **ikke** en del av MVP eller av noen enkelt funksjonsfase. Den skjer samlet, som siste fase, når de planlagte funksjonene er bygget og verifisert lokalt. Se innledningen til kapittel 16.
+
+Bygg ikke videre til neste *avhengige* fase før akseptansekriteriene for gjeldende fase er oppfylt og testene er grønne. Hvilke faser som er avhengige av hverandre, står i kapittel 16.
 
 ### Ikke-mål (bevisst utelatt i versjon 1)
 
@@ -534,15 +550,28 @@ Merk at `clients/` er utelatt her. Bygges React-klienten senere som en del av sa
 
 **Forsikring**
 
+> **Utvidet 11. august 2026.** Den opprinnelige modellen hadde én
+> `Egenandel`-kolonne. Norsk dyreforsikring har som regel **to**: en fast sum
+> og en variabel andel av det overskytende. Uten begge kan man ikke regne ut
+> hva et veterinærbesøk faktisk koster. `ForsikringsbelopKr` er også lagt til
+> — det er summen forsikringen dekker per år, og det tallet man trenger når
+> man vurderer om dekningen er stor nok.
+
 | Felt | Type | Merknad |
 |---|---|---|
 | Id | int | PK |
 | DyrId | int | FK |
 | Selskap | varchar(80) | |
-| PoliseNr | varchar(40) | |
-| ArspremieKr | int | |
-| Egenandel | int | |
-| FornyesDato | date | driver påminnelse |
+| PoliseNr | varchar(40) | nullable |
+| ArspremieKr | int | hele kroner per år |
+| ForsikringsbelopKr | int | dekningssum per år, hele kroner |
+| EgenandelFastKr | int | fast egenandel i hele kroner |
+| EgenandelVariabelTidels | int | tidels prosent. 200 = 20,0 % av beløpet over den faste egenandelen |
+| FornyesDato | date | nullable, driver påminnelse |
+
+Den variable egenandelen lagres i **tidels prosent**, av samme grunn som
+`forplan.prosent_tidels`: hele modellen holder seg til `INT`, og all
+aritmetikk blir eksakt. 20 % lagres som 200.
 
 **Dokument**
 
@@ -728,14 +757,21 @@ CREATE TABLE vetbesok (
 );
 
 CREATE TABLE forsikring (
-    id            INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    dyr_id        INT         NOT NULL REFERENCES dyr(id) ON DELETE CASCADE,
-    selskap       VARCHAR(80) NOT NULL,
-    polise_nr     VARCHAR(40) NOT NULL,
-    arspremie_kr  INT         NOT NULL DEFAULT 0,
-    egenandel     INT         NOT NULL DEFAULT 0,
-    fornyes_dato  DATE
+    id                        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    dyr_id                    INT         NOT NULL REFERENCES dyr(id) ON DELETE CASCADE,
+    selskap                   VARCHAR(80) NOT NULL,
+    polise_nr                 VARCHAR(40),
+    arspremie_kr              INT         NOT NULL DEFAULT 0,
+    forsikringsbelop_kr       INT         NOT NULL DEFAULT 0,
+    egenandel_fast_kr         INT         NOT NULL DEFAULT 0,
+    -- Tidels prosent: 200 = 20,0 %. Samme monster som forplan.prosent_tidels.
+    egenandel_variabel_tidels INT         NOT NULL DEFAULT 0,
+    fornyes_dato              DATE,
+    CONSTRAINT ck_forsikring_variabel
+        CHECK (egenandel_variabel_tidels BETWEEN 0 AND 1000)
 );
+CREATE INDEX ix_forsikring_fornyes ON forsikring(fornyes_dato)
+    WHERE fornyes_dato IS NOT NULL;
 
 CREATE TABLE dokument (
     id              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -2554,7 +2590,11 @@ Artefakter slettes etter 90 dager. Vil du ha lengre oppbevaring, må dumpen kryp
 
 ## 16. Implementeringsfaser og akseptansekriterier
 
-Hver fase ender i en fungerende, utrullet applikasjon med grønne tester. **Gå ikke videre før alle kriteriene under er oppfylt** — de er definisjonen av ferdig, ikke en ønskeliste.
+Hver fase ender i en fungerende applikasjon kjørt lokalt, med grønne tester. **Gå ikke videre til en avhengig fase før alle kriteriene under er oppfylt** — de er definisjonen av ferdig, ikke en ønskeliste.
+
+Rekkefølgen 1 → 1b → 2 er obligatorisk: det er fundamentet (husstand, innlogging, skall) alt annet bygger på. Fra og med fase 3 er ikke rekkefølgen bindende — fase 6c kan bygges før fase 4 og 5 dersom det gir mer mening der og da. Sjekk likevel om en fase forutsetter noe fra en annen (fôrplan i fase 3 forutsetter for eksempel en vektregistrering fra fase 2) før du hopper.
+
+Utrulling til Render og Neon er **ikke** et kriterium i noen av funksjonsfasene. Den er samlet i fase 8 til slutt, og gjøres når de funksjonene du trenger er bygget og testet lokalt — ikke før.
 
 ### Fase 1 — fundament (MVP)
 
@@ -2595,9 +2635,8 @@ Vekt og behandling med neste dato. Dashbordet viser siste vekt og kommende behan
 - Vekthistorikk vises i synkende datorekkefølge
 - Behandling med `NesteDato` innen 14 dager vises på dashbordet, forfalte øverst
 - Enhetstest dekker konvertering kilo/gram begge veier, inkludert avrunding
-- Appen er rullet ut på Render og `/helse` svarer
 
-**MVP er ferdig her.** Alt under er senere faser.
+**MVP er ferdig her**, funksjonelt. Selve utrullingen til Render skjer i fase 8. Alt under er senere faser.
 
 ### Fase 3 — medisin og fôr
 
@@ -2609,11 +2648,22 @@ Medisiner med doselogg og dobbeltdoseringsvarsel. Fôrplan med begge metoder, ko
 
 `PaminnelseService`, jobb-endepunkt, GitHub Actions-planlegger, e-postutsending.
 
-**Ferdig når:** `POST /jobb/paminnelser` uten gyldig nøkkel gir 401, med gyldig nøkkel sender e-post, og den planlagte arbeidsflyten har kjørt vellykket minst én gang.
+**Ferdig når:** `POST /jobb/paminnelser` uten gyldig nøkkel gir 401, og med gyldig nøkkel sender e-post. At `paminnelser.yml` faktisk trigger jobben på en ekte, planlagt kjøring, forutsetter en utrulling og verifiseres først i fase 8.
 
-### Fase 5 — dokumenter og forsikring
+### Fase 5a — forsikring
 
-Filopplasting, forsikringsregister med fornyelsesvarsel.
+Eget punkt i menyen. Forsikringsregister med selskap, polisenummer, årspremie,
+forsikringsbeløp, fast og variabel egenandel, og hvilket dyr polisen gjelder.
+Fornyelsesdato driver påminnelse på dashbordet.
+
+**Ferdig når:** en polise kan registreres på et dyr og vises under Forsikring,
+fornyelsesdato innen 14 dager dukker opp under «Forfaller snart» med kilde
+Forsikring, og egenandelen vises som både fast sum og prosent — ikke som ett
+sammenblandet tall.
+
+### Fase 5b — dokumenter
+
+Filopplasting knyttet til dyr.
 
 **Ferdig når:** kun pdf, jpg og png under 10 MB aksepteres, filer serveres gjennom en controller som verifiserer husstand, og direkte URL til en annen husstands fil gir 404.
 
@@ -2638,6 +2688,21 @@ Oppsettflyt, tillegging av medlem på e-post, innstillingsside, dataeksport, kon
 ### Fase 7 — polering
 
 Vektgraf, responsiv gjennomgang, sikkerhetskopi-jobb, eventuell PWA-vurdering.
+
+### Fase 8 — utrulling til produksjon
+
+Render (app) og Neon (database) satt opp, hemmeligheter lagt inn i Render-dashbordet, GitHub Actions-arbeidsflytene fra kapittel 14.5 koblet til. Dette er stedet i planen der appen første gang møter internett — gjør det når funksjonene du trenger er bygget og testet lokalt, ikke før.
+
+**Ferdig når:**
+
+- `dotnet ef database update` er kjørt mot Neon, og skjemaet i kapittel 5 er komplett i produksjon
+- Appen er rullet ut på Render og `GET /helse` svarer `200` uten å treffe databasen
+- `bygg.yml` er påkrevd statussjekk på `main`, og et rødt bygg blokkerer utrulling
+- `rull-ut.yml` kjører migrasjoner og røyktest mot `/helse` etter utrulling, og tåler kaldstart
+- `paminnelser.yml` har trigget `/jobb/paminnelser` minst én gang og sendt e-post
+- `sikkerhetskopi.yml` har produsert en dump som er lastet opp som artefakt
+- Med «Husk meg» avkrysset: brukeren er fortsatt innlogget etter en reell utrulling, ikke bare en lokal omstart. Dette bekrefter at Data Protection-nøklene faktisk ligger i database og ikke på Renders flyktige filsystem
+- Alle hemmeligheter er satt som miljøvariabler i Render-dashbordet, ingen i `appsettings.json`
 
 ---
 

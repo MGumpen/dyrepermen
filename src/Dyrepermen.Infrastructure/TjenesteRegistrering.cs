@@ -23,6 +23,7 @@ public static class TjenesteRegistrering
         tjenester.AddScoped<IKontoService, KontoService>();
         tjenester.AddScoped<IHandlelisteService, HandlelisteService>();
         tjenester.AddScoped<IInformasjonService, InformasjonService>();
+        tjenester.AddScoped<IForsikringService, ForsikringService>();
         return tjenester;
     }
 }
