@@ -158,17 +158,18 @@ MVP-avgrensning — utrulling er fase 8, helt til slutt. Akseptansekriteriene i
 | 2 | Vekt og behandling, med vektgraf |
 | 3 | Medisiner og doser |
 | 5a | Forsikring med selskap, premie, egenandeler og forsikringsbeløp |
+| 5c | Veterinær: steder med telefon som ringes med ett trykk, kommende og gjennomførte timer med pris og refusjon |
 | 6 | Handleliste |
 | 6b | Fôringslogg bak funksjonsbryter |
 | 6c | Husstand og konto, dataeksport, kontosletting |
 | 6d | Handlinger direkte på dashbordet: porsjon for neste måltid, gi mat, godbit, avkryssing av handleliste |
 | — | Flere husstander per bruker med gjesterolle, informasjonssider, designgjennomgang |
 
-Dashbordet gjør **fem** databasespørringer uansett antall dyr. Kravet i
+Dashbordet gjør **seks** databasespørringer uansett antall dyr. Kravet i
 kapittel 16 er at ingenting skal vokse med antall dyr; nye kilder slås sammen
 med de eksisterende framfor å legges til per rad.
 
-**133 tester grønne.** Enhetstester for ren logikk, integrasjonstester mot
+**144 tester grønne.** Enhetstester for ren logikk, integrasjonstester mot
 ekte PostgreSQL via Testcontainers. Aldri EF Core InMemory.
 
 To fail-closed prøver holder sikkerheten på plass av seg selv:

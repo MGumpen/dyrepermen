@@ -4,5 +4,6 @@ public enum Kilde
 {
     Behandling,
     Medisin,
-    Forsikring
+    Forsikring,
+    Vetbesok
 }

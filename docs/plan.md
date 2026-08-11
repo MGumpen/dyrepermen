@@ -1321,6 +1321,22 @@ Godbitloggen har **egen bryter på husstandsnivå** — `husstand_innstilling.go
 
 **Dagen starter ved norsk midnatt**, ikke UTC-midnatt. `Tidssone.DagStart` henter forskyvningen *på* midnatt, ikke på nåtidspunktet — ellers bommer omstillingshelgene med en time. Teller man fra UTC, nullstilles måltidstelleren klokka 01 eller 02 norsk tid, altså etter at kvelden er over, og kveldsmaten flytter seg til «i morgen».
 
+### 8.2b Veterinær
+
+**Stedene hører til husstanden, besøkene til dyret.** Man bruker samme klinikk til hunden og katten, og vakta er den samme uansett hvem som er syk. `veterinar` filtreres derfor på egen `husstand_id`-kolonne, ikke via dyret — den varianten testes for seg i isolasjonstesten.
+
+Grunnen til at dette er en tabell og ikke fritekst på hvert besøk: nummeret til vakta skal være å finne klokka to om natten, uten å lete gjennom gamle besøk etter det. Telefonnummeret vises som `tel:`-lenke, så ett trykk ringer.
+
+`veterinar.type` er `char(1)`: `F` fast, `V` vakt, `S` sykehus, `A` annet. Typen sorterer listen. **Sorteringen må skje etter materialisering** — `OrderBy(v => v.Type)` ser riktig ut, men `HasConversion` gjør at databasen sorterer på det lagrede tegnet, og `'A','F','S','V'` er ikke samme rekkefølge som enumen. Feilen er stille: listen kommer sortert, bare feil sortert.
+
+**Ingen statuskolonne på besøket.** En time er kommende så lenge datoen ikke har passert, og gjennomført etterpå. En status måtte hukes av manuelt, og den som glemte det ville hatt en «kommende» time fra i fjor stående.
+
+`kostnad_kr` er nullbar. En kommende time har ingen pris ennå, og `0` ville betydd at besøket var gratis. `refundert_kr` krever at `forsikring_krevd` er satt — et CHECK-vilkår håndhever det, og tjenesten nuller feltet framfor å la en skjemafeil bli en 500-side.
+
+Besøket peker på stedet med `SET NULL`. Slettes klinikken, blir historikken og beløpene stående — de mister bare koblingen.
+
+Kommende timer og avtalt oppfølging (`neste_kontroll_dato`) dukker opp i «Forfaller snart» på dashbordet, hentet i **samme** spørring: to spørringer mot samme tabell ville vært en rundtur for mye for det som er ett spørsmål.
+
 ### 8.3 Påminnelser
 
 Én tjeneste samler alt som forfaller, uavhengig av kilde:
@@ -2688,6 +2704,12 @@ Delt liste på husstandsnivå med valgfri kobling til dyr, htmx for avkryssing u
 Funksjonsbrytere per dyr, standardverdier på husstandsnivå, fôringslogg bak bryter.
 
 **Ferdig når:** bryteren av skjuler fanen *og* `POST` mot endepunktet gir 404, tidspunkt settes på server og kan ikke sendes fra klient, og «sist matet» viser riktig lokal tid over sommertidsskiftet.
+
+### Fase 5c — veterinær
+
+Egen side med steder og timer. Fastveterinær, vakt og dyresykehus i én liste, med telefonnummer som ringes med ett trykk. Kommende og gjennomførte timer med pris, forsikring og refusjon.
+
+**Ferdig når:** en veterinær i en annen husstand ikke er synlig og ikke kan kobles til et besøk, sletting av et sted beholder besøkene med `NULL` i koblingen, listen sorteres på type og ikke på det lagrede tegnet, og kommende timer dukker opp i «Forfaller snart».
 
 ### Fase 6d — handlinger på dashbordet
 

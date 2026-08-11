@@ -1,0 +1,119 @@
+@using Dyrepermen.Domain.Enums
+@using Dyrepermen.Web.ViewModels
+@model NyVeterinarVm
+@{
+    var erNy = Model.Id is null;
+    ViewData["Tittel"] = erNy ? "Nytt sted" : Model.Navn;
+}
+
+<div class="sidehode">
+    <div>
+        <h1>@(erNy ? "Nytt sted" : Model.Navn)</h1>
+        <div class="undertittel">
+            Veterinær, vakt eller dyresykehus
+        </div>
+    </div>
+</div>
+
+<section class="kort">
+    <div class="kort-kropp">
+    <form method="post" asp-action="Lagre">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-7">
+                <label asp-for="Navn" class="form-label"></label>
+                <input asp-for="Navn" class="form-control" autofocus
+                       placeholder="Bergen Dyreklinikk" />
+                <span asp-validation-for="Navn" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 col-md-5">
+                <label asp-for="Type" class="form-label"></label>
+                @* Typen bestemmer rekkefolgen i listen. Vakta skal vaere lett
+                   a finne nar noe har skjedd. *@
+                <select asp-for="Type" class="form-select"
+                        asp-items="Html.GetEnumSelectList<Veterinartype>()"></select>
+            </div>
+
+            <div class="col-12 col-md-5">
+                <label asp-for="Telefon" class="form-label"></label>
+                @* type=tel gir talltastatur pa mobil. Ingen formatvalidering -
+                   utenlandske numre og kortnumre skal ogsa ga gjennom. *@
+                <input asp-for="Telefon" class="form-control" type="tel"
+                       inputmode="tel" placeholder="55 12 34 56" />
+                <span asp-validation-for="Telefon" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 col-md-7">
+                <label asp-for="Adresse" class="form-label"></label>
+                <input asp-for="Adresse" class="form-control" />
+                <span asp-validation-for="Adresse" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="Apningstider" class="form-label"></label>
+                <input asp-for="Apningstider" class="form-control"
+                       placeholder="Man–fre 08–16, lør 10–14" />
+                <div class="form-text">
+                    Fritekst. Skriv det som står på nettsiden deres.
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="Nettside" class="form-label"></label>
+                <input asp-for="Nettside" class="form-control" type="url"
+                       placeholder="https://…" />
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="Epost" class="form-label"></label>
+                <input asp-for="Epost" class="form-control" type="email" />
+                <span asp-validation-for="Epost" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Notat" class="form-label"></label>
+                <textarea asp-for="Notat" class="form-control" rows="2"
+                          placeholder="Parkering bak bygget. Spør etter Anne."></textarea>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary btn-sm">
+                @(erNy ? "Legg til" : "Lagre")
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Avbryt</a>
+        </div>
+    </form>
+    </div>
+</section>
+
+@if (!erNy)
+{
+    <section class="kort" style="max-width: 34rem;">
+        <div class="kort-hode">
+            <h2>Slett stedet</h2>
+        </div>
+        <div class="kort-kropp">
+            <p class="mb-3">
+                Tidligere besøk blir stående. De mister bare koblingen hit,
+                så historikken og beløpene er i behold.
+            </p>
+            <form method="post" asp-action="Slett" asp-route-id="@Model.Id">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Slette @Model.Navn?')">
+                    Slett @Model.Navn
+                </button>
+            </form>
+        </div>
+    </section>
+}
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}
