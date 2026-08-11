@@ -37,6 +37,27 @@ if (string.IsNullOrWhiteSpace(tilkobling))
         "I produksjon settes miljovariabelen ConnectionStrings__Postgres.");
 }
 
+// Neon og Render oppgir databasen som URI. Npgsql tar ikke imot den formen
+// og kaster i konstruktoren, for den har forsokt a kontakte noe - feilen ser
+// derfor ut som et nettverksproblem uten a vaere det.
+try
+{
+    tilkobling = Tilkoblingsstreng.Normaliser(tilkobling);
+}
+catch (Exception feil)
+{
+    // Verdien gjengis ALDRI i meldingen. Den inneholder passordet, og en
+    // oppstartsfeil havner i utrullingsloggen der hvem som helst med tilgang
+    // til Render leser den.
+    throw new InvalidOperationException(
+        "Tilkoblingsstrengen 'Postgres' lar seg ikke tolke. Den ma vaere "
+        + "enten nokkel/verdi:\n\n"
+        + "  Host=vert;Port=5432;Database=base;Username=bruker;Password=…\n\n"
+        + "eller en URI slik Neon oppgir den:\n\n"
+        + "  postgresql://bruker:passord@vert/base?sslmode=require\n\n"
+        + "Verdien gjengis ikke her, fordi den inneholder passordet.", feil);
+}
+
 builder.Services.AddDbContext<DyrepermenDbContext>(opt =>
     opt.UseNpgsql(
            tilkobling,

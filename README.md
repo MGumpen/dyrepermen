@@ -142,6 +142,11 @@ Har du ingen lokal PostgreSQL, kan du sette `POSTGRES_PORT=5432` i
 Arbeidsflyt: `feature/*` → `dev` → `main`. `Bygg og test` kjører på alle
 brancher og pull requests.
 
+Miljøvariabelen `ConnectionStrings__Postgres` tar imot **begge** formene:
+nøkkel/verdi (`Host=…;Username=…`) og URI-en Neon gir deg
+(`postgresql://…`). Appen oversetter selv, så det Neon legger på
+utklippstavla kan limes rett inn.
+
 Utrulling skjer fra Render, som bygger branchen tjenesten er koblet til.
 Det finnes ingen utrullingsarbeidsflyt i GitHub Actions, og ingen
 GitHub-hemmeligheter er nødvendige. Skjemaet legges inn ved oppstart —
