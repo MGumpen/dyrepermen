@@ -3,7 +3,7 @@ using Dyrepermen.Domain.Enums;
 
 namespace Dyrepermen.Web.ViewModels;
 
-public class NyttDyrVm
+public class NyttDyrVm : IValidatableObject
 {
     [Required(ErrorMessage = "Gi dyret et navn.")]
     [StringLength(60, ErrorMessage = "Navnet kan være høyst 60 tegn.")]
@@ -37,4 +37,18 @@ public class NyttDyrVm
 
     [Display(Name = "Kastrert")]
     public bool Kastrert { get; set; }
+
+    /// <summary>
+    /// NKK-registeret er Norsk Kennel Klub - det gjelder hund. En katt kan
+    /// ikke ha regnummer derfra, og feltet skjules for katter i skjemaet.
+    /// Sjekken her fanger den som poster likevel.
+    /// </summary>
+    public IEnumerable<ValidationResult> Validate(ValidationContext ctx)
+    {
+        if (Art != Art.Hund && !string.IsNullOrWhiteSpace(RegNrNkk))
+        {
+            yield return new ValidationResult(
+                "NKK-regnummer gjelder bare hunder.", [nameof(RegNrNkk)]);
+        }
+    }
 }

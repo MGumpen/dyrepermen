@@ -1,5 +1,6 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -51,6 +52,7 @@ public sealed class ForsikringController : Controller
     }
 
     [HttpPost("")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Lagre(NyForsikringVm ny, CancellationToken ct)
     {
@@ -84,6 +86,7 @@ public sealed class ForsikringController : Controller
     }
 
     [HttpPost("{id:int}/slett")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Slett(int id, CancellationToken ct)
     {

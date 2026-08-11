@@ -1,6 +1,7 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Web.Extensions;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -51,6 +52,7 @@ public sealed class VektController : Controller
     }
 
     [HttpPost("{vektId:int}/slett")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Slett(
         int dyrId, int vektId, CancellationToken ct)

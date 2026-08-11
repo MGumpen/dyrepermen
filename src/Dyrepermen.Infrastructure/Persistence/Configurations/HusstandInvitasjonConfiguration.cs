@@ -1,4 +1,5 @@
 using Dyrepermen.Domain.Entities;
+using Dyrepermen.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,6 +14,14 @@ public sealed class HusstandInvitasjonConfiguration
         b.Property(i => i.Id).UseIdentityAlwaysColumn();
 
         b.Property(i => i.Epost).HasMaxLength(256).IsRequired();
+
+        b.Property(i => i.Rolle)
+         .HasConversion(
+             v => v == Husstandsrolle.Eier ? 'E' : 'G',
+             v => v == 'E' ? Husstandsrolle.Eier : Husstandsrolle.Gjest)
+         .HasColumnType("char(1)")
+         .HasDefaultValue(Husstandsrolle.Gjest)
+         .IsRequired();
 
         b.Property(i => i.OpprettetDato)
          .HasDefaultValueSql("CURRENT_DATE")

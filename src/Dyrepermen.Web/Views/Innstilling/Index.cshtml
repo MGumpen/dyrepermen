@@ -1,3 +1,4 @@
+@using Dyrepermen.Domain.Enums
 @model InnstillingerVm
 @{
     ViewData["Tittel"] = "Innstillinger";
@@ -78,7 +79,10 @@
                                     <span class="merkelapp ms-1">deg</span>
                                 }
                             </span>
-                            <span class="under d-block">@m.Epost</span>
+                            <span class="under d-block">
+                                @m.Epost ·
+                                <strong>@(m.Rolle == Husstandsrolle.Eier ? "Eier" : "Gjest")</strong>
+                            </span>
                         </span>
                         @* Alle medlemmer er likestilte i v1. Hvem som helst kan
                            fjerne hvem som helst - en bevisst begrensning, ikke
@@ -133,13 +137,30 @@
                     Personen blir med automatisk. Har de ikke konto ennå, skjer
                     det når de registrerer seg med denne adressen.
                 </p>
-                <form method="post" asp-action="LeggTilMedlem" class="d-flex gap-2">
+                <form method="post" asp-action="LeggTilMedlem" class="row g-2">
                     @Html.AntiForgeryToken()
-                    <input type="email" name="nyttMedlemEpost" class="form-control"
-                           placeholder="navn@@eksempel.no" required />
-                    <button type="submit" class="btn btn-outline-secondary btn-sm text-nowrap">
-                        Legg til
-                    </button>
+                    <div class="col-12 col-sm">
+                        <input type="email" name="nyttMedlemEpost" class="form-control"
+                               placeholder="navn@@eksempel.no" required />
+                    </div>
+                    <div class="col-7 col-sm-4">
+                        <select name="rolle" class="form-select">
+                            <option value="Gjest">Gjest</option>
+                            <option value="Eier">Eier</option>
+                        </select>
+                    </div>
+                    <div class="col-5 col-sm-auto">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                            Legg til
+                        </button>
+                    </div>
+                    <div class="col-12">
+                        <p class="form-text mt-0 mb-0">
+                            <strong>Gjest</strong> ser alt og kan registrere vekt,
+                            fôring og doser — men ikke endre dyr, medlemmer eller
+                            innstillinger. <strong>Eier</strong> kan alt.
+                        </p>
+                    </div>
                 </form>
             </div>
         </section>

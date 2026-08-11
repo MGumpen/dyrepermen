@@ -1,6 +1,7 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Web.Extensions;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,6 +27,7 @@ public sealed class MedisinController : Controller
     }
 
     [HttpPost("")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Ny(
         int dyrId, NyMedisinVm ny, CancellationToken ct)
@@ -76,6 +78,7 @@ public sealed class MedisinController : Controller
     }
 
     [HttpPost("{medisinId:int}/avslutt")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Avslutt(
         int dyrId, int medisinId, CancellationToken ct)

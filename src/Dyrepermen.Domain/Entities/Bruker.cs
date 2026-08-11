@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Identity;
 namespace Dyrepermen.Domain.Entities;
 
 /// <summary>
-/// Utvider Identity med husstandstilknytning og visningsnavn.
+/// Utvider Identity med visningsnavn og medlemskap.
 ///
-/// <see cref="HusstandId"/> er nullbar inntil brukeren er tilknyttet en
-/// husstand. En bruker uten husstand ser ingenting og sendes til
-/// /husstand/oppsett av middlewaren. Se plan kapittel 12.1.
+/// Kolonnen husstand_id er FJERNET. En bruker kan vaere med i flere
+/// husstander - egen, og for eksempel farens der hun passer hunden - og da
+/// holder ikke en enkeltverdi. Tilknytningen ligger i
+/// <see cref="Medlemskap"/>. Se ADR 0009.
 ///
 /// E-post er innloggingsnavnet: <c>UserName</c> og <c>Email</c> settes like
 /// ved registrering. Gjores ikke det, feiler innlogging med e-post selv om
@@ -15,9 +16,8 @@ namespace Dyrepermen.Domain.Entities;
 /// </summary>
 public sealed class Bruker : IdentityUser<int>
 {
-    public int? HusstandId { get; set; }
-
-    public Husstand? Husstand { get; set; }
-
     public string Visningsnavn { get; set; } = null!;
+
+    public ICollection<Husstandsmedlemskap> Medlemskap { get; set; }
+        = new List<Husstandsmedlemskap>();
 }

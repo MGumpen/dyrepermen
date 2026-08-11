@@ -99,7 +99,9 @@ builder.Services.ConfigureApplicationCookie(o =>
 {
     o.LoginPath = "/logg-inn";
     o.LogoutPath = "/logg-ut";
-    o.AccessDeniedPath = "/logg-inn";
+    // Ikke /logg-inn: en gjest som mangler rettigheter ER innlogget,
+    // og a sende henne til innloggingssiden er misvisende.
+    o.AccessDeniedPath = "/ingen-tilgang";
 
     o.ExpireTimeSpan = TimeSpan.FromDays(30);
     o.SlidingExpiration = true;

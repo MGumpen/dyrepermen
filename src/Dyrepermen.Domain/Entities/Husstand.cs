@@ -14,7 +14,8 @@ public sealed class Husstand
 
     public DateOnly OpprettetDato { get; set; }
 
-    public ICollection<Bruker> Medlemmer { get; set; } = new List<Bruker>();
+    public ICollection<Husstandsmedlemskap> Medlemskap { get; set; }
+        = new List<Husstandsmedlemskap>();
 
     public ICollection<Dyr> Dyr { get; set; } = new List<Dyr>();
 

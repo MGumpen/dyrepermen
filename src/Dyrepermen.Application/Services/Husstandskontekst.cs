@@ -1,4 +1,6 @@
+using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Domain.Enums;
 
 namespace Dyrepermen.Application.Services;
 
@@ -14,7 +16,9 @@ namespace Dyrepermen.Application.Services;
 /// for noe leser dem. Star den urort, er HusstandId 0, og alle query-filtre
 /// gir tomt resultatsett.
 ///
-/// Bakgrunnsjobber og tester setter verdiene direkte.
+/// Rollen star ogsa her, og gjelder den AKTIVE husstanden. Standardverdien er
+/// Gjest, ikke Eier: glipper middlewaren, skal man ha minst rettigheter -
+/// ikke flest.
 /// </summary>
 public sealed class Husstandskontekst : IHusstandContext, IGjeldendeBruker
 {
@@ -27,6 +31,12 @@ public sealed class Husstandskontekst : IHusstandContext, IGjeldendeBruker
     public string Epost { get; set; } = string.Empty;
 
     public string HusstandNavn { get; set; } = string.Empty;
+
+    public Husstandsrolle Rolle { get; set; } = Husstandsrolle.Gjest;
+
+    public bool KanEndre => Rolle == Husstandsrolle.Eier;
+
+    public IReadOnlyList<HusstandsValg> Husstander { get; set; } = [];
 
     public bool ErInnlogget => BrukerId is not null;
 }

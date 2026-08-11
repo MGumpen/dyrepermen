@@ -179,7 +179,11 @@ public sealed class DyrService : IDyrService
             // partielle unike indeksen, mens NULL ikke deltar. Uten den
             // kolliderer dyr nummer to uten chipnummer.
             ChipNr = input.ChipNr.TomTilNull(),
-            RegNrNkk = input.RegNrNkk.TomTilNull()?.ToUpperInvariant(),
+            // NKK-registeret gjelder hund. En katt skal aldri ha regnummer,
+            // uansett hva som ble postet.
+            RegNrNkk = input.Art == Art.Hund
+                ? input.RegNrNkk.TomTilNull()?.ToUpperInvariant()
+                : null,
             Kastrert = input.Kastrert,
             ForingsloggAktiv = std?.ForingsloggStandard ?? false,
             ForplanAktiv = std?.ForplanStandard ?? true
@@ -215,7 +219,9 @@ public sealed class DyrService : IDyrService
         dyr.Rase = input.Rase.TomTilNull();
         dyr.Fodselsdato = input.Fodselsdato;
         dyr.ChipNr = input.ChipNr.TomTilNull();
-        dyr.RegNrNkk = input.RegNrNkk.TomTilNull()?.ToUpperInvariant();
+        dyr.RegNrNkk = input.Art == Art.Hund
+            ? input.RegNrNkk.TomTilNull()?.ToUpperInvariant()
+            : null;
         dyr.Kastrert = input.Kastrert;
         dyr.ForingsloggAktiv = input.ForingsloggAktiv;
         dyr.ForplanAktiv = input.ForplanAktiv;

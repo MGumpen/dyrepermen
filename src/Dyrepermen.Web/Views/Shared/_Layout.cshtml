@@ -1,4 +1,5 @@
 @using Dyrepermen.Application.Interfaces
+@using Dyrepermen.Domain.Enums
 @inject IGjeldendeBruker Meg
 @{
     var innlogget = User.Identity?.IsAuthenticated == true && Meg.ErInnlogget;
@@ -103,18 +104,65 @@
                         <span>Dyrepermen</span>
                     </a>
 
-                    @* Husstandskortet: hvilken husstand du ser pa. Lenker til
-                       husstandsinnstillingene - det er delte data. Dine egne
-                       innstillinger ligger i brukerkortet nederst. *@
-                    <a class="husstandskort" href="/innstillinger">
-                        <span class="merke">
-                            <svg class="ikon" aria-hidden="true"><use href="#i-hjem" /></svg>
-                        </span>
-                        <span class="min-w-0">
-                            <span class="navn d-block">@Meg.HusstandNavn</span>
-                            <span class="under">Husstand</span>
-                        </span>
-                    </a>
+                    @* Husstandskortet: hvilken husstand du ser pa na.
+                       Er du med i flere, blir det en velger. Rollen din kan
+                       vaere ulik i hver - eier hjemme, gjest hos pappa. *@
+                    @if (Meg.Husstander.Count > 1)
+                    {
+                        <div class="dropdown husstandsvelger">
+                            <button class="husstandskort w-100 text-start border-0"
+                                    type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <span class="merke">
+                                    <svg class="ikon" aria-hidden="true"><use href="#i-hjem" /></svg>
+                                </span>
+                                <span class="min-w-0 flex-grow-1">
+                                    <span class="navn d-block">@Meg.HusstandNavn</span>
+                                    <span class="under">
+                                        @(Meg.KanEndre ? "Eier" : "Gjest") ·
+                                        @Meg.Husstander.Count husstander
+                                    </span>
+                                </span>
+                                <svg class="ikon" aria-hidden="true" style="transform:rotate(90deg)">
+                                    <use href="#i-chevron" />
+                                </svg>
+                            </button>
+
+                            <ul class="dropdown-menu w-100">
+                                @foreach (var h in Meg.Husstander)
+                                {
+                                    <li>
+                                        <form method="post" action="/husstand/bytt">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="husstandId" value="@h.Id" />
+                                            <input type="hidden" name="retur"
+                                                   value="@Context.Request.Path" />
+                                            <button type="submit"
+                                                    class="dropdown-item d-flex justify-content-between gap-2">
+                                                <span>@h.Navn</span>
+                                                <span class="text-body-secondary small">
+                                                    @(h.Rolle == Husstandsrolle.Eier ? "Eier" : "Gjest")
+                                                    @(h.ErAktiv ? " ✓" : "")
+                                                </span>
+                                            </button>
+                                        </form>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <a class="husstandskort" href="/innstillinger">
+                            <span class="merke">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-hjem" /></svg>
+                            </span>
+                            <span class="min-w-0">
+                                <span class="navn d-block">@Meg.HusstandNavn</span>
+                                <span class="under">Husstand</span>
+                            </span>
+                        </a>
+                    }
 
                     <ul class="sidemeny-nav">
                         <li>

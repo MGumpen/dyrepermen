@@ -3,6 +3,7 @@ using Dyrepermen.Domain.Entities;
 using Dyrepermen.Web.Extensions;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
+using Dyrepermen.Web.Middleware;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Dyrepermen.Web.Controllers;
@@ -22,6 +23,32 @@ public sealed class HusstandController : Controller
         _husstand = husstand;
         _paalogging = paalogging;
         _brukere = brukere;
+    }
+
+    /// <summary>
+    /// Bytter aktiv husstand. Verdien er kun et VALG - middlewaren validerer
+    /// den mot medlemskapene ved hver foresporsel, sa en manipulert kapsel
+    /// gir ingen tilgang. Se ADR 0009.
+    /// </summary>
+    [HttpPost("bytt")]
+    [ValidateAntiForgeryToken]
+    public IActionResult Bytt(int husstandId, string? retur)
+    {
+        Response.Cookies.Append(
+            HusstandMiddleware.Kapsel,
+            husstandId.ToString(),
+            new CookieOptions
+            {
+                HttpOnly = true,
+                SameSite = SameSiteMode.Lax,
+                Secure = Request.IsHttps,
+                IsEssential = true,
+                Expires = DateTimeOffset.UtcNow.AddYears(1)
+            });
+
+        // Kun lokale stier. Uten sjekken kan lenken sende brukeren til et
+        // fremmed nettsted etter innlogging - apen omdirigering.
+        return Url.IsLocalUrl(retur) ? Redirect(retur!) : RedirectToAction("Index", "Hjem");
     }
 
     [HttpGet("oppsett")]

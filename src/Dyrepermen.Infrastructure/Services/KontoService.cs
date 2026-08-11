@@ -52,9 +52,26 @@ public sealed class KontoService : IKontoService
                 .Select(h => new { h.Navn, h.OpprettetDato })
                 .SingleOrDefaultAsync(ct),
 
-            medlemmer = await _db.Users
-                .Where(u => u.HusstandId == husstandId)
-                .Select(u => new { u.Visningsnavn, u.Email })
+            medlemmer = await _db.Husstandsmedlemskap
+                .Where(m => m.HusstandId == husstandId)
+                .Select(m => new
+                {
+                    m.Bruker.Visningsnavn,
+                    m.Bruker.Email,
+                    Rolle = m.Rolle.ToString()
+                })
+                .ToListAsync(ct),
+
+            // Notatene er ogsa husstandens data, og skal med i eksporten.
+            notater = await _db.Informasjon
+                .OrderBy(i => i.Tittel)
+                .Select(i => new
+                {
+                    i.Tittel,
+                    i.Tekst,
+                    Dyr = i.Dyr == null ? null : i.Dyr.Navn,
+                    i.OpprettetDato
+                })
                 .ToListAsync(ct),
 
             // IgnoreQueryFilters pa Dyr: eksporten skal ogsa inneholde
@@ -123,24 +140,24 @@ public sealed class KontoService : IKontoService
     public async Task<(bool ErSisteMedlem, int AntallDyr)> Slettekonsekvens(
         int brukerId, CancellationToken ct)
     {
-        var husstandId = await _db.Users
-            .Where(u => u.Id == brukerId)
-            .Select(u => u.HusstandId)
-            .SingleOrDefaultAsync(ct);
+        // Husstander der denne brukeren er ENESTE medlem forsvinner ved
+        // sletting. Er hun bare gjest hos noen andre, rores ikke den.
+        var alene = await _db.Husstandsmedlemskap
+            .Where(m => m.BrukerId == brukerId)
+            .Where(m => m.Husstand.Medlemskap.Count == 1)
+            .Select(m => m.HusstandId)
+            .ToListAsync(ct);
 
-        if (husstandId is null)
+        if (alene.Count == 0)
         {
             return (false, 0);
         }
 
-        var medlemmer = await _db.Users
-            .CountAsync(u => u.HusstandId == husstandId, ct);
-
         var dyr = await _db.Dyr
             .IgnoreQueryFilters()
-            .CountAsync(d => d.HusstandId == husstandId, ct);
+            .CountAsync(d => alene.Contains(d.HusstandId), ct);
 
-        return (medlemmer == 1, dyr);
+        return (true, dyr);
     }
 
     public async Task<SlettResultat> SlettBruker(
@@ -158,12 +175,15 @@ public sealed class KontoService : IKontoService
             return SlettResultat.FeilPassord;
         }
 
-        var husstandId = bruker.HusstandId;
+        // Husstander der hun er eneste medlem. De blir utilgjengelige for
+        // alltid hvis de blir staende uten medlemmer, sa de slettes med.
+        var alene = await _db.Husstandsmedlemskap
+            .Where(m => m.BrukerId == brukerId)
+            .Where(m => m.Husstand.Medlemskap.Count == 1)
+            .Select(m => m.HusstandId)
+            .ToListAsync(ct);
 
-        var sisteMedlem = husstandId is not null
-            && await _db.Users.CountAsync(u => u.HusstandId == husstandId, ct) == 1;
-
-        if (sisteMedlem && !bekreftetSletteHusstand)
+        if (alene.Count > 0 && !bekreftetSletteHusstand)
         {
             return SlettResultat.MaBekrefteHusstandsletting;
         }
@@ -184,18 +204,22 @@ public sealed class KontoService : IKontoService
             return SlettResultat.FeilPassord;
         }
 
-        if (sisteMedlem)
+        if (alene.Count > 0)
         {
             await _db.Dyr.IgnoreQueryFilters()
-                .Where(d => d.HusstandId == husstandId)
+                .Where(d => alene.Contains(d.HusstandId))
                 .ExecuteDeleteAsync(ct);
 
             await _db.Handleliste.IgnoreQueryFilters()
-                .Where(x => x.HusstandId == husstandId)
+                .Where(x => alene.Contains(x.HusstandId))
+                .ExecuteDeleteAsync(ct);
+
+            await _db.Informasjon.IgnoreQueryFilters()
+                .Where(x => alene.Contains(x.HusstandId))
                 .ExecuteDeleteAsync(ct);
 
             await _db.Husstand
-                .Where(h => h.Id == husstandId)
+                .Where(h => alene.Contains(h.Id))
                 .ExecuteDeleteAsync(ct);
         }
 
@@ -203,8 +227,8 @@ public sealed class KontoService : IKontoService
 
         // Logg bruker-ID, aldri e-postadressen.
         _log.LogInformation(
-            "Bruker {BrukerId} slettet permanent. Husstand slettet: {Husstand}",
-            brukerId, sisteMedlem);
+            "Bruker {BrukerId} slettet permanent. Husstander slettet: {Antall}",
+            brukerId, alene.Count);
 
         return SlettResultat.Ok;
     }

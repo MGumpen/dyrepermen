@@ -26,6 +26,7 @@ public sealed class DyrepermenDbContext
     }
 
     public DbSet<Husstand> Husstand => Set<Husstand>();
+    public DbSet<Husstandsmedlemskap> Husstandsmedlemskap => Set<Husstandsmedlemskap>();
     public DbSet<HusstandInnstilling> HusstandInnstilling => Set<HusstandInnstilling>();
     public DbSet<HusstandInvitasjon> HusstandInvitasjon => Set<HusstandInvitasjon>();
     public DbSet<Dyr> Dyr => Set<Dyr>();

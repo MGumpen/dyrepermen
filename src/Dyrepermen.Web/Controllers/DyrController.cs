@@ -1,5 +1,6 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,6 +43,7 @@ public sealed class DyrController : Controller
     public IActionResult Ny() => View(new NyttDyrVm());
 
     [HttpPost("ny")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Ny(NyttDyrVm vm, CancellationToken ct)
     {
@@ -89,6 +91,7 @@ public sealed class DyrController : Controller
     }
 
     [HttpPost("{dyrId:int}/rediger")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Rediger(
         int dyrId, RedigerDyrVm vm, CancellationToken ct)
@@ -122,6 +125,7 @@ public sealed class DyrController : Controller
     }
 
     [HttpPost("{dyrId:int}/deaktiver")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deaktiver(int dyrId, CancellationToken ct)
     {

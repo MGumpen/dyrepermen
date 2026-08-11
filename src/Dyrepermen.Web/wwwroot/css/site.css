@@ -634,3 +634,14 @@ h1, h2, h3, h4 {
 .min-w-0 {
     min-width: 0;
 }
+
+/* Husstandsvelgeren: kortet er en knapp nar man er med i flere husstander. */
+.husstandsvelger {
+    margin: 0 .75rem .75rem;
+}
+
+.husstandsvelger .husstandskort {
+    margin: 0;
+    background: var(--dp-flate-2);
+    cursor: pointer;
+}

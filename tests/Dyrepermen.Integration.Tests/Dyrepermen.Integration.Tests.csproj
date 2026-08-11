@@ -11,6 +11,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Dyrepermen.Infrastructure\Dyrepermen.Infrastructure.csproj" />
+    <!-- For RolleTester: gar gjennom alle controllere og sjekker at
+         hver POST-handling enten krever eier eller staar paa gjestelisten. -->
+    <ProjectReference Include="..\..\src\Dyrepermen.Web\Dyrepermen.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>

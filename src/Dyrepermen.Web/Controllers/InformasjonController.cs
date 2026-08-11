@@ -1,6 +1,7 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Web.Extensions;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -46,6 +47,7 @@ public sealed class InformasjonController : Controller
     }
 
     [HttpPost("")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Lagre(NyttNotatVm ny, CancellationToken ct)
     {
@@ -70,6 +72,7 @@ public sealed class InformasjonController : Controller
     }
 
     [HttpPost("{id:int}/slett")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Slett(int id, CancellationToken ct)
     {
