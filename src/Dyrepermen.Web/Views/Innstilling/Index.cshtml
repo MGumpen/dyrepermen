@@ -26,7 +26,7 @@
             <div class="kort-kropp">
                 <form method="post" asp-action="Lagre">
                     @Html.AntiForgeryToken()
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
+                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
 
                     <div class="mb-3">
                         <label asp-for="Husstandsnavn" class="form-label"></label>

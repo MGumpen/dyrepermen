@@ -72,7 +72,7 @@
                 <form method="post" asp-action="Registrer" asp-route-dyrId="@Model.DyrId">
                     @Html.AntiForgeryToken()
 
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
+                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
 
                     <div class="mb-2">
                         <label asp-for="Ny.Kilo" class="form-label"></label>

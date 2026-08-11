@@ -53,7 +53,10 @@ public sealed class MinKontoController : Controller
 
     [HttpPost("slett")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Slett(SlettKontoVm vm, CancellationToken ct)
+    // Parameteren MA hete "slett": skjemaet poster "Slett.Passord", og
+    // modellbinderen bruker parameternavnet som prefiks. Heter den noe annet,
+    // binder ingenting - og siden lastes pa nytt uten a gjore noe.
+    public async Task<IActionResult> Slett(SlettKontoVm slett, CancellationToken ct)
     {
         var brukerId = User.BrukerId();
         if (brukerId is null)
@@ -68,7 +71,7 @@ public sealed class MinKontoController : Controller
         }
 
         var resultat = await _konto.SlettBruker(
-            brukerId.Value, vm.Passord, vm.BekrefterHusstandsletting, ct);
+            brukerId.Value, slett.Passord, slett.BekrefterHusstandsletting, ct);
 
         if (resultat is SlettResultat.Ok)
         {

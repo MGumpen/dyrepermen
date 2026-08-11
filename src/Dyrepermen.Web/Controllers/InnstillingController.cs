@@ -25,10 +25,9 @@ public sealed class InnstillingController : Controller
     [HttpPost("lagre")]
     [KreverEier]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Lagre(InnstillingerVm vm, CancellationToken ct)
+    public async Task<IActionResult> Lagre(
+        LagreInnstillingerVm inn, CancellationToken ct)
     {
-        ModelState.Remove(nameof(vm.NyttMedlemEpost));
-
         if (!ModelState.IsValid)
         {
             var side = await Bygg(ct);
@@ -37,13 +36,13 @@ public sealed class InnstillingController : Controller
                 return NotFound();
             }
 
-            side.Husstandsnavn = vm.Husstandsnavn;
+            side.Husstandsnavn = inn.Husstandsnavn;
             return View(nameof(Index), side);
         }
 
         await _husstand.LagreInnstillinger(
-            vm.Husstandsnavn, vm.ForingsloggStandard,
-            vm.ForplanStandard, vm.VarslerAktiv, ct);
+            inn.Husstandsnavn, inn.ForingsloggStandard,
+            inn.ForplanStandard, inn.VarslerAktiv, ct);
 
         TempData["Melding"] = "Innstillingene er lagret.";
         return RedirectToAction(nameof(Index));
