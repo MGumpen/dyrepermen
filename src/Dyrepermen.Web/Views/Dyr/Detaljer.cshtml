@@ -24,6 +24,40 @@
 <div class="dp-kolonner">
     <div class="kolonne">
 
+        @* --- Opplysninger ----------------------------------------------- *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+                <h2>Opplysninger</h2>
+            </div>
+            <div class="kort-kropp">
+                <dl class="row mb-0 small">
+                    <dt class="col-5 fw-normal text-body-secondary">Art</dt>
+                    <dd class="col-7">@d.Art</dd>
+
+                    <dt class="col-5 fw-normal text-body-secondary">Kjønn</dt>
+                    <dd class="col-7">@d.Kjonn</dd>
+
+                    <dt class="col-5 fw-normal text-body-secondary">Rase</dt>
+                    <dd class="col-7">@(d.Rase ?? "—")</dd>
+
+                    <dt class="col-5 fw-normal text-body-secondary">Født</dt>
+                    <dd class="col-7">
+                        @(d.Fodselsdato is { } fd ? $"{fd:d. MMMM yyyy}" : "—")
+                    </dd>
+
+                    <dt class="col-5 fw-normal text-body-secondary">Chipnummer</dt>
+                    <dd class="col-7">@(d.ChipNr ?? "—")</dd>
+
+                    <dt class="col-5 fw-normal text-body-secondary">NKK-regnr</dt>
+                    <dd class="col-7">@(d.RegNrNkk ?? "—")</dd>
+
+                    <dt class="col-5 fw-normal text-body-secondary">Kastrert</dt>
+                    <dd class="col-7 mb-0">@(d.Kastrert ? "Ja" : "Nei")</dd>
+                </dl>
+            </div>
+        </section>
+
         @* --- Vekt ------------------------------------------------------ *@
         <section class="kort">
             <div class="kort-hode">
@@ -56,6 +90,100 @@
             {
                 @* Ikke "0 kg". Et tall uten dekning er verre enn ingen tall. *@
                 <div class="tomt">Ingen vekt registrert.</div>
+            }
+        </section>
+
+        @* --- Forplan ----------------------------------------------------
+           Bryteren styrer visning OG tilgang. Er den av, gir controlleren
+           404 - og da skal seksjonen heller ikke vises her. *@
+        @if (d.ForplanAktiv)
+        {
+            <section class="kort">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-forplan" /></svg>
+                    <h2>Fôrplan</h2>
+                    <a class="se-alle" asp-controller="Forplan" asp-action="Index"
+                       asp-route-dyrId="@d.Id">
+                        @(s.ForplanTekst is null ? "Opprett" : "Se alle")
+                    </a>
+                </div>
+
+                @if (s.ForplanTekst is { } plan)
+                {
+                    <div class="kort-kropp">
+                        <div class="dyrekort-tall mt-0">
+                            <span>
+                                <span class="verdi fs-6">@plan</span>
+                                <span class="etikett">gjeldende plan</span>
+                            </span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="tomt">
+                        Ingen fôrplan lagt inn. Appen anbefaler ikke mengde —
+                        den regner ut regelen du legger inn.
+                    </div>
+                }
+            </section>
+        }
+        @* --- Foring ------------------------------------------------------
+           Bryteren styrer visning OG tilgang. Er den av, gir controlleren
+           404 - og da skal seksjonen heller ikke vises her. *@
+        @if (d.ForingsloggAktiv)
+        {
+            <section class="kort">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-forplan" /></svg>
+                    <h2>Fôring</h2>
+                    <a class="se-alle" asp-controller="Foring" asp-action="Index"
+                       asp-route-dyrId="@d.Id">Se loggen</a>
+                </div>
+                <div class="kort-kropp">
+                    <p class="mb-0 small text-body-secondary">
+                        Logg hvem som ga mat og når, så slipper dere å spørre
+                        hverandre.
+                    </p>
+                </div>
+            </section>
+        }
+
+        @* --- Medisin ---------------------------------------------------- *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-medisin" /></svg>
+                <h2>Medisin</h2>
+                @if (s.AktiveMedisiner.Count > 0)
+                {
+                    <span class="antall">@s.AktiveMedisiner.Count</span>
+                }
+                <a class="se-alle" asp-controller="Medisin" asp-action="Index"
+                   asp-route-dyrId="@d.Id">
+                    @(s.AntallMedisiner > 0 ? "Se alle" : "Legg til")
+                </a>
+            </div>
+
+            @if (s.AktiveMedisiner.Count > 0)
+            {
+                <ul class="rad-liste">
+                    @foreach (var m in s.AktiveMedisiner)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@m</span>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="tomt">
+                    @(s.AntallMedisiner > 0
+                        ? "Ingen aktive medisiner. Se historikken."
+                        : "Ingen medisiner registrert.")
+                </div>
             }
         </section>
 
@@ -103,137 +231,9 @@
             }
         </section>
 
-        @* --- Medisin ---------------------------------------------------- *@
-        <section class="kort">
-            <div class="kort-hode">
-                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-medisin" /></svg>
-                <h2>Medisin</h2>
-                @if (s.AktiveMedisiner.Count > 0)
-                {
-                    <span class="antall">@s.AktiveMedisiner.Count</span>
-                }
-                <a class="se-alle" asp-controller="Medisin" asp-action="Index"
-                   asp-route-dyrId="@d.Id">
-                    @(s.AntallMedisiner > 0 ? "Se alle" : "Legg til")
-                </a>
-            </div>
-
-            @if (s.AktiveMedisiner.Count > 0)
-            {
-                <ul class="rad-liste">
-                    @foreach (var m in s.AktiveMedisiner)
-                    {
-                        <li>
-                            <span class="flex-grow-1 min-w-0">
-                                <span class="tittel">@m</span>
-                            </span>
-                        </li>
-                    }
-                </ul>
-            }
-            else
-            {
-                <div class="tomt">
-                    @(s.AntallMedisiner > 0
-                        ? "Ingen aktive medisiner. Se historikken."
-                        : "Ingen medisiner registrert.")
-                </div>
-            }
-        </section>
-
-        @* --- Foring ------------------------------------------------------
-           Bryteren styrer visning OG tilgang. Er den av, gir controlleren
-           404 - og da skal seksjonen heller ikke vises her. *@
-        @if (d.ForingsloggAktiv)
-        {
-            <section class="kort">
-                <div class="kort-hode">
-                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-forplan" /></svg>
-                    <h2>Fôring</h2>
-                    <a class="se-alle" asp-controller="Foring" asp-action="Index"
-                       asp-route-dyrId="@d.Id">Se loggen</a>
-                </div>
-                <div class="kort-kropp">
-                    <p class="mb-0 small text-body-secondary">
-                        Logg hvem som ga mat og når, så slipper dere å spørre
-                        hverandre.
-                    </p>
-                </div>
-            </section>
-        }
-
-        @* --- Forplan ----------------------------------------------------
-           Bryteren styrer visning OG tilgang. Er den av, gir controlleren
-           404 - og da skal seksjonen heller ikke vises her. *@
-        @if (d.ForplanAktiv)
-        {
-            <section class="kort">
-                <div class="kort-hode">
-                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-forplan" /></svg>
-                    <h2>Fôrplan</h2>
-                    <a class="se-alle" asp-controller="Forplan" asp-action="Index"
-                       asp-route-dyrId="@d.Id">
-                        @(s.ForplanTekst is null ? "Opprett" : "Se alle")
-                    </a>
-                </div>
-
-                @if (s.ForplanTekst is { } plan)
-                {
-                    <div class="kort-kropp">
-                        <div class="dyrekort-tall mt-0">
-                            <span>
-                                <span class="verdi fs-6">@plan</span>
-                                <span class="etikett">gjeldende plan</span>
-                            </span>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="tomt">
-                        Ingen fôrplan lagt inn. Appen anbefaler ikke mengde —
-                        den regner ut regelen du legger inn.
-                    </div>
-                }
-            </section>
-        }
     </div>
 
     <div class="kolonne">
-
-        @* --- Opplysninger ----------------------------------------------- *@
-        <section class="kort">
-            <div class="kort-hode">
-                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
-                <h2>Opplysninger</h2>
-            </div>
-            <div class="kort-kropp">
-                <dl class="row mb-0 small">
-                    <dt class="col-5 fw-normal text-body-secondary">Art</dt>
-                    <dd class="col-7">@d.Art</dd>
-
-                    <dt class="col-5 fw-normal text-body-secondary">Kjønn</dt>
-                    <dd class="col-7">@d.Kjonn</dd>
-
-                    <dt class="col-5 fw-normal text-body-secondary">Rase</dt>
-                    <dd class="col-7">@(d.Rase ?? "—")</dd>
-
-                    <dt class="col-5 fw-normal text-body-secondary">Født</dt>
-                    <dd class="col-7">
-                        @(d.Fodselsdato is { } fd ? $"{fd:d. MMMM yyyy}" : "—")
-                    </dd>
-
-                    <dt class="col-5 fw-normal text-body-secondary">Chipnummer</dt>
-                    <dd class="col-7">@(d.ChipNr ?? "—")</dd>
-
-                    <dt class="col-5 fw-normal text-body-secondary">NKK-regnr</dt>
-                    <dd class="col-7">@(d.RegNrNkk ?? "—")</dd>
-
-                    <dt class="col-5 fw-normal text-body-secondary">Kastrert</dt>
-                    <dd class="col-7 mb-0">@(d.Kastrert ? "Ja" : "Nei")</dd>
-                </dl>
-            </div>
-        </section>
 
         @* --- Notater ----------------------------------------------------- *@
         <section class="kort">

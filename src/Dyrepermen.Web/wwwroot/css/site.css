@@ -491,6 +491,27 @@ h1, h2, h3, h4 {
 
 /* --- Nokkeltall pa dyrekort ---------------------------------------------- */
 
+/* Verdi med etikett under, pa rad. Dashbordet bruker den ikke lenger - der
+   star opplysningene i <dl> - men forplansiden, informasjonssiden og
+   dyredetaljene gjor det. Fjernes den, mister de tre all avstand mellom
+   tallene. */
+.dyrekort-tall {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: .5rem;
+}
+
+.dyrekort-tall .verdi {
+    font-weight: 700;
+}
+
+.dyrekort-tall .etikett {
+    display: block;
+    font-size: .76rem;
+    color: var(--dp-tekst-svak);
+}
+
 /* --- Dyrekort pa dashbordet ----------------------------------------------
    Radliste ble forsokt forst. Med fem-seks opplysninger per dyr gled radene
    inn i hverandre, og opplysninger som hoerer sammen - porsjon, sist matet,
