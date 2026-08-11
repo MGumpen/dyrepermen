@@ -215,4 +215,22 @@ app.MapGet("/helse", () => Results.Ok(new
     tid = DateTimeOffset.UtcNow
 })).AllowAnonymous();
 
+// Skjemaet legges inn ved oppstart, slik at Render alene er nok til a fa
+// appen i lufta - ingen manuelle terminalkommandoer, ingen egen jobb.
+// Se ADR 0010.
+//
+// Forutsetningen er EN instans. Kjorer to instanser oppstart samtidig,
+// migrerer de samtidig, og databasen havner i en tilstand ingen har
+// designet. Skaleres appen ut, ma dette flyttes ut av oppstarten igjen.
+//
+// MigrateAsync er idempotent: den leser __EFMigrationsHistory og kjorer
+// bare det som mangler. En omstart uten nye migrasjoner gjor ingenting.
+using (var oppstart = app.Services.CreateScope())
+{
+    var db = oppstart.ServiceProvider.GetRequiredService<DyrepermenDbContext>();
+    app.Logger.LogInformation("Sjekker databaseskjema");
+    await db.Database.MigrateAsync();
+    app.Logger.LogInformation("Databaseskjema er a jour");
+}
+
 app.Run();

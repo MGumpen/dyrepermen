@@ -55,7 +55,7 @@ Ikke bruk æ, ø eller å i klassenavn, filnavn, tabellnavn eller ruter. Skriv `
 - Enkle datatyper: `INT`, `VARCHAR`, `CHAR`. Enums lagres som `char(1)` med eksplisitt `HasConversion`.
 - Vekt lagres i gram som `INT`. Prosent lagres i tidels prosent som `INT`.
 - Skriv aldri `Include` etterfulgt av `.Last()` i C# — projiser i spørringen.
-- Migrasjoner kjøres aldri ved oppstart.
+- Migrasjoner kjøres ved oppstart, i `Program.cs` rett før `app.Run()`. Dette opphever planens motsatte regel og forutsetter **én instans** — se ADR 0010. Skaleres appen ut, må kallet flyttes ut igjen.
 
 ## Sikkerhet — ufravikelig
 
@@ -111,9 +111,11 @@ Sentral pakkestyring i `Directory.Packages.props`. **Legg aldri `Version` i en `
 3. Implementer
 4. `dotnet build` med null advarsler, `dotnet test` grønt
 5. Commit på norsk, imperativ form: «Legg til vektregistrering»
-6. Push til `main` utløser `Bygg og test`. Grønt bygg utløser utrulling
+6. Push utløser `Bygg og test` på alle brancher
 
-Rødt bygg blokkerer utrulling. Ikke omgå det.
+Rødt bygg blokkerer. Ikke omgå det.
+
+Utrulling skjer fra Render, som bygger branchen tjenesten er koblet til — ikke fra GitHub Actions. Skjemaet legges inn ved oppstart, se ADR 0010.
 
 ## Når spesifikasjonen er uklar
 

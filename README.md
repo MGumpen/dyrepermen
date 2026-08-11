@@ -140,7 +140,12 @@ Har du ingen lokal PostgreSQL, kan du sette `POSTGRES_PORT=5432` i
 | `feature/mvp` | Første versjon av appen |
 
 Arbeidsflyt: `feature/*` → `dev` → `main`. `Bygg og test` kjører på alle
-brancher og pull requests; utrulling skjer kun fra `main`.
+brancher og pull requests.
+
+Utrulling skjer fra Render, som bygger branchen tjenesten er koblet til.
+Det finnes ingen utrullingsarbeidsflyt i GitHub Actions, og ingen
+GitHub-hemmeligheter er nødvendige. Skjemaet legges inn ved oppstart —
+se [ADR 0010](docs/beslutninger/0010-migrasjoner-ved-oppstart.md).
 
 ---
 
