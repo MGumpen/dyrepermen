@@ -49,8 +49,13 @@ filterprøven dekker den ikke.
 
 | Rolle | Kan |
 |---|---|
-| `Eier` (E) | Alt: endre dyr, medlemmer, innstillinger, forsikring, notater |
+| `Beboer` (B) | Alt: endre dyr, medlemmer, innstillinger, forsikring, notater |
 | `Gjest` (G) | Se alt, og logge det daglige: vekt, fôring, medisindoser, handleliste |
+
+Rollen het opprinnelig `Eier`, lagret som `'E'`. Marius formulerte skillet som
+«bor der eller er gjest», og det treffer bedre: en husstand har ikke en eier,
+den har noen som bor der. Omdøpt til `Beboer`/`'B'` i migrasjonen
+`RolleBeboer`. I grensesnittet står det «Bor her» og «Gjest».
 
 Gjesten kan skrive, ikke bare lese. Passer du hunden, må du kunne notere at
 du ga mat og medisin — ellers får loggen hull nettopp de dagene noen andre
@@ -93,8 +98,8 @@ finnes, slik at et navn ikke blir stående igjen etter en omdøping.
   fjerningen var trygg.
 - **Kapittel 12.6 er utdatert.** Den sier at alle medlemmer er likestilte og
   at det er en bevisst begrensning. Nå finnes roller.
-- **En husstand må ha minst én eier.** Den siste eieren kan verken fjernes
-  eller degraderes — uten eier ville innstillingene vært låst for alle.
+- **En husstand må ha minst én beboer.** Den siste kan verken fjernes
+  eller degraderes — uten beboer ville innstillingene vært låst for alle.
 - **Kontosletting** rammer nå de husstandene der brukeren er eneste medlem,
   ikke «husstanden hennes». Er hun bare gjest hos noen, røres ikke den.
 - **Migrasjonens rekkefølge var ikke valgfri.** EF genererte `DropColumn` før
@@ -102,5 +107,10 @@ finnes, slik at et navn ikke blir stående igjen etter en omdøping.
   ville slettet hver eneste eksisterende tilknytning. Migrasjonen er skrevet
   om: opprett tabell, flytt data, slipp kolonne. Verifisert mot databasen at
   begge eksisterende brukere beholdt husstanden sin.
-- Alle eksisterende tilknytninger ble migrert som `Eier`. De var eneste
+- Alle eksisterende tilknytninger ble migrert som beboer. De var eneste
   medlem, og noen må kunne endre innstillingene.
+- **Invitasjonens rolle har ingen `HasDefaultValue`.** `Beboer` er CLR-standard
+  for enumen, så EF ville utelatt kolonnen fra `INSERT` når rollen var
+  `Beboer` — og databasens standard `'G'` ville slått inn. En invitert beboer
+  ville blitt stille lagret som gjest. EF advarte om det, og advarselen var
+  reell.

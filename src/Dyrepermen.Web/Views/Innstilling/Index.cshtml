@@ -81,7 +81,7 @@
                             </span>
                             <span class="under d-block">
                                 @m.Epost ·
-                                <strong>@(m.Rolle == Husstandsrolle.Eier ? "Eier" : "Gjest")</strong>
+                                <strong>@(m.Rolle == Husstandsrolle.Beboer ? "Bor her" : "Gjest")</strong>
                             </span>
                         </span>
                         @* Alle medlemmer er likestilte i v1. Hvem som helst kan
@@ -145,8 +145,8 @@
                     </div>
                     <div class="col-7 col-sm-4">
                         <select name="rolle" class="form-select">
+                            <option value="Beboer">Bor her</option>
                             <option value="Gjest">Gjest</option>
-                            <option value="Eier">Eier</option>
                         </select>
                     </div>
                     <div class="col-5 col-sm-auto">
@@ -156,9 +156,10 @@
                     </div>
                     <div class="col-12">
                         <p class="form-text mt-0 mb-0">
-                            <strong>Gjest</strong> ser alt og kan registrere vekt,
-                            fôring og doser — men ikke endre dyr, medlemmer eller
-                            innstillinger. <strong>Eier</strong> kan alt.
+                            <strong>Bor her</strong> — deler ansvaret og kan endre
+                            alt. <strong>Gjest</strong> — passer dyra av og til:
+                            ser alt og kan registrere vekt, fôring og doser, men
+                            ikke endre dyr, medlemmer eller innstillinger.
                         </p>
                     </div>
                 </form>

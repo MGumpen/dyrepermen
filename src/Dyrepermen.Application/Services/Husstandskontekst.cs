@@ -34,7 +34,7 @@ public sealed class Husstandskontekst : IHusstandContext, IGjeldendeBruker
 
     public Husstandsrolle Rolle { get; set; } = Husstandsrolle.Gjest;
 
-    public bool KanEndre => Rolle == Husstandsrolle.Eier;
+    public bool KanEndre => Rolle == Husstandsrolle.Beboer;
 
     public IReadOnlyList<HusstandsValg> Husstander { get; set; } = [];
 

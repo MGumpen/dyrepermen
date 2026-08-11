@@ -17,10 +17,13 @@ public sealed class HusstandInvitasjonConfiguration
 
         b.Property(i => i.Rolle)
          .HasConversion(
-             v => v == Husstandsrolle.Eier ? 'E' : 'G',
-             v => v == 'E' ? Husstandsrolle.Eier : Husstandsrolle.Gjest)
+             v => v == Husstandsrolle.Beboer ? 'B' : 'G',
+             v => v == 'B' ? Husstandsrolle.Beboer : Husstandsrolle.Gjest)
          .HasColumnType("char(1)")
-         .HasDefaultValue(Husstandsrolle.Gjest)
+         // INGEN HasDefaultValue her. Beboer er CLR-standardverdien for
+         // enumen, sa EF ville utelatt kolonnen fra INSERT nar rollen er
+         // Beboer - og databasens standard 'G' ville slatt inn. Da ble en
+         // invitert beboer stille lagret som gjest.
          .IsRequired();
 
         b.Property(i => i.OpprettetDato)

@@ -25,7 +25,7 @@ public sealed class Husstandsmedlemskap
 
     public Bruker Bruker { get; set; } = null!;
 
-    public Husstandsrolle Rolle { get; set; } = Husstandsrolle.Eier;
+    public Husstandsrolle Rolle { get; set; } = Husstandsrolle.Beboer;
 
     public DateOnly OpprettetDato { get; set; }
 }

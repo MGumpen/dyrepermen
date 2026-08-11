@@ -122,7 +122,7 @@
                             <span class="min-w-0 flex-grow-1">
                                 <span class="navn d-block">@Meg.HusstandNavn</span>
                                 <span class="under">
-                                    @(Meg.KanEndre ? "Eier" : "Gjest")@(Meg.Husstander.Count > 1
+                                    @(Meg.KanEndre ? "Bor her" : "Gjest")@(Meg.Husstander.Count > 1
                                         ? $" · {Meg.Husstander.Count} husstander" : "")
                                 </span>
                             </span>
@@ -146,7 +146,7 @@
                                                 class="dropdown-item d-flex justify-content-between align-items-center gap-2 @(h.ErAktiv ? "active" : "")">
                                             <span class="min-w-0 text-truncate">@h.Navn</span>
                                             <span class="small opacity-75 text-nowrap">
-                                                @(h.Rolle == Husstandsrolle.Eier ? "Eier" : "Gjest")
+                                                @(h.Rolle == Husstandsrolle.Beboer ? "Bor her" : "Gjest")
                                             </span>
                                         </button>
                                     </form>

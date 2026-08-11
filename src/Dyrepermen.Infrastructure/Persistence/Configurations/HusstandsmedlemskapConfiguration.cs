@@ -15,8 +15,8 @@ public sealed class HusstandsmedlemskapConfiguration
 
         b.Property(m => m.Rolle)
          .HasConversion(
-             v => v == Husstandsrolle.Eier ? 'E' : 'G',
-             v => v == 'E' ? Husstandsrolle.Eier : Husstandsrolle.Gjest)
+             v => v == Husstandsrolle.Beboer ? 'B' : 'G',
+             v => v == 'B' ? Husstandsrolle.Beboer : Husstandsrolle.Gjest)
          .HasColumnType("char(1)")
          .IsRequired();
 
@@ -45,6 +45,6 @@ public sealed class HusstandsmedlemskapConfiguration
         b.HasIndex(m => m.BrukerId).HasDatabaseName("ix_medlemskap_bruker");
 
         b.ToTable(t => t.HasCheckConstraint(
-            "ck_medlemskap_rolle", "rolle IN ('E','G')"));
+            "ck_medlemskap_rolle", "rolle IN ('B','G')"));
     }
 }

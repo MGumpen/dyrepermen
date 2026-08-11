@@ -46,12 +46,12 @@ public sealed class HusstandService : IHusstandService
             HusstandId = husstand.Id
         });
 
-        // Den som oppretter husstanden blir eier av den.
+        // Den som oppretter husstanden bor i den.
         _db.Husstandsmedlemskap.Add(new Husstandsmedlemskap
         {
             HusstandId = husstand.Id,
             BrukerId = brukerId,
-            Rolle = Husstandsrolle.Eier
+            Rolle = Husstandsrolle.Beboer
         });
 
         await _db.SaveChangesAsync(ct);
@@ -208,10 +208,10 @@ public sealed class HusstandService : IHusstandService
             return false;
         }
 
-        // En husstand ma ha minst en eier. Uten det blir innstillingene og
-        // medlemslisten last for alle - gjester kan ikke endre dem.
-        if (medlemskap.Rolle == Husstandsrolle.Eier
-            && await AntallEiere(husstandId, ct) <= 1)
+        // En husstand ma ha minst en beboer. Uten det blir innstillingene
+        // og medlemslisten last for alle - gjester kan ikke endre dem.
+        if (medlemskap.Rolle == Husstandsrolle.Beboer
+            && await AntallBeboere(husstandId, ct) <= 1)
         {
             return false;
         }
@@ -239,9 +239,10 @@ public sealed class HusstandService : IHusstandService
             return false;
         }
 
-        // Samme regel som ved fjerning: den siste eieren kan ikke degraderes.
-        if (medlemskap.Rolle == Husstandsrolle.Eier
-            && await AntallEiere(husstandId, ct) <= 1)
+        // Samme regel som ved fjerning: den siste beboeren kan ikke
+        // degraderes til gjest.
+        if (medlemskap.Rolle == Husstandsrolle.Beboer
+            && await AntallBeboere(husstandId, ct) <= 1)
         {
             return false;
         }
@@ -251,9 +252,9 @@ public sealed class HusstandService : IHusstandService
         return true;
     }
 
-    private Task<int> AntallEiere(int husstandId, CancellationToken ct)
+    private Task<int> AntallBeboere(int husstandId, CancellationToken ct)
         => _db.Husstandsmedlemskap.CountAsync(
-            m => m.HusstandId == husstandId && m.Rolle == Husstandsrolle.Eier, ct);
+            m => m.HusstandId == husstandId && m.Rolle == Husstandsrolle.Beboer, ct);
 
     public async Task<bool> LagreInnstillinger(
         string husstandsnavn,

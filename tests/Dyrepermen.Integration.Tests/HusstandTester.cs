@@ -62,7 +62,7 @@ public sealed class HusstandTester
         await using var db = _fixture.LagContext(min);
         var meg = await NyBruker(db, "meg@eksempel.no");
 
-        await Meld(db, min, meg, Husstandsrolle.Eier);
+        await Meld(db, min, meg, Husstandsrolle.Beboer);
         await Meld(db, pappa, meg, Husstandsrolle.Gjest);
 
         var medlemskap = await db.Husstandsmedlemskap
@@ -71,7 +71,7 @@ public sealed class HusstandTester
             .ToListAsync();
 
         Assert.Equal(2, medlemskap.Count);
-        Assert.Equal(Husstandsrolle.Eier, medlemskap.Single(m => m.HusstandId == min).Rolle);
+        Assert.Equal(Husstandsrolle.Beboer, medlemskap.Single(m => m.HusstandId == min).Rolle);
         Assert.Equal(Husstandsrolle.Gjest, medlemskap.Single(m => m.HusstandId == pappa).Rolle);
     }
 
@@ -92,8 +92,8 @@ public sealed class HusstandTester
         var jeg = await NyBruker(db, "jeg@eksempel.no");
         var annen = await NyBruker(db, "annen@eksempel.no");
 
-        await Meld(db, min, jeg, Husstandsrolle.Eier);
-        await Meld(db, deres, annen, Husstandsrolle.Eier);
+        await Meld(db, min, jeg, Husstandsrolle.Beboer);
+        await Meld(db, deres, annen, Husstandsrolle.Beboer);
 
         var resultat = await Tjeneste(db, min)
             .LeggTilMedlem("ANNEN@eksempel.no", Husstandsrolle.Gjest, jeg, default);
@@ -103,8 +103,8 @@ public sealed class HusstandTester
         var deres_etterpa = await db.Husstandsmedlemskap
             .SingleAsync(m => m.BrukerId == annen && m.HusstandId == deres);
 
-        // Uroert - og fortsatt eier der.
-        Assert.Equal(Husstandsrolle.Eier, deres_etterpa.Rolle);
+        // Uroert - og bor fortsatt der.
+        Assert.Equal(Husstandsrolle.Beboer, deres_etterpa.Rolle);
 
         // Og na ogsa gjest hos meg.
         var hos_meg = await db.Husstandsmedlemskap
@@ -120,7 +120,7 @@ public sealed class HusstandTester
         await using var db = _fixture.LagContext(h);
         var eier = await NyBruker(db, "eier@eksempel.no");
         var gjest = await NyBruker(db, "gjest@eksempel.no");
-        await Meld(db, h, eier, Husstandsrolle.Eier);
+        await Meld(db, h, eier, Husstandsrolle.Beboer);
 
         var tjeneste = Tjeneste(db, h);
         Assert.Equal(LeggTilResultat.LagtTil,
@@ -139,7 +139,7 @@ public sealed class HusstandTester
 
         await using var db = _fixture.LagContext(h);
         var eier = await NyBruker(db, "eier2@eksempel.no");
-        await Meld(db, h, eier, Husstandsrolle.Eier);
+        await Meld(db, h, eier, Husstandsrolle.Beboer);
 
         var tjeneste = Tjeneste(db, h);
         Assert.Equal(LeggTilResultat.VenterPaRegistrering,
@@ -161,16 +161,16 @@ public sealed class HusstandTester
     }
 
     [Fact]
-    public async Task Siste_eier_kan_ikke_fjernes_eller_degraderes()
+    public async Task Siste_beboer_kan_ikke_fjernes_eller_degraderes()
     {
-        // En husstand uten eier ville hatt last innstillingsside for alle -
+        // En husstand uten beboer ville hatt last innstillingsside for alle -
         // gjester kan ikke endre den.
         var h = await _fixture.OpprettHusstand("Siste eier");
 
         await using var db = _fixture.LagContext(h);
         var eier = await NyBruker(db, "enesteeier@eksempel.no");
         var gjest = await NyBruker(db, "engjest@eksempel.no");
-        await Meld(db, h, eier, Husstandsrolle.Eier);
+        await Meld(db, h, eier, Husstandsrolle.Beboer);
         await Meld(db, h, gjest, Husstandsrolle.Gjest);
 
         var tjeneste = Tjeneste(db, h);
@@ -183,24 +183,24 @@ public sealed class HusstandTester
     }
 
     [Fact]
-    public async Task Gjest_kan_forfremmes_til_eier_og_da_kan_den_forste_gaa()
+    public async Task Gjest_kan_bli_beboer_og_da_kan_den_forste_gaa()
     {
         var h = await _fixture.OpprettHusstand("Overdragelse");
 
         await using var db = _fixture.LagContext(h);
         var forste = await NyBruker(db, "forste@eksempel.no");
         var andre = await NyBruker(db, "andre@eksempel.no");
-        await Meld(db, h, forste, Husstandsrolle.Eier);
+        await Meld(db, h, forste, Husstandsrolle.Beboer);
         await Meld(db, h, andre, Husstandsrolle.Gjest);
 
         var tjeneste = Tjeneste(db, h);
 
-        Assert.True(await tjeneste.EndreRolle(andre, Husstandsrolle.Eier, default));
+        Assert.True(await tjeneste.EndreRolle(andre, Husstandsrolle.Beboer, default));
         Assert.True(await tjeneste.FjernMedlem(forste, default));
 
         var igjen = await db.Husstandsmedlemskap.SingleAsync(m => m.HusstandId == h);
         Assert.Equal(andre, igjen.BrukerId);
-        Assert.Equal(Husstandsrolle.Eier, igjen.Rolle);
+        Assert.Equal(Husstandsrolle.Beboer, igjen.Rolle);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public sealed class HusstandTester
         await using var db = _fixture.LagContext(a);
 
         var bruker = await NyBruker(db, "forsvinner@eksempel.no");
-        await Meld(db, a, bruker, Husstandsrolle.Eier);
+        await Meld(db, a, bruker, Husstandsrolle.Beboer);
 
         var dyr = new Dyr
         {
