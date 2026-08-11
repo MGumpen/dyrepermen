@@ -298,12 +298,45 @@ h1, h2, h3, h4 {
     align-items: center;
     justify-content: space-between;
     gap: .5rem;
-    padding: .6rem .75rem;
+    /* Hoyre side er smalere enn venstre: knappen har egen luft, og lik
+       padding ville dyttet den for langt inn fra kanten. */
+    padding: .45rem .5rem .45rem .9rem;
     background: var(--dp-flate);
     border-bottom: 1px solid var(--dp-kant);
     position: sticky;
     top: 0;
     z-index: 1020;
+
+    /* Under statuslinja pa iPhone. Uten dette havner logoen delvis bak
+       "hakket" i landskapsmodus. */
+    padding-left: max(.9rem, env(safe-area-inset-left));
+    padding-right: max(.5rem, env(safe-area-inset-right));
+}
+
+.topplinje .sidemeny-merke span {
+    font-size: 1.05rem;
+}
+
+/* Minst 44 x 44 px. Under det bommer tommelen, og menyen er det eneste
+   inngangspunktet til navigasjonen pa mobil. Se plan kapittel 10.2. */
+.menyknapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius-sm);
+    color: var(--dp-tekst);
+    background: var(--dp-flate);
+}
+
+.menyknapp:hover,
+.menyknapp:active {
+    background: var(--dp-flate-2);
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
 }
 
 /* --- Kort -------------------------------------------------------------- */
@@ -510,6 +543,89 @@ h1, h2, h3, h4 {
 .kjopt-tekst {
     text-decoration: line-through;
     color: var(--dp-tekst-svak);
+}
+
+/* --- Handlinger pa dashbordet --------------------------------------------- */
+
+/* Avkryssingen pa dashbordet. Selve boksen er 22 px av hensyn til
+   utseendet, men knappen rundt strekker seg til 44 - det er den man
+   treffer. */
+.kryssknapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    /* Negativ marg pa venstre side, slik at den storre treffflaten ikke
+       dytter teksten innover i raden. */
+    margin: -11px -11px -11px -12px;
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+.kryssknapp:hover .handleliste-boks {
+    border-color: var(--dp-aksent);
+    background: var(--dp-aksent-svak);
+}
+
+.matknapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 44px;
+    padding: .4rem .8rem;
+    border: 1px solid var(--dp-aksent);
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-aksent);
+    color: var(--dp-tekst-hvit);
+    font-size: .875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.matknapp:hover,
+.matknapp:focus-visible {
+    background: var(--dp-aksent-mork);
+    border-color: var(--dp-aksent-mork);
+    color: var(--dp-tekst-hvit);
+}
+
+/* Er alle maltider gitt, skal knappen fortsatt virke - en ekstra porsjon
+   eller en godbit skal kunne fores. Men den slutter a be om oppmerksomhet,
+   slik at raden med mat igjen a gi er den som skiller seg ut. */
+.matknapp.ferdig {
+    background: transparent;
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst-svak);
+}
+
+.matknapp.ferdig:hover,
+.matknapp.ferdig:focus-visible {
+    background: var(--dp-flate-2);
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
+}
+
+/* Mens kallet gar. Uten dette rekker man a trykke to ganger, og da
+   registreres to maltider. */
+.matknapp[disabled] {
+    opacity: .55;
+}
+
+@media (max-width: 420px) {
+    /* Pa de smaleste skjermene ryker plassen til bade dyrenavn og etikett.
+       Ikonet alene er entydig nok nar knappen ellers er den eneste i raden,
+       og aria-label baerer meningen for skjermleser. */
+    .matknapp span {
+        display: none;
+    }
+
+    .matknapp {
+        padding: .4rem;
+        min-width: 44px;
+        justify-content: center;
+    }
 }
 
 /* --- Sider uten innlogging ------------------------------------------------ */

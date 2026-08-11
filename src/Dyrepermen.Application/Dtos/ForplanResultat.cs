@@ -21,6 +21,20 @@ public sealed record ForplanResultat(
     public static ForplanResultat ManglerVektgrunnlag()
         => new(true, true, 0, 0, null, null);
 
+    /// <summary>
+    /// Gram til ETT maltid. Regelen bor kun finnes her: viser dashbordet 53 g
+    /// mens loggen skriver 54, er det ingen som stoler pa noen av tallene.
+    ///
+    /// Resten fordeles ikke utover maltidene. Med 160 g pa tre blir det
+    /// 53 + 53 + 53, ikke 53 + 53 + 54 - ett gram kattemat er under
+    /// maleusikkerheten til et kjokkenmal, og en presisjon vi ikke har er
+    /// verre enn ingen.
+    /// </summary>
+    public int PorsjonGram => AntallMaltider <= 0
+        ? GramPerDag
+        : (int)Math.Round(
+            GramPerDag / (double)AntallMaltider, MidpointRounding.AwayFromZero);
+
     public static ForplanResultat Ok(
         int gram,
         int maltider,

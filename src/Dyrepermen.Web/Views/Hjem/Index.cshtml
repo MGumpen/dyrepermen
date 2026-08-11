@@ -54,94 +54,7 @@
             }
             else
             {
-                <ul class="rad-liste">
-                    @foreach (var dyr in Model.Dyr)
-                    {
-                        <li>
-                            <a class="rad-lenke" asp-controller="Dyr" asp-action="Detaljer"
-                               asp-route-dyrId="@dyr.Id">
-                                <span class="tittel">@dyr.Navn</span>
-                                <span class="under d-block">
-                                    @dyr.Art@(dyr.Fodselsdato is { } f
-                                        ? $" · {Alderformat.Tekst(f, idag)}" : "")
-                                </span>
-
-                                <span class="dyrekort-tall">
-                                    <span>
-                                        @if (dyr.SisteVektGram is { } gram)
-                                        {
-                                            <span class="verdi">@Vektformat.TilKiloTekst(gram)</span>
-                                            <span class="etikett">
-                                                målt @($"{dyr.SisteVektDato:d. MMM}")
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            @* Ikke "0 kg". Et tall uten dekning er
-                                               verre enn ingen tall. *@
-                                            <span class="verdi text-body-secondary">—</span>
-                                            <span class="etikett">ingen vekt</span>
-                                        }
-                                    </span>
-
-                                    @if (dyr.ForplanTekst is { } plan)
-                                    {
-                                        <span>
-                                            <span class="verdi">@plan</span>
-                                            <span class="etikett">fôr per dag</span>
-                                        </span>
-                                    }
-
-                                    @if (dyr.NesteBehandlingDato is { } nb)
-                                    {
-                                        <span>
-                                            <span class="verdi @(nb < idag ? "text-danger" : "")">
-                                                @($"{nb:d. MMM}")
-                                            </span>
-                                            <span class="etikett">@dyr.NesteBehandlingTekst</span>
-                                        </span>
-                                    }
-
-                                    @if (dyr.SistMatet is { } matet)
-                                    {
-                                        <span>
-                                            <span class="verdi">
-                                                @Tidssone.NaerTid(matet.Tidspunkt, DateTimeOffset.UtcNow)
-                                            </span>
-                                            <span class="etikett">
-                                                sist matet@(matet.GittAv is null
-                                                    ? "" : $" av {matet.GittAv}")
-                                            </span>
-                                        </span>
-                                    }
-                                    else if (dyr.ForingsloggAktiv)
-                                    {
-                                        <span>
-                                            <span class="verdi text-body-secondary">—</span>
-                                            <span class="etikett">ikke matet ennå</span>
-                                        </span>
-                                    }
-
-                                    @if (dyr.AktiveMedisiner.Count > 0)
-                                    {
-                                        <span>
-                                            <span class="verdi">
-                                                @string.Join(", ", dyr.AktiveMedisiner)
-                                            </span>
-                                            <span class="etikett">
-                                                @(dyr.AktiveMedisiner.Count == 1
-                                                    ? "medisin" : "medisiner")
-                                            </span>
-                                        </span>
-                                    }
-                                </span>
-                            </a>
-                            <span class="hoyre">
-                                <svg class="ikon" aria-hidden="true"><use href="#i-chevron" /></svg>
-                            </span>
-                        </li>
-                    }
-                </ul>
+                <partial name="_Dyreliste" model="Model.Dyr" />
             }
         </section>
     </div>
@@ -212,29 +125,7 @@
                 <a class="se-alle" asp-controller="Handleliste" asp-action="Index">Se alle</a>
             </div>
 
-            @if (Model.Handleliste.Count == 0)
-            {
-                <div class="tomt">Handlelisten er tom.</div>
-            }
-            else
-            {
-                <ul class="rad-liste">
-                    @foreach (var p in Model.Handleliste)
-                    {
-                        <li>
-                            <span class="flex-grow-1 min-w-0">
-                                <span class="tittel">@p.Tekst</span>
-                                @if (p.Antall > 1)
-                                {
-                                    <span class="text-body-secondary">× @p.Antall</span>
-                                }
-                            </span>
-                            @* Punkt uten dyr vises som "Felles". *@
-                            <span class="hoyre">@(p.DyreNavn ?? "Felles")</span>
-                        </li>
-                    }
-                </ul>
-            }
+            <partial name="_Handleliste" model="Model.Handleliste" />
         </section>
     </div>
 </div>

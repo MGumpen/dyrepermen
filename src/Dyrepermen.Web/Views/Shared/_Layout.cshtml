@@ -73,13 +73,15 @@
                 <img src="~/img/logo.svg" alt="" height="26" width="26" />
                 <span>Dyrepermen</span>
             </a>
-            <button class="btn btn-outline-secondary btn-sm" type="button"
+            @* Treffflaten skal vaere minst 44 px, jf. plan kapittel 10.2.
+               btn-sm ga rundt 31 og var vanskelig a treffe med tommelen. *@
+            <button class="btn menyknapp" type="button"
                     data-bs-toggle="offcanvas"
                     data-bs-target="#hovedmeny"
                     aria-controls="hovedmeny"
                     aria-expanded="false"
                     aria-label="Åpne meny">
-                <svg class="ikon" aria-hidden="true"><use href="#i-meny" /></svg>
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-meny" /></svg>
             </button>
         </nav>
 

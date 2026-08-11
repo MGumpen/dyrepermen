@@ -34,6 +34,28 @@ public static class Tidssone
     public static TimeSpan Forskyvning(DateTime lokalTid)
         => Oslo.GetUtcOffset(DateTime.SpecifyKind(lokalTid, DateTimeKind.Unspecified));
 
+    /// <summary>
+    /// Starten pa dagen I NORGE, uttrykt som UTC-tidspunkt.
+    ///
+    /// "Hvor mange maltider er gitt i dag" er et menneskelig sporsmal
+    /// forankret i lokal midnatt. Teller man fra UTC-midnatt i stedet,
+    /// nullstilles telleren klokka 01 eller 02 norsk tid - altsa midt pa
+    /// natten, men etter at kvelden er over. Da ville kveldsmaten flyttet
+    /// seg til "i morgen" for den som mater sent.
+    /// </summary>
+    public static DateTimeOffset DagStart(DateTimeOffset naa)
+    {
+        var lokal = TilLokal(naa);
+
+        var midnatt = new DateTime(
+            lokal.Year, lokal.Month, lokal.Day, 0, 0, 0, DateTimeKind.Unspecified);
+
+        // Forskyvningen hentes PA midnatt, ikke pa naa. Om hosten passeres
+        // omstillingen klokka tre, og de to verdiene er da ikke like.
+        return new DateTimeOffset(midnatt, Oslo.GetUtcOffset(midnatt))
+            .ToUniversalTime();
+    }
+
     /// <summary>"07:12" i norsk lokaltid.</summary>
     public static string Klokke(DateTimeOffset tid)
         => TilLokal(tid).ToString("HH:mm", Norsk);

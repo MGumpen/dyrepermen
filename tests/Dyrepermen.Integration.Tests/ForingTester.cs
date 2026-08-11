@@ -195,4 +195,113 @@ public sealed class ForingTester
         Assert.NotNull(dashbord.Dyr.Single(d => d.Id == med).SistMatet);
         Assert.Null(dashbord.Dyr.Single(d => d.Id == uten.Id).SistMatet);
     }
+
+    private static async Task<Dashbord> HentDashbord(
+        DyrepermenDbContext db, int husstand)
+        => await new DashbordService(
+            db,
+            new HandlelisteService(db, new Dyrepermen.Application.Services
+                .Husstandskontekst { HusstandId = husstand })).Hent(default);
+
+    [Fact]
+    public async Task Maltidstelleren_teller_kun_dagens_foringer()
+    {
+        // Uten datogrensen hadde dashbordet sagt "maltid 9 av 3" etter en uke,
+        // og tallet ville aldri blitt riktig igjen.
+        var h = await _fixture.OpprettHusstand("Teller i dag");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h, foringPa: true);
+
+        db.Foring.Add(new Foring
+        {
+            DyrId = dyrId,
+            Tidspunkt = DateTimeOffset.UtcNow.AddDays(-3)
+        });
+        await db.SaveChangesAsync();
+
+        await new ForingService(db).Registrer(
+            new NyForing(dyrId, 100, null, null), default);
+
+        var kort = (await HentDashbord(db, h)).Dyr.Single();
+
+        Assert.Equal(1, kort.MaltiderIDag);
+    }
+
+    [Fact]
+    public async Task Kortet_viser_porsjonen_til_ETT_maltid_ikke_hele_dagen()
+    {
+        // 300 g pa tre maltider er 100 g i skala - ikke 300. Blandes de to,
+        // far dyret tre ganger for mye.
+        var h = await _fixture.OpprettHusstand("Porsjon");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h, foringPa: true);
+
+        db.Forplan.Add(new Forplan
+        {
+            DyrId = dyrId,
+            Metode = Formetode.Gram,
+            GramPerDag = 300,
+            AntallMaltider = 3,
+            Aktiv = true,
+            OpprettetDato = DateOnly.FromDateTime(DateTime.UtcNow)
+        });
+        await db.SaveChangesAsync();
+
+        var kort = (await HentDashbord(db, h)).Dyr.Single();
+
+        Assert.Equal(100, kort.PorsjonGram);
+        Assert.Equal(3, kort.AntallMaltider);
+        Assert.Equal(1, kort.NesteMaltid);
+        Assert.False(kort.AlleMaltiderGitt);
+    }
+
+    [Fact]
+    public async Task Alle_maltider_gitt_slar_inn_pa_siste_porsjon()
+    {
+        var h = await _fixture.OpprettHusstand("Ferdig i dag");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h, foringPa: true);
+
+        db.Forplan.Add(new Forplan
+        {
+            DyrId = dyrId,
+            Metode = Formetode.Gram,
+            GramPerDag = 200,
+            AntallMaltider = 2,
+            Aktiv = true,
+            OpprettetDato = DateOnly.FromDateTime(DateTime.UtcNow)
+        });
+        await db.SaveChangesAsync();
+
+        var tjeneste = new ForingService(db);
+        await tjeneste.Registrer(new NyForing(dyrId, 100, null, null), default);
+
+        Assert.False((await HentDashbord(db, h)).Dyr.Single().AlleMaltiderGitt);
+
+        db.ChangeTracker.Clear();
+        await tjeneste.Registrer(new NyForing(dyrId, 100, null, null), default);
+
+        var kort = (await HentDashbord(db, h)).Dyr.Single();
+
+        Assert.True(kort.AlleMaltiderGitt);
+
+        // Knappen forsvinner ikke: en ekstra porsjon skal fortsatt kunne
+        // registreres, og da ma tallet vaere der.
+        Assert.Equal(100, kort.PorsjonGram);
+    }
+
+    [Fact]
+    public async Task Uten_foringslogg_telles_ingen_maltider()
+    {
+        // Er loggen av, ville "0 av 2" lest som et etterslep for et dyr som
+        // aldri skulle vaert foringsloggfort.
+        var h = await _fixture.OpprettHusstand("Logg av");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h, foringPa: false);
+
+        db.Foring.Add(new Foring { DyrId = dyrId, Tidspunkt = DateTimeOffset.UtcNow });
+        await db.SaveChangesAsync();
+
+        Assert.Equal(0, (await HentDashbord(db, h)).Dyr.Single().MaltiderIDag);
+    }
 }

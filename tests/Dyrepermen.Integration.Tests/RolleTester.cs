@@ -39,6 +39,12 @@ public sealed class RolleTester
         $"{nameof(MedisinController)}.LoggDose",
         $"{nameof(ForingController)}.Registrer",
 
+        // Samme to handlinger, men utfort fra dashbordet. Gjor de tynne
+        // dashbordvariantene noe annet enn sine opphav, ma de flyttes ut
+        // herfra - de star pa listen fordi de kaller nayaktig samme tjeneste.
+        $"{nameof(HjemController)}.GiMat",
+        $"{nameof(HjemController)}.KryssAv",
+
         // Handlelisten er felles og lavterskel
         $"{nameof(HandlelisteController)}.Legg",
         $"{nameof(HandlelisteController)}.MarkerKjopt",
