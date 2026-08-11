@@ -29,41 +29,42 @@
     </div>
 </div>
 
-<div class="dp-kolonner">
-    <div class="kolonne">
-
-        @* --- Dyrene ---------------------------------------------------- *@
-        <section class="kort">
-            <div class="kort-hode">
-                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
-                <h2>Dyrene</h2>
-                @if (Model.Dyr.Count > 0)
-                {
-                    <span class="antall">@Model.Dyr.Count</span>
-                    <a class="se-alle" asp-controller="Dyr" asp-action="Index">Se alle</a>
-                }
-            </div>
-
-            @if (Model.Dyr.Count == 0)
-            {
-                <div class="tomt tomt-stor">
-                    <p class="mb-3">Ingen dyr registrert ennå.</p>
-                    <a asp-controller="Dyr" asp-action="Ny" class="btn btn-primary btn-sm">
-                        Legg til ditt første dyr
-                    </a>
-                </div>
-            }
-            else
-            {
-                <partial name="_Dyreliste"
-                         model="new DyrelisteVm(Model.Dyr, Model.GodbitloggAktiv)" />
-            }
-        </section>
+@* Dyrene far hele bredden. De er grunnen til at man apner dashbordet, og
+   som kort i et rutenett bruker de plassen i stedet for a stable seg i en
+   smal kolonne med tom hoyreside. *@
+<section class="seksjon">
+    <div class="seksjon-hode">
+        <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+        <h2>Dyrene</h2>
+        @if (Model.Dyr.Count > 0)
+        {
+            <span class="antall">@Model.Dyr.Count</span>
+            <a class="se-alle" asp-controller="Dyr" asp-action="Index">Se alle</a>
+        }
     </div>
 
-    <div class="kolonne">
+    @if (Model.Dyr.Count == 0)
+    {
+        <div class="kort">
+            <div class="tomt tomt-stor">
+                <p class="mb-3">Ingen dyr registrert ennå.</p>
+                <a asp-controller="Dyr" asp-action="Ny" class="btn btn-primary btn-sm">
+                    Legg til ditt første dyr
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <partial name="_Dyreliste"
+                 model="new DyrelisteVm(Model.Dyr, Model.GodbitloggAktiv)" />
+    }
+</section>
 
-        @* --- Forfaller snart -------------------------------------------- *@
+@* Forfall og handleliste deler bredden likt. De er like viktige, og ingen av
+   dem trenger mer plass enn den andre. *@
+<div class="dp-kolonner likt">
+    <div class="kolonne">
         <section class="kort">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-klokke" /></svg>
@@ -84,8 +85,8 @@
                 <div class="tomt">
                     <p class="mb-1">Ingenting forfaller de neste 14 dagene.</p>
                     <p class="mb-0" style="font-size:.85em">
-                        Her dukker behandlinger opp når du fyller inn
-                        «neste gang» — vaksine, ormekur, flåttmiddel.
+                        Her dukker behandlinger, veterinærtimer og fornyelser
+                        opp når du fyller inn en dato.
                     </p>
                 </div>
             }
@@ -114,8 +115,9 @@
                 </ul>
             }
         </section>
+    </div>
 
-        @* --- Handleliste ------------------------------------------------ *@
+    <div class="kolonne">
         <section class="kort">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-handleliste" /></svg>

@@ -491,21 +491,151 @@ h1, h2, h3, h4 {
 
 /* --- Nokkeltall pa dyrekort ---------------------------------------------- */
 
-.dyrekort-tall {
+/* --- Dyrekort pa dashbordet ----------------------------------------------
+   Radliste ble forsokt forst. Med fem-seks opplysninger per dyr gled radene
+   inn i hverandre, og opplysninger som hoerer sammen - porsjon, sist matet,
+   godbiter - ble skilt av vekt og vaksine fordi alt sto i en flat strek.
+   Kort med grupper loeser begge deler. */
+
+.dyrerutenett {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+    /* auto-fill, ikke auto-fit: med ett dyr skal kortet beholde bredden sin
+       i stedet for a strekke seg over hele skjermen. */
+    .dyrerutenett {
+        grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    }
+}
+
+.dyrekort {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    margin-top: .5rem;
+    flex-direction: column;
+    background: var(--dp-flate);
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius);
+    overflow: hidden;
 }
 
-.dyrekort-tall .verdi {
-    font-weight: 700;
+.dyrekort-hode {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .7rem .9rem;
+    background: var(--dp-flate-2);
+    border-bottom: 1px solid var(--dp-kant);
+    color: var(--dp-tekst);
+    text-decoration: none;
 }
 
-.dyrekort-tall .etikett {
+.dyrekort-hode:hover {
+    background: var(--dp-aksent-svak);
+    color: var(--dp-tekst);
+}
+
+.dyrekort-hode .navn {
     display: block;
-    font-size: .76rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.dyrekort-hode .art {
+    display: block;
+    font-size: .8rem;
     color: var(--dp-tekst-svak);
+}
+
+.dyrekort-hode .ikon {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--dp-tekst-svak);
+}
+
+.dyrekort-gruppe {
+    padding: .65rem .9rem .75rem;
+}
+
+/* Skillelinje mellom gruppene, ikke rundt hver. En ramme til inne i kortet
+   ville lagt en tredje kant oppa de to som allerede er der. */
+.dyrekort-gruppe + .dyrekort-gruppe {
+    border-top: 1px solid var(--dp-kant);
+}
+
+.gruppe-tittel {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    margin: 0 0 .4rem;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--dp-tekst-svak);
+}
+
+.gruppe-tittel .ikon {
+    width: 14px;
+    height: 14px;
+}
+
+/* Etikett til venstre, verdi til hoyre, begge pa linje nedover. Det er
+   dette som gjor det mulig a se hva som hoerer til hva. */
+.fakta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .25rem .75rem;
+    margin: 0;
+    align-items: baseline;
+}
+
+.fakta dt {
+    font-size: .82rem;
+    font-weight: 400;
+    color: var(--dp-tekst-svak);
+    /* Lange behandlingsnavn skal ikke presse verdikolonnen ut av kortet. */
+    max-width: 9rem;
+    overflow-wrap: anywhere;
+}
+
+.fakta dd {
+    margin: 0;
+    font-size: .92rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* Naar-teksten er kontekst, ikke verdi: "malt 9. aug." skal ikke veie like
+   mye som selve vekten. */
+.fakta .naar {
+    display: block;
+    font-size: .78rem;
+    font-weight: 400;
+    color: var(--dp-tekst-svak);
+}
+
+.fakta dd.tom {
+    font-weight: 400;
+    color: var(--dp-tekst-svak);
+}
+
+.gruppe-handlinger {
+    display: flex;
+    gap: .4rem;
+    margin-top: .7rem;
+}
+
+/* Knappene deler bredden likt. Da treffer man dem uten a sikte, og de to
+   handlingene ser like viktige ut - for de er det. */
+.gruppe-handlinger > form {
+    flex: 1 1 0;
+}
+
+.gruppe-handlinger .btn {
+    width: 100%;
+    justify-content: center;
 }
 
 /* --- Faresone ------------------------------------------------------------ */
@@ -857,6 +987,41 @@ h1, h2, h3, h4 {
 
 .dp-kolonner > .kolonne > .kort:first-child {
     margin-top: 0;
+}
+
+/* Like brede kolonner. Brukes der de to boksene er like viktige. */
+@media (min-width: 992px) {
+    .dp-kolonner.likt {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* En seksjon er et kort uten ramme: overskrift og innhold, men uten en boks
+   rundt en boks. */
+.seksjon {
+    margin-bottom: .85rem;
+}
+
+.seksjon-hode {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    margin-bottom: .5rem;
+    padding: 0 .15rem;
+}
+
+.seksjon-hode h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.seksjon-hode .ikon {
+    color: var(--dp-tekst-svak);
+}
+
+.seksjon-hode .se-alle {
+    margin-left: auto;
 }
 
 /* Bootstrap 5.3 har ikke min-w-0. Uten den sprenger lange navn og
