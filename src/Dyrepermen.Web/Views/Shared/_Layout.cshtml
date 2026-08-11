@@ -68,18 +68,28 @@
 
     @if (innlogget)
     {
+        @* En dialog for hele siden, ikke en per dyr. Innholdet hentes nar
+           den apnes, sa markupen er tom til den trengs. showModal() gir
+           fokusfelle, Esc-lukking og bakteppe uten en linje egen kode. *@
+        <dialog id="foringsdialog" class="dp-dialog">
+            <div id="foringsdialog-innhold"
+                 hx-on::after-swap="const d = this.closest('dialog'); if (!d.open) d.showModal();"></div>
+        </dialog>
+
         <nav class="topplinje d-lg-none">
             <a class="sidemeny-merke p-0" href="/">
                 <img src="~/img/logo.svg" alt="" height="26" width="26" />
                 <span>Dyrepermen</span>
             </a>
-            <button class="btn btn-outline-secondary btn-sm" type="button"
+            @* Treffflaten skal vaere minst 44 px, jf. plan kapittel 10.2.
+               btn-sm ga rundt 31 og var vanskelig a treffe med tommelen. *@
+            <button class="btn menyknapp" type="button"
                     data-bs-toggle="offcanvas"
                     data-bs-target="#hovedmeny"
                     aria-controls="hovedmeny"
                     aria-expanded="false"
                     aria-label="Åpne meny">
-                <svg class="ikon" aria-hidden="true"><use href="#i-meny" /></svg>
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-meny" /></svg>
             </button>
         </nav>
 

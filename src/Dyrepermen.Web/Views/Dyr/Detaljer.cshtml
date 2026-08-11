@@ -141,6 +141,27 @@
             }
         </section>
 
+        @* --- Foring ------------------------------------------------------
+           Bryteren styrer visning OG tilgang. Er den av, gir controlleren
+           404 - og da skal seksjonen heller ikke vises her. *@
+        @if (d.ForingsloggAktiv)
+        {
+            <section class="kort">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-forplan" /></svg>
+                    <h2>Fôring</h2>
+                    <a class="se-alle" asp-controller="Foring" asp-action="Index"
+                       asp-route-dyrId="@d.Id">Se loggen</a>
+                </div>
+                <div class="kort-kropp">
+                    <p class="mb-0 small text-body-secondary">
+                        Logg hvem som ga mat og når, så slipper dere å spørre
+                        hverandre.
+                    </p>
+                </div>
+            </section>
+        }
+
         @* --- Forplan ----------------------------------------------------
            Bryteren styrer visning OG tilgang. Er den av, gir controlleren
            404 - og da skal seksjonen heller ikke vises her. *@

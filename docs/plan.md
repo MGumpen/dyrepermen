@@ -1311,6 +1311,16 @@ Tidspunkt er bevisst ikke en parameter. Tjenesten setter `DateTimeOffset.UtcNow`
 
 **Visning av tid:** lagre alltid i UTC (`timestamptz`), konverter til `Europe/Oslo` i visningslaget. Ellers forskyver alle registreringer seg med én time ved sommertidsomstillingen.
 
+**Måltider og godbiter skilles.** `foring.type` er `char(1)`: `M` for måltid, `G` for godbit. Uten skillet ville en ostebit talt som et måltid, og dashbordet sagt «måltid 3 av 3» til den som kommer hjem og skal gi middag. Godbitene telles for seg og vises som «3 godbiter i dag».
+
+Godbitloggen har **egen bryter på husstandsnivå** — `husstand_innstilling.godbitlogg_aktiv`. Dette er en ekte bryter, ikke en malverdi som `foringslogg_standard`: den gjelder alle dyr straks den skrus av. Ikke alle bryr seg om å telle godbiter, og for dem er knappen bare støy i hver eneste dyrerad. Som alle funksjonsbrytere styrer den visning **og** håndheves i tjenesten.
+
+`foring.fornavn` er fritekst med forslag fra husstandens egne tidligere rader — ikke fremmednøkkel til et fôrregister. Et register måtte vedlikeholdes for å gi et navn vi like gjerne kan skrive, og forslagslisten holder stavemåten stabil av seg selv.
+
+**Porsjonsregelen finnes ett sted**, som `ForplanResultat.PorsjonGram`. Regner dashbordet for seg selv, kan det vise 53 g mens loggen skriver 54 — og da stoler ingen på noen av tallene. Mengden regnes alltid på serveren når knappen trykkes, aldri sendt fra klienten: for en valp endrer porsjonen seg hver gang vekten registreres, og en fane som har stått åpen siden i går ville skrevet et foreldet tall.
+
+**Dagen starter ved norsk midnatt**, ikke UTC-midnatt. `Tidssone.DagStart` henter forskyvningen *på* midnatt, ikke på nåtidspunktet — ellers bommer omstillingshelgene med en time. Teller man fra UTC, nullstilles måltidstelleren klokka 01 eller 02 norsk tid, altså etter at kvelden er over, og kveldsmaten flytter seg til «i morgen».
+
 ### 8.3 Påminnelser
 
 Én tjeneste samler alt som forfaller, uavhengig av kilde:
@@ -2678,6 +2688,12 @@ Delt liste på husstandsnivå med valgfri kobling til dyr, htmx for avkryssing u
 Funksjonsbrytere per dyr, standardverdier på husstandsnivå, fôringslogg bak bryter.
 
 **Ferdig når:** bryteren av skjuler fanen *og* `POST` mot endepunktet gir 404, tidspunkt settes på server og kan ikke sendes fra klient, og «sist matet» viser riktig lokal tid over sommertidsskiftet.
+
+### Fase 6d — handlinger på dashbordet
+
+Porsjon for neste måltid på dyrekortet, «gi mat» med ett trykk, dialog for ekstra porsjon og godbit, avkryssing av handlelisten uten sidelast.
+
+**Ferdig når:** en godbit ikke øker måltidstelleren, måltidstelleren nullstilles ved norsk midnatt og ikke ved UTC-midnatt, godbitbryteren av både skjuler knappen og får tjenesten til å avvise `POST`, og alle handlinger virker uten JavaScript gjennom vanlig skjemainnsending.
 
 ### Fase 6c — husstand og konto
 

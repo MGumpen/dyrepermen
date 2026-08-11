@@ -109,6 +109,8 @@ public sealed class HusstandService : IHusstandService
             innstilling?.ForingsloggStandard ?? false,
             innstilling?.ForplanStandard ?? true,
             innstilling?.VarslerAktiv ?? true,
+            // Mangler raden, gjelder standardverdien fra Domain.
+            innstilling?.GodbitloggAktiv ?? true,
             await _db.Dyr.CountAsync(ct));
     }
 
@@ -261,6 +263,7 @@ public sealed class HusstandService : IHusstandService
         bool foringsloggStandard,
         bool forplanStandard,
         bool varslerAktiv,
+        bool godbitloggAktiv,
         CancellationToken ct)
     {
         var id = _husstand.HusstandId;
@@ -287,6 +290,7 @@ public sealed class HusstandService : IHusstandService
         innstilling.ForingsloggStandard = foringsloggStandard;
         innstilling.ForplanStandard = forplanStandard;
         innstilling.VarslerAktiv = varslerAktiv;
+        innstilling.GodbitloggAktiv = godbitloggAktiv;
 
         await _db.SaveChangesAsync(ct);
         return true;

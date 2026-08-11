@@ -25,6 +25,11 @@
     --dp-aksent-mork: #245437;
     --dp-aksent-svak: #e7f0ea;
 
+    /* Datafarge for grafer. Egen variabel, ikke aksenten: aksenten har for
+       lav kroma til a lese som data. Validert mot lyshetsband, kromagulv og
+       kontrast mot flaten. */
+    --dp-serie-1: #0f7d47;
+
     --dp-fare: #a4271f;
     --dp-fare-svak: #fbeceb;
     --dp-varsel: #8a5a00;
@@ -293,12 +298,45 @@ h1, h2, h3, h4 {
     align-items: center;
     justify-content: space-between;
     gap: .5rem;
-    padding: .6rem .75rem;
+    /* Hoyre side er smalere enn venstre: knappen har egen luft, og lik
+       padding ville dyttet den for langt inn fra kanten. */
+    padding: .45rem .5rem .45rem .9rem;
     background: var(--dp-flate);
     border-bottom: 1px solid var(--dp-kant);
     position: sticky;
     top: 0;
     z-index: 1020;
+
+    /* Under statuslinja pa iPhone. Uten dette havner logoen delvis bak
+       "hakket" i landskapsmodus. */
+    padding-left: max(.9rem, env(safe-area-inset-left));
+    padding-right: max(.5rem, env(safe-area-inset-right));
+}
+
+.topplinje .sidemeny-merke span {
+    font-size: 1.05rem;
+}
+
+/* Minst 44 x 44 px. Under det bommer tommelen, og menyen er det eneste
+   inngangspunktet til navigasjonen pa mobil. Se plan kapittel 10.2. */
+.menyknapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius-sm);
+    color: var(--dp-tekst);
+    background: var(--dp-flate);
+}
+
+.menyknapp:hover,
+.menyknapp:active {
+    background: var(--dp-flate-2);
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
 }
 
 /* --- Kort -------------------------------------------------------------- */
@@ -507,6 +545,198 @@ h1, h2, h3, h4 {
     color: var(--dp-tekst-svak);
 }
 
+/* --- Handlinger pa dashbordet --------------------------------------------- */
+
+/* Avkryssingen pa dashbordet. Selve boksen er 22 px av hensyn til
+   utseendet, men knappen rundt strekker seg til 44 - det er den man
+   treffer. */
+.kryssknapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    /* Negativ marg pa venstre side, slik at den storre treffflaten ikke
+       dytter teksten innover i raden. */
+    margin: -11px -11px -11px -12px;
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+.kryssknapp:hover .handleliste-boks {
+    border-color: var(--dp-aksent);
+    background: var(--dp-aksent-svak);
+}
+
+.matknapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 44px;
+    padding: .4rem .8rem;
+    border: 1px solid var(--dp-aksent);
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-aksent);
+    color: var(--dp-tekst-hvit);
+    font-size: .875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.matknapp:hover,
+.matknapp:focus-visible {
+    background: var(--dp-aksent-mork);
+    border-color: var(--dp-aksent-mork);
+    color: var(--dp-tekst-hvit);
+}
+
+/* Er alle maltider gitt, skal knappen fortsatt virke - en ekstra porsjon
+   eller en godbit skal kunne fores. Men den slutter a be om oppmerksomhet,
+   slik at raden med mat igjen a gi er den som skiller seg ut. */
+.matknapp.ferdig {
+    background: transparent;
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst-svak);
+}
+
+.matknapp.ferdig:hover,
+.matknapp.ferdig:focus-visible {
+    background: var(--dp-flate-2);
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
+}
+
+/* Mens kallet gar. Uten dette rekker man a trykke to ganger, og da
+   registreres to maltider. */
+.matknapp[disabled] {
+    opacity: .55;
+}
+
+.radhandlinger {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-shrink: 0;
+}
+
+/* Godbiten er sekundaer. Den star ved siden av matknappen i hver rad, og
+   ville trukket like mye oppmerksomhet som maten hvis den var fylt. */
+.godbitknapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 44px;
+    padding: .4rem .7rem;
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-flate);
+    color: var(--dp-tekst-svak);
+    font-size: .875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.godbitknapp:hover,
+.godbitknapp:focus-visible {
+    background: var(--dp-flate-2);
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
+}
+
+@media (max-width: 420px) {
+    /* Pa de smaleste skjermene ryker plassen til bade dyrenavn og etikett.
+       Ikonet alene er entydig nok, og aria-label baerer meningen. */
+    .matknapp span {
+        display: none;
+    }
+
+    .matknapp,
+    .godbitknapp {
+        padding: .4rem;
+        min-width: 44px;
+        justify-content: center;
+    }
+}
+
+/* --- Dialog --------------------------------------------------------------- */
+
+/* <dialog> med showModal() gir fokusfelle, Esc-lukking og bakteppe uten en
+   linje egen kode. Bootstrap sin modal ville krevd mer markup og et
+   JavaScript-objekt per apning. */
+.dp-dialog {
+    width: min(30rem, calc(100vw - 2rem));
+    padding: 0;
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius);
+    background: var(--dp-flate);
+    color: var(--dp-tekst);
+    box-shadow: 0 18px 48px rgb(0 0 0 / .18);
+}
+
+.dp-dialog::backdrop {
+    background: rgb(15 20 15 / .45);
+}
+
+.dialog-hode {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .85rem 1rem;
+    border-bottom: 1px solid var(--dp-kant);
+}
+
+.dialog-kropp {
+    padding: 1rem;
+}
+
+.dialog-fot {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    padding: .85rem 1rem;
+    border-top: 1px solid var(--dp-kant);
+    background: var(--dp-flate-2);
+    border-radius: 0 0 var(--dp-radius) var(--dp-radius);
+}
+
+.lukkeknapp {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--dp-tekst-svak);
+}
+
+.lukkeknapp:hover {
+    color: var(--dp-tekst);
+}
+
+@media (max-width: 480px) {
+    /* Pa mobil legger dialogen seg nederst, der tommelen er. En boks midt pa
+       skjermen krever at man strekker seg. */
+    .dp-dialog {
+        width: 100%;
+        max-width: 100%;
+        margin: auto auto 0;
+        border-radius: var(--dp-radius) var(--dp-radius) 0 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .dialog-fot {
+        border-radius: 0;
+    }
+
+    /* Knappene i foten deler bredden likt. Da treffer man dem uten a sikte. */
+    .dialog-fot .btn {
+        flex: 1 1 0;
+        min-height: 44px;
+    }
+}
+
 /* --- Sider uten innlogging ------------------------------------------------ */
 
 .apen-side {
@@ -690,4 +920,114 @@ h1, h2, h3, h4 {
     border-color: var(--dp-kant);
     border-radius: var(--dp-radius);
     box-shadow: 0 4px 16px rgba(26, 29, 25, .08);
+}
+
+/* --- Vektgraf ----------------------------------------------------------
+   Serienfargen er egen, ikke --dp-aksent: aksenten er for lite mettet til
+   a lese som data - den ville blitt oppfattet som ramme eller hjelpelinje.
+   Verifisert mot lyshet, kroma og kontrast for den ble valgt. */
+
+.vektgraf {
+    position: relative;
+    margin: 0;
+}
+
+/* Ensartet skalering: hoyden folger bredden, sa punkter forblir sirkler
+   og teksten beholder proporsjonene. */
+.vektgraf-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.graf-rutenett {
+    stroke: var(--dp-kant);
+    stroke-width: 1;
+}
+
+.graf-akse {
+    fill: var(--dp-tekst-svak);
+    font-size: 11px;
+}
+
+.graf-flate {
+    fill: var(--dp-serie-1);
+    fill-opacity: .1;
+    stroke: none;
+}
+
+.graf-linje {
+    fill: none;
+    stroke: var(--dp-serie-1);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.graf-punkt {
+    fill: var(--dp-serie-1);
+    stroke: var(--dp-flate);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+/* Treffflatene ligger over grafen og folger punktenes prosentposisjon. */
+.graf-treff {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.graf-treffpunkt {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.graf-treffpunkt:focus-visible {
+    outline: 2px solid var(--dp-serie-1);
+    outline-offset: 2px;
+}
+
+.graf-boble {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 14px));
+    padding: .35rem .6rem;
+    border-radius: var(--dp-radius-sm);
+    background: var(--dp-tekst);
+    color: var(--dp-tekst-hvit);
+    font-size: .78rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.graf-bunn {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-top: .35rem;
+    font-size: .78rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* Teksten baerer aldri seriefargen. Tallet star i vanlig blekk. */
+.graf-siste strong {
+    color: var(--dp-tekst);
+}
+
+/* Enheten sies en gang, ikke pa hvert aksemerke. */
+.graf-enhet {
+    opacity: .7;
 }

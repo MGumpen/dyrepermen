@@ -1,4 +1,5 @@
 using Dyrepermen.Application.Dtos;
+using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Enums;
 using Dyrepermen.Infrastructure.Persistence;
@@ -9,7 +10,8 @@ namespace Dyrepermen.Infrastructure.Services;
 public sealed class DashbordService : IDashbordService
 {
     private const int Varselvindu = 14;
-    private const int AntallPaHandleliste = 5;
+    /// <summary>Deles med HjemController, som tegner samme liste pa nytt.</summary>
+    public const int AntallPaHandleliste = 5;
 
     private readonly DyrepermenDbContext _db;
     private readonly IHandlelisteService _handleliste;
@@ -25,6 +27,10 @@ public sealed class DashbordService : IDashbordService
     {
         var idag = DateOnly.FromDateTime(DateTime.UtcNow);
         var grense = idag.AddDays(Varselvindu);
+
+        // Midnatt i Norge, ikke i UTC. Ellers nullstilles maltidstelleren
+        // klokka to om natten - etter at kvelden er over.
+        var dagStart = Tidssone.DagStart(DateTimeOffset.UtcNow);
 
         // Sporring 1. Siste vekt, aktiv forplan, neste behandling og aktive
         // medisiner hentes som korrelerte undersporringer inne i Select.
@@ -59,7 +65,8 @@ public sealed class DashbordService : IDashbordService
                         f.Metode,
                         f.ProsentTidels,
                         f.GramPerDag,
-                        f.AntallMaltider
+                        f.AntallMaltider,
+                        f.Fornavn
                     })
                     .FirstOrDefault(),
 
@@ -73,31 +80,70 @@ public sealed class DashbordService : IDashbordService
                     .Where(m => m.SluttDato == null || m.SluttDato >= idag)
                     .OrderBy(m => m.Navn)
                     .Select(m => m.Navn)
-                    .ToList()
+                    .ToList(),
+
+                // Korrelert undersporring - siste foring i samme rundtur.
+                SisteForing = d.Foringer
+                    .OrderByDescending(f => f.Tidspunkt)
+                    .Select(f => new
+                    {
+                        f.Tidspunkt,
+                        Navn = f.GittAv == null ? null : f.GittAv.Visningsnavn
+                    })
+                    .FirstOrDefault(),
+
+                // Enda to korrelerte undersporringer, ikke to nye rundturer.
+                // Godbiter telles for seg: en ostebit er ikke middag.
+                MaltiderIDag = d.Foringer.Count(f =>
+                    f.Tidspunkt >= dagStart && f.Type == Foringstype.Maltid),
+
+                GodbiterIDag = d.Foringer.Count(f =>
+                    f.Tidspunkt >= dagStart && f.Type == Foringstype.Godbit)
             })
             .ToListAsync(ct);
 
-        var dyr = raa.Select(d => new DyrKort(
-            d.Id,
-            d.Navn,
-            d.Art,
-            d.BildeFilnavn,
-            d.Fodselsdato,
-            d.ForingsloggAktiv,
-            d.SisteVekt?.VektGram,
-            d.SisteVekt?.Dato,
+        var dyr = raa.Select(d =>
+        {
             // Bryteren styrer visning: er forplan slatt av for dyret, skal
             // den ikke dukke opp pa kortet heller.
-            d.ForplanAktiv
-                ? Forplantekst(
+            var mengde = d.ForplanAktiv
+                ? Formengde(
                     d.Forplan?.Metode, d.Forplan?.ProsentTidels,
                     d.Forplan?.GramPerDag, d.Forplan?.AntallMaltider,
                     d.SisteVekt?.VektGram)
-                : null,
-            d.Neste is null ? null : TypeTekst(d.Neste.Type, d.Neste.Preparat),
-            d.Neste?.Dato,
-            d.Medisiner))
-            .ToList();
+                : null;
+
+            return new DyrKort(
+                d.Id,
+                d.Navn,
+                d.Art,
+                d.BildeFilnavn,
+                d.Fodselsdato,
+                d.ForingsloggAktiv,
+                d.SisteVekt?.VektGram,
+                d.SisteVekt?.Dato,
+                Forplantekst(mengde),
+                d.Neste is null ? null : TypeTekst(d.Neste.Type, d.Neste.Preparat),
+                d.Neste?.Dato,
+                d.Medisiner,
+                // Kortet vises kun nar bryteren er pa for dyret. Er den av,
+                // skal "sist matet" ikke dukke opp i det hele tatt.
+                d.ForingsloggAktiv && d.SisteForing is not null
+                    ? new SistMatet(d.SisteForing.Tidspunkt, d.SisteForing.Navn)
+                    : null,
+                // Uten vektgrunnlag finnes det ikke noe tall a vise, og da
+                // skal knappen heller ikke tilby en porsjon.
+                mengde is { HarPlan: true, ManglerVekt: false }
+                    ? mengde.PorsjonGram
+                    : null,
+                mengde?.AntallMaltider ?? 0,
+                // Telles bare nar loggen er pa. Er den av, finnes det ingen
+                // maltider a telle, og "0 av 2" ville vaert et falskt
+                // etterslep for et dyr som ikke skal foringsloggfores.
+                d.ForingsloggAktiv ? d.MaltiderIDag : 0,
+                d.Forplan?.Fornavn,
+                d.ForingsloggAktiv ? d.GodbiterIDag : 0);
+        }).ToList();
 
         // Sporring 2. Behandlinger som forfaller innen vinduet.
         //
@@ -148,9 +194,19 @@ public sealed class DashbordService : IDashbordService
         // Sporring 4. De fem oeverste aktive punktene pa handlelisten.
         var handleliste = await _handleliste.HentAktive(AntallPaHandleliste, ct);
 
-        // Fire sporringer totalt, uansett antall dyr. Det er taket i
-        // kapittel 16 - flere kilder ma slas sammen med de eksisterende.
-        return new Dashbord(dyr, forfaller, handleliste);
+        // Sporring 5. Husstandsbryteren for godbitloggen.
+        //
+        // Forslagene til dialogen hentes IKKE her. De ville vaert en sjette
+        // rundtur pa hver eneste sidelast, for en liste de fleste aldri ser -
+        // dialogen henter sitt eget innhold nar den apnes.
+        var godbit = await _db.HusstandInnstilling
+            .Select(i => (bool?)i.GodbitloggAktiv)
+            .FirstOrDefaultAsync(ct) ?? true;
+
+        // Fem sporringer, uansett antall dyr. Taket i kapittel 16 handler om
+        // at ingenting skal vokse med antall dyr - flere kilder ma slas
+        // sammen med de eksisterende, ikke legges til per rad.
+        return new Dashbord(dyr, forfaller, handleliste, godbit);
     }
 
     private static string TypeTekst(BehandlingType type, string? preparat)
@@ -169,10 +225,14 @@ public sealed class DashbordService : IDashbordService
     }
 
     /// <summary>
-    /// Samme regel som ForplanService. Uten vektgrunnlag sier den fra framfor
-    /// a vise 0 gram - et tall uten dekning er verre enn ingen tall.
+    /// Samme regel som ForplanService, og med vilje samme returtype: da deler
+    /// de to ogsa <see cref="ForplanResultat.PorsjonGram"/>, sa dashbordet og
+    /// forplansiden aldri kan runde ulikt.
+    ///
+    /// Uten vektgrunnlag sier den fra framfor a vise 0 gram - et tall uten
+    /// dekning er verre enn ingen tall.
     /// </summary>
-    private static string? Forplantekst(
+    private static ForplanResultat? Formengde(
         Formetode? metode, int? prosentTidels, int? gramPerDag,
         int? antallMaltider, int? sisteVektGram)
     {
@@ -185,18 +245,25 @@ public sealed class DashbordService : IDashbordService
 
         if (metode == Formetode.Gram)
         {
-            return $"{gramPerDag} g på {maltider} måltider";
+            return ForplanResultat.Ok(gramPerDag ?? 0, maltider);
         }
 
         if (sisteVektGram is null)
         {
-            return "Mangler vekt";
+            return ForplanResultat.ManglerVektgrunnlag();
         }
 
         var gram = (int)Math.Round(
             sisteVektGram.Value * prosentTidels!.Value / 1000.0,
             MidpointRounding.AwayFromZero);
 
-        return $"{gram} g på {maltider} måltider";
+        return ForplanResultat.Ok(gram, maltider);
     }
+
+    private static string? Forplantekst(ForplanResultat? mengde) => mengde switch
+    {
+        null => null,
+        { ManglerVekt: true } => "Mangler vekt",
+        _ => $"{mengde.GramPerDag} g på {mengde.AntallMaltider} måltider"
+    };
 }

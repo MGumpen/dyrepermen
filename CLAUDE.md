@@ -134,3 +134,6 @@ Ikke gjett på ting som er sikkerhetsrelatert eller påvirker skjemaet. Spør.
 - **`InvariantGlobalization=true`** får tidssonekonvertering til å kaste i containeren.
 - **`char(15)` i PostgreSQL** blank-padder. Bruk `varchar` med lengde-CHECK.
 - **Manglende sjekk på at e-postadressen tilhører en annen husstand** lar hvem som helst tømme en fremmed husstand.
+- **`HasDefaultValue` på en `bool`** gjør at bryteren aldri kan skrus av. EF bruker CLR-standarden (`false`) som sentinel, utelater kolonnen fra `INSERT`, og databasens `true` slår inn. Sett standardverdien på egenskapen i Domain i stedet, og fyll eksisterende rader i migrasjonen. Samme familie som `HusstandInvitasjon.Rolle`.
+- **`AddColumn<char>` uten `defaultValue`** gir `'\0'`. Legger du til et CHECK-vilkår i samme migrasjon, avvises hver eneste eksisterende rad. Sett alltid den verdien de gamle radene faktisk hadde.
+- **Dagsgrenser i UTC** flytter kveldsaktivitet til «i morgen». Bruk `Tidssone.DagStart`, som henter forskyvningen på midnatt — ikke på nåtidspunktet.

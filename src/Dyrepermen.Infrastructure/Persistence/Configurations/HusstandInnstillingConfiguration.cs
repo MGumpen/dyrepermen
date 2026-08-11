@@ -15,7 +15,24 @@ public sealed class HusstandInnstillingConfiguration
 
         b.Property(i => i.ForingsloggStandard).HasDefaultValue(false);
         b.Property(i => i.ForplanStandard).HasDefaultValue(true);
-        b.Property(i => i.VarslerAktiv).HasDefaultValue(true);
+        // Ingen av bryterne har HasDefaultValue, og det er med vilje.
+        //
+        // For en bool er CLR-standarden false, og nar en egenskap har
+        // lagringsstandard bruker EF nettopp CLR-standarden som sentinel:
+        // verdien utelates fra INSERT, og databasens true slar inn. En bryter
+        // som slas AV i samme kall som raden opprettes, ville altsa blitt
+        // lagret som PA.
+        //
+        // VarslerAktiv hadde denne feilen. LagreInnstillinger oppretter raden
+        // hvis den mangler (se HusstandService), og skrur man av varsler i
+        // det oyeblikket, kom de tilbake ved neste sidelast. Samme familie
+        // som HusstandInvitasjon.Rolle.
+        //
+        // Standardverdien ligger i stedet pa egenskapen i Domain, der den
+        // gjelder uansett hvem som setter den. Migrasjonen fyller radene som
+        // allerede finnes.
+        b.Property(i => i.VarslerAktiv).IsRequired();
+        b.Property(i => i.GodbitloggAktiv).IsRequired();
 
         b.HasOne(i => i.Husstand)
          .WithOne(h => h.Innstilling)

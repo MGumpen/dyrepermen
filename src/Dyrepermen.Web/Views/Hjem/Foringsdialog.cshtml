@@ -1,0 +1,18 @@
+@using Dyrepermen.Web.ViewModels
+@model ForingsdialogVm
+@{
+    ViewData["Tittel"] = Model.Tittel;
+}
+
+@* Uten skript apner ikke dialogen - da havner man her i stedet, pa en
+   vanlig side med nayaktig samme skjema. Det er derfor knappene pa
+   dashbordet er lenker: href-en virker alene, hx-get er forbedringen. *@
+<div class="sidehode">
+    <div>
+        <h1>@Model.Tittel</h1>
+    </div>
+</div>
+
+<section class="kort kort-skjema">
+    <partial name="_Foringsdialog" model="Model" />
+</section>

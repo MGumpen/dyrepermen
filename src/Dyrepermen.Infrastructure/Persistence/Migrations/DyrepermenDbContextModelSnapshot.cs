@@ -358,6 +358,11 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("dyr_id");
 
+                    b.Property<string>("Fornavn")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("fornavn");
+
                     b.Property<int?>("GittAvBrukerId")
                         .HasColumnType("integer")
                         .HasColumnName("gitt_av_bruker_id");
@@ -377,6 +382,10 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnName("tidspunkt")
                         .HasDefaultValueSql("now()");
 
+                    b.Property<char>("Type")
+                        .HasColumnType("char(1)")
+                        .HasColumnName("type");
+
                     b.HasKey("Id")
                         .HasName("pk_foring");
 
@@ -390,6 +399,8 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.ToTable("foring", null, t =>
                         {
                             t.HasCheckConstraint("ck_foring_mengde", "mengde_gram IS NULL OR mengde_gram > 0");
+
+                            t.HasCheckConstraint("ck_foring_type", "type IN ('M','G')");
                         });
                 });
 
@@ -647,10 +658,12 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("forplan_standard");
 
-                    b.Property<bool>("VarslerAktiv")
-                        .ValueGeneratedOnAdd()
+                    b.Property<bool>("GodbitloggAktiv")
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true)
+                        .HasColumnName("godbitlogg_aktiv");
+
+                    b.Property<bool>("VarslerAktiv")
+                        .HasColumnType("boolean")
                         .HasColumnName("varsler_aktiv");
 
                     b.HasKey("HusstandId")

@@ -23,4 +23,14 @@ public sealed class HusstandInnstilling : IHusstandsbundet
 
     /// <summary>Gjelder e-postutsending, og er pa husstandsniva.</summary>
     public bool VarslerAktiv { get; set; } = true;
+
+    /// <summary>
+    /// Viser godbitknappen. Ikke alle bryr seg om a telle godbiter, og for
+    /// dem er knappen bare stoy i hver eneste dyrerad.
+    ///
+    /// Dette er en EKTE husstandsbryter, ikke en malverdi som de to over -
+    /// den gjelder alle dyr med en gang den skrus av. Bryteren styrer
+    /// visning OG handheves i tjenesten, jf. plan kapittel 8.2.
+    /// </summary>
+    public bool GodbitloggAktiv { get; set; } = true;
 }

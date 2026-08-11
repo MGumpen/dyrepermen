@@ -1,0 +1,147 @@
+@using Dyrepermen.Application.Extensions
+@using Dyrepermen.Application.Interfaces
+@inject IGjeldendeBruker Meg
+@model ForingSideVm
+@{
+    ViewData["Tittel"] = $"Fôring – {Model.DyrNavn}";
+    var naa = DateTimeOffset.UtcNow;
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Fôring</h1>
+        <div class="undertittel">
+            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
+                @Model.DyrNavn
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="dp-kolonner">
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-forplan" /></svg>
+                <h2>Logg</h2>
+                @if (Model.Historikk.Count > 0)
+                {
+                    <span class="antall">@Model.Historikk.Count</span>
+                }
+            </div>
+
+            @if (Model.Historikk.Count == 0)
+            {
+                <div class="tomt">
+                    <p class="mb-1">Ingen fôringer registrert ennå.</p>
+                    <p class="mb-0" style="font-size:.85em">
+                        Trykk «Gi mat» når @Model.DyrNavn har spist, så ser den
+                        andre i husstanden det med én gang.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var rad in Model.Historikk)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                @* Lagret i UTC, vist i norsk tid. Konverteringen
+                                   skjer ett sted - i Tidssone. *@
+                                <span class="tittel">@Tidssone.NaerTid(rad.Tidspunkt, naa)</span>
+                                <span class="under d-block">
+                                    @(rad.MengdeGram is { } g ? $"{g} g · " : "")
+                                    @(rad.GittAv ?? "slettet bruker")
+                                    @if (rad.Kommentar is not null)
+                                    {
+                                        <span class="d-block">@rad.Kommentar</span>
+                                    }
+                                </span>
+                            </span>
+
+                            @if (Meg.KanEndre)
+                            {
+                                <span class="hoyre">
+                                    @* Glemmer man a huke av til man kommer hjem om
+                                       kvelden, er automatikken feil og ma kunne
+                                       overstyres. Se plan kapittel 8.2. *@
+                                    <form method="post" asp-action="RedigerTid"
+                                          asp-route-dyrId="@Model.DyrId"
+                                          asp-route-foringId="@rad.Id"
+                                          class="d-flex gap-1 align-items-center justify-content-end">
+                                        @Html.AntiForgeryToken()
+                                        <input type="datetime-local" name="tidspunkt"
+                                               class="form-control form-control-sm"
+                                               value="@Tidssone.TilLokal(rad.Tidspunkt).ToString("yyyy-MM-ddTHH:mm")" />
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                            Rett
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-action="Slett"
+                                          asp-route-dyrId="@Model.DyrId"
+                                          asp-route-foringId="@rad.Id"
+                                          onsubmit="return confirm('Slette denne fôringen?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-lenke-fare">Slett</button>
+                                    </form>
+                                </span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+                <h2>Gi mat</h2>
+            </div>
+            <div class="kort-kropp">
+                @* Registrering skal vaere sa naer ett klikk som mulig.
+                   Tidspunktet settes pa serveren - det finnes ikke som felt. *@
+                <form method="post" asp-action="Registrer" asp-route-dyrId="@Model.DyrId">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-2">
+                        <label for="mengdeGram" class="form-label">Mengde i gram</label>
+                        <input type="number" name="mengdeGram" id="mengdeGram"
+                               class="form-control" min="1" max="20000"
+                               value="@Model.ForeslattMengde" placeholder="valgfritt" />
+                        @if (Model.ForeslattMengde is { } foreslatt)
+                        {
+                            <div class="form-text">
+                                Forslag fra fôrplanen: @foreslatt g per måltid,
+                                @Model.AntallMaltider måltider om dagen.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="form-text">
+                                Kan stå tomt — da noteres bare at det er gjort.
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="kommentar" class="form-label">Kommentar</label>
+                        <input type="text" name="kommentar" id="kommentar"
+                               class="form-control" maxlength="200"
+                               placeholder="valgfritt" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Gi mat nå
+                    </button>
+                    <p class="form-text mb-0 mt-2">
+                        Tidspunktet settes automatisk. Er det feil, kan du rette
+                        det i loggen etterpå.
+                    </p>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>

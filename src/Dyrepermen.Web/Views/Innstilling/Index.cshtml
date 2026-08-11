@@ -26,7 +26,7 @@
             <div class="kort-kropp">
                 <form method="post" asp-action="Lagre">
                     @Html.AntiForgeryToken()
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
+                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
 
                     <div class="mb-3">
                         <label asp-for="Husstandsnavn" class="form-label"></label>
@@ -47,6 +47,17 @@
                     <div class="form-check form-switch mb-3">
                         <input asp-for="ForplanStandard" class="form-check-input" role="switch" />
                         <label asp-for="ForplanStandard" class="form-check-label"></label>
+                    </div>
+
+                    <h3 class="h6 mt-3">Fôringslogg</h3>
+                    <p class="form-text mt-0">
+                        Gjelder alle dyr med en gang. Ikke alle bryr seg om å
+                        telle godbiter — er den av, forsvinner knappen fra
+                        oversikten.
+                    </p>
+                    <div class="form-check form-switch mb-3">
+                        <input asp-for="GodbitloggAktiv" class="form-check-input" role="switch" />
+                        <label asp-for="GodbitloggAktiv" class="form-check-label"></label>
                     </div>
 
                     <h3 class="h6 mt-3">Varsler</h3>

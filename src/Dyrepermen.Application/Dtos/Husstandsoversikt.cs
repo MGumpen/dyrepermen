@@ -8,4 +8,5 @@ public sealed record Husstandsoversikt(
     bool ForingsloggStandard,
     bool ForplanStandard,
     bool VarslerAktiv,
+    bool GodbitloggAktiv,
     int AntallDyr);

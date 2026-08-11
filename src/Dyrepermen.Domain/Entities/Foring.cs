@@ -1,4 +1,5 @@
 using Dyrepermen.Domain.Abstractions;
+using Dyrepermen.Domain.Enums;
 
 namespace Dyrepermen.Domain.Entities;
 
@@ -21,8 +22,21 @@ public sealed class Foring : IHusstandsbundet
     /// <summary>Lagres i UTC. Konverteres til Europe/Oslo i visningslaget.</summary>
     public DateTimeOffset Tidspunkt { get; set; }
 
+    /// <summary>
+    /// Maltid eller godbit. Kun maltider teller mot "maltid 2 av 3".
+    /// </summary>
+    public Foringstype Type { get; set; }
+
     /// <summary>Valgfri - kan hukes av uten mengde.</summary>
     public int? MengdeGram { get; set; }
+
+    /// <summary>
+    /// Hva som ble gitt: "Royal Canin Maxi", "Tyggebein". Fritekst, ikke
+    /// fremmednokkel - et eget forregister ville krevd vedlikehold for a gi
+    /// et navn vi like gjerne kan skrive. Tidligere verdier tilbys som
+    /// forslag, sa stavematen holder seg stabil av seg selv.
+    /// </summary>
+    public string? Fornavn { get; set; }
 
     public int? GittAvBrukerId { get; set; }
 

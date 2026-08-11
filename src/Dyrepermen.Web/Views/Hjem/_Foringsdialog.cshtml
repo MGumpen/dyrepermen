@@ -1,0 +1,72 @@
+@using Dyrepermen.Web.ViewModels
+@model ForingsdialogVm
+
+<form method="post"
+      asp-controller="Hjem" asp-action="RegistrerForing"
+      asp-route-dyrId="@Model.DyrId"
+      hx-post="@Url.Action("RegistrerForing", "Hjem", new { dyrId = Model.DyrId })"
+      hx-target="#dyreliste" hx-swap="outerHTML"
+      @* Lukkes bare nar kallet gikk gjennom. Feiler valideringen, byttes
+         skjemaet ut med feilmeldingene i behold, og da skal dialogen bli
+         staende. *@
+      hx-on::after-request="if (event.detail.successful &amp;&amp; event.detail.xhr.status &lt; 300) this.closest('dialog').close()">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Type" value="@Model.Type" />
+
+    <div class="dialog-hode">
+        <h2 class="h5 mb-0">@Model.Tittel</h2>
+        <button type="button" class="btn lukkeknapp"
+                aria-label="Lukk"
+                onclick="this.closest('dialog').close()">&times;</button>
+    </div>
+
+    <div class="dialog-kropp">
+        <div asp-validation-summary="All" class="tekst-feil small mb-2"></div>
+
+        <div class="mb-3">
+            <label class="form-label" for="fornavn">
+                @(Model.ErGodbit ? "Hva" : "Fôr")
+            </label>
+            @* Fritekst med forslag: skriver du "Royal Canin Maxi" en gang,
+               ligger det i lista neste gang - uten at noen ma vedlikeholde
+               et register. *@
+            <input class="form-control" id="fornavn" name="Fornavn"
+                   list="fornavn-forslag" autocomplete="off"
+                   maxlength="80" value="@Model.Fornavn"
+                   placeholder="@(Model.ErGodbit ? "Tyggebein" : "Navn på fôret")" />
+            <datalist id="fornavn-forslag">
+                @foreach (var forslag in Model.Forslag)
+                {
+                    <option value="@forslag"></option>
+                }
+            </datalist>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="mengde">
+                Mengde @(Model.ErGodbit ? "(valgfritt)" : "")
+            </label>
+            <div class="input-group">
+                @* inputmode numeric gir talltastatur pa mobil. Gram er
+                   heltall, sa ingen desimaler - og da slipper vi hele
+                   komma-mot-punktum-problemet. *@
+                <input class="form-control" id="mengde" name="MengdeGram"
+                       type="number" inputmode="numeric" min="1" max="5000"
+                       step="1" value="@Model.MengdeGram" />
+                <span class="input-group-text">g</span>
+            </div>
+        </div>
+
+        <div class="mb-1">
+            <label class="form-label" for="kommentar">Kommentar (valgfritt)</label>
+            <input class="form-control" id="kommentar" name="Kommentar"
+                   maxlength="200" />
+        </div>
+    </div>
+
+    <div class="dialog-fot">
+        <button type="button" class="btn btn-outline-secondary"
+                onclick="this.closest('dialog').close()">Avbryt</button>
+        <button type="submit" class="btn btn-primary">Registrer</button>
+    </div>
+</form>

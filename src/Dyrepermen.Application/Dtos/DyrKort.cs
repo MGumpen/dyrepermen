@@ -23,4 +23,42 @@ public sealed record DyrKort(
     string? ForplanTekst,
     string? NesteBehandlingTekst,
     DateOnly? NesteBehandlingDato,
-    IReadOnlyList<string> AktiveMedisiner);
+    IReadOnlyList<string> AktiveMedisiner,
+
+    /// <summary>Kun nar foringsloggen er pa for dyret.</summary>
+    SistMatet? SistMatet,
+
+    /// <summary>
+    /// Gram til ETT maltid, ikke til hele dagen. Null nar dyret ikke har
+    /// aktiv forplan, eller nar planen regner prosent av vekt og vekten
+    /// mangler - da finnes det ikke noe tall a vise.
+    /// </summary>
+    int? PorsjonGram,
+
+    /// <summary>Maltider planen sier per dag.</summary>
+    int AntallMaltider,
+
+    /// <summary>
+    /// Foringer registrert siden midnatt NORSK tid. Sammen med
+    /// AntallMaltider gir det "maltid 2 av 3" pa dashbordet.
+    /// </summary>
+    int MaltiderIDag,
+
+    /// <summary>Foret planen sier, som forhandsvalg i dialogen.</summary>
+    string? Fornavn,
+
+    /// <summary>
+    /// Godbiter siden midnatt. Talt for seg - en godbit er ikke et maltid,
+    /// og skal aldri fa telleren til a si at middagen er gitt.
+    /// </summary>
+    int GodbiterIDag)
+{
+    /// <summary>
+    /// Nummeret pa maltidet som star for tur. Er alle gitt, peker det forbi
+    /// planen - og visningen sier "alle gitt" i stedet.
+    /// </summary>
+    public int NesteMaltid => MaltiderIDag + 1;
+
+    public bool AlleMaltiderGitt =>
+        AntallMaltider > 0 && MaltiderIDag >= AntallMaltider;
+}
