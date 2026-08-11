@@ -8,8 +8,9 @@ Webapplikasjon for oppfølging av husstandens kjæledyr. ASP.NET Core MVC (.NET 
 
 ## Les dette først
 
-- **MVP er fase 1, 1b og 2** (plan kapittel 16). Bygg ikke funksjoner fra senere faser fordi tabellen finnes i skjemaet.
+- **Hele funksjonsomfanget skal bygges før utrulling.** Det finnes ingen MVP-avgrensning lenger — planens opprinnelige «MVP er fase 1, 1b og 2» er opphevet. Appen kjøres lokalt i Docker gjennom hele løpet, og hosting er fase 8, helt til slutt.
 - **Akseptansekriteriene i kapittel 16 er definisjonen av ferdig.** Kod ikke videre til neste fase før de er oppfylt og testene er grønne.
+- **Bygg én fase om gangen likevel.** At alt skal med, betyr ikke at alt skal bygges samtidig. En halvferdig fase er verre enn en fase som ikke er påbegynt.
 - **Isolasjonstesten skrives først** (kapittel 17.3), før første funksjon.
 
 ---

@@ -42,13 +42,34 @@
     <div class="form-text">15 siffer. Norske chip starter på 578. Kan stå tomt.</div>
 </div>
 
-<div class="mb-3">
+@* NKK-registeret er Norsk Kennel Klub og gjelder hund. Feltet skjules for
+   katt - og tjenesten nuller det ut uansett hva som postes. *@
+<div class="mb-3" data-kun-hund>
     <label asp-for="RegNrNkk" class="form-label"></label>
     <input asp-for="RegNrNkk" class="form-control" />
     <span asp-validation-for="RegNrNkk" class="text-danger small"></span>
+    <div class="form-text">Gjelder bare hunder.</div>
 </div>
 
 <div class="form-check mb-3">
     <input asp-for="Kastrert" class="form-check-input" />
     <label asp-for="Kastrert" class="form-check-label"></label>
 </div>
+
+<script>
+    // Skjuler NKK-feltet nar arten ikke er hund. Serveren nuller det ut
+    // uansett, sa dette er ren opprydding i skjemaet.
+    (function () {
+        var art = document.querySelector('select[name="Art"]');
+        if (!art) return;
+
+        function oppdater() {
+            document.querySelectorAll('[data-kun-hund]').forEach(function (rad) {
+                rad.hidden = art.value !== 'Hund';
+            });
+        }
+
+        art.addEventListener('change', oppdater);
+        oppdater();
+    })();
+</script>

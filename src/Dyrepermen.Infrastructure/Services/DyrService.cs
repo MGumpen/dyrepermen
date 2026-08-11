@@ -2,6 +2,7 @@ using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Entities;
+using Dyrepermen.Domain.Enums;
 using Dyrepermen.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -44,6 +45,121 @@ public sealed class DyrService : IDyrService
                 d.ForingsloggAktiv, d.ForplanAktiv))
             .SingleOrDefaultAsync(ct);
 
+    public async Task<DyrSammendrag?> HentSammendrag(
+        int dyrId, CancellationToken ct)
+    {
+        var idag = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Korrelerte undersporringer i ett Select. Npgsql oversetter dem til
+        // LEFT JOIN LATERAL, sa hele sammendraget kommer i en rundtur.
+        var rad = await _db.Dyr
+            .Where(d => d.Id == dyrId)
+            .Select(d => new
+            {
+                AntallVekter = d.Vekter.Count(),
+                SisteVekt = d.Vekter
+                    .OrderByDescending(v => v.Dato)
+                    .ThenByDescending(v => v.Id)
+                    .Select(v => new { v.VektGram, v.Dato })
+                    .FirstOrDefault(),
+
+                AntallBehandlinger = d.Behandlinger.Count(),
+                Neste = d.Behandlinger
+                    .Where(b => b.NesteDato != null)
+                    .OrderBy(b => b.NesteDato)
+                    .Select(b => new { b.Type, b.Preparat, Dato = b.NesteDato!.Value })
+                    .FirstOrDefault(),
+
+                AntallMedisiner = d.Medisiner.Count(),
+                Aktive = d.Medisiner
+                    .Where(m => m.SluttDato == null || m.SluttDato >= idag)
+                    .OrderBy(m => m.Navn)
+                    .Select(m => m.Navn + " – " + m.Dose)
+                    .ToList(),
+
+                Forplan = d.Forplaner
+                    .Where(f => f.Aktiv)
+                    .Select(f => new
+                    {
+                        f.Metode,
+                        f.ProsentTidels,
+                        f.GramPerDag,
+                        f.AntallMaltider
+                    })
+                    .FirstOrDefault()
+            })
+            .SingleOrDefaultAsync(ct);
+
+        if (rad is null)
+        {
+            return null;
+        }
+
+        var notater = await _db.Informasjon.CountAsync(i => i.DyrId == dyrId, ct);
+
+        return new DyrSammendrag(
+            rad.AntallVekter,
+            rad.SisteVekt?.VektGram,
+            rad.SisteVekt?.Dato,
+            rad.AntallBehandlinger,
+            rad.Neste is null ? null : Behandlingstekst(rad.Neste.Type, rad.Neste.Preparat),
+            rad.Neste?.Dato,
+            rad.AntallMedisiner,
+            rad.Aktive,
+            Forplantekst(
+                rad.Forplan?.Metode, rad.Forplan?.ProsentTidels,
+                rad.Forplan?.GramPerDag, rad.Forplan?.AntallMaltider,
+                rad.SisteVekt?.VektGram),
+            notater);
+    }
+
+    private static string Behandlingstekst(BehandlingType type, string? preparat)
+    {
+        var navn = type switch
+        {
+            BehandlingType.Vaksine => "Vaksine",
+            BehandlingType.Ormekur => "Ormekur",
+            BehandlingType.Flatt => "Flåttmiddel",
+            BehandlingType.Kloklipp => "Kloklipp",
+            BehandlingType.Tannrens => "Tannrens",
+            _ => "Behandling"
+        };
+
+        return preparat is null ? navn : $"{navn} – {preparat}";
+    }
+
+    /// <summary>
+    /// Samme regel som ForplanService. Uten vektgrunnlag sier den fra
+    /// framfor a vise et tall uten dekning.
+    /// </summary>
+    private static string? Forplantekst(
+        Formetode? metode, int? prosentTidels, int? gramPerDag,
+        int? antallMaltider, int? sisteVektGram)
+    {
+        if (metode is null)
+        {
+            return null;
+        }
+
+        var maltider = antallMaltider ?? 2;
+
+        if (metode == Formetode.Gram)
+        {
+            return $"{gramPerDag} g/dag på {maltider} måltider";
+        }
+
+        if (sisteVektGram is null)
+        {
+            return "Mangler vektregistrering";
+        }
+
+        var gram = (int)Math.Round(
+            sisteVektGram.Value * prosentTidels!.Value / 1000.0,
+            MidpointRounding.AwayFromZero);
+
+        return $"{gram} g/dag på {maltider} måltider";
+    }
+
     public async Task<DyrResultat> Opprett(NyttDyr input, CancellationToken ct)
     {
         // Standardverdiene kopieres inn ved opprettelse. De overstyrer aldri
@@ -63,7 +179,11 @@ public sealed class DyrService : IDyrService
             // partielle unike indeksen, mens NULL ikke deltar. Uten den
             // kolliderer dyr nummer to uten chipnummer.
             ChipNr = input.ChipNr.TomTilNull(),
-            RegNrNkk = input.RegNrNkk.TomTilNull()?.ToUpperInvariant(),
+            // NKK-registeret gjelder hund. En katt skal aldri ha regnummer,
+            // uansett hva som ble postet.
+            RegNrNkk = input.Art == Art.Hund
+                ? input.RegNrNkk.TomTilNull()?.ToUpperInvariant()
+                : null,
             Kastrert = input.Kastrert,
             ForingsloggAktiv = std?.ForingsloggStandard ?? false,
             ForplanAktiv = std?.ForplanStandard ?? true
@@ -99,7 +219,9 @@ public sealed class DyrService : IDyrService
         dyr.Rase = input.Rase.TomTilNull();
         dyr.Fodselsdato = input.Fodselsdato;
         dyr.ChipNr = input.ChipNr.TomTilNull();
-        dyr.RegNrNkk = input.RegNrNkk.TomTilNull()?.ToUpperInvariant();
+        dyr.RegNrNkk = input.Art == Art.Hund
+            ? input.RegNrNkk.TomTilNull()?.ToUpperInvariant()
+            : null;
         dyr.Kastrert = input.Kastrert;
         dyr.ForingsloggAktiv = input.ForingsloggAktiv;
         dyr.ForplanAktiv = input.ForplanAktiv;

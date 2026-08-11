@@ -1,12 +1,25 @@
+@using Dyrepermen.Application.Interfaces
+@inject IGjeldendeBruker Meg
 @model OppsettVm
 @{
     ViewData["Tittel"] = "Kom i gang";
 }
 
 <div class="container-fluid px-0" style="max-width: 40rem;">
-    <h1 class="h4 mb-1">Kom i gang</h1>
+@{
+    var harHusstand = Meg.Husstander.Count > 0;
+}
+
+    <h1 class="h4 mb-1">@(harHusstand ? "Ny husstand" : "Kom i gang")</h1>
     <p class="text-body-secondary">
-        Du er logget inn, men er ikke knyttet til en husstand ennå.
+        @if (harHusstand)
+        {
+            @:Du kan være med i flere husstander samtidig. Den nye blir aktiv med en gang.
+        }
+        else
+        {
+            @:Du er logget inn, men er ikke knyttet til en husstand ennå.
+        }
     </p>
 
     <div class="row g-3 mt-1">
@@ -53,12 +66,21 @@
         </div>
     </div>
 
-    <form method="post" action="/logg-ut" class="mt-4">
-        @Html.AntiForgeryToken()
-        <button type="submit" class="btn btn-link btn-sm px-0 text-body-secondary">
-            Logg ut
-        </button>
-    </form>
+    @if (harHusstand)
+    {
+        <p class="mt-4">
+            <a href="/" class="text-body-secondary small">← Tilbake til @Meg.HusstandNavn</a>
+        </p>
+    }
+    else
+    {
+        <form method="post" action="/logg-ut" class="mt-4">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-link btn-sm px-0 text-body-secondary">
+                Logg ut
+            </button>
+        </form>
+    }
 </div>
 
 @section Skript {

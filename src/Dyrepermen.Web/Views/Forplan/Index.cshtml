@@ -5,31 +5,38 @@
     var r = Model.Resultat;
 }
 
-<h1 class="h4 mb-1">Fôrplan</h1>
-<p class="text-body-secondary mb-3">
-    <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
-        @Model.DyrNavn
-    </a>
-</p>
+<div class="sidehode">
+    <div>
+        <h1>Fôrplan</h1>
+        <div class="undertittel">
+            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
+                @Model.DyrNavn
+            </a>
+        </div>
+    </div>
+</div>
 
-<div class="row g-3">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">I dag</h2>
+<div class="dp-kolonner">
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-forplan" /></svg>
+                <h2>I dag</h2>
+            </div>
 
-                @* Fire tilstander, spesifisert i plan kapittel 8.1.
-                   Ingen av dem skal vises som "0 gram". *@
-                @if (!r.HarPlan)
-                {
-                    <p class="text-body-secondary mb-0">
-                        Ingen fôrplan lagt inn. Legg inn regelen du bruker,
-                        så regner appen ut mengden.
-                    </p>
-                }
-                else if (r.ManglerVekt)
-                {
-                    <div class="alert alert-warning mb-0" role="status">
+            @* Fire tilstander, spesifisert i plan kapittel 8.1.
+               Ingen av dem skal vises som "0 gram". *@
+            @if (!r.HarPlan)
+            {
+                <div class="tomt">
+                    Ingen fôrplan lagt inn. Legg inn regelen du bruker, så
+                    regner appen ut mengden.
+                </div>
+            }
+            else if (r.ManglerVekt)
+            {
+                <div class="kort-kropp">
+                    <div class="alert alert-warning py-2 mb-0" role="status">
                         <strong>Registrer en vekt for å regne ut mengden.</strong>
                         <div class="small mt-1">
                             Planen er prosentbasert, og da trengs en
@@ -41,50 +48,53 @@
                             Registrer vekt
                         </a>
                     </div>
-                }
-                else
-                {
-                    <p class="display-6 mb-1">@r.GramPerDag g</p>
-                    <p class="text-body-secondary small">per dag</p>
+                </div>
+            }
+            else
+            {
+                <div class="kort-kropp">
+                    <div class="dyrekort-tall mt-0">
+                        <span>
+                            <span class="verdi fs-3">@r.GramPerDag g</span>
+                            <span class="etikett">per dag</span>
+                        </span>
+                    </div>
 
                     @if (r.GrunnlagVektGram is { } grunnlag)
                     {
                         @* Vektgrunnlaget skal alltid vises sammen med
                            resultatet. Et tall uten synlig grunnlag er et tall
                            ingen tor stole pa. *@
-                        <p class="small text-body-secondary">
+                        <p class="form-text mb-0 mt-1">
                             Regnet fra @Vektformat.TilKiloTekst(grunnlag),
                             målt @($"{r.GrunnlagDato:d. MMM yyyy}")
                         </p>
                     }
+                </div>
 
-                    <hr />
-
-                    <h3 class="h6">Fordeling</h3>
-                    <ul class="list-unstyled mb-0">
-                        @for (var i = 0; i < Model.Maltider.Length; i++)
-                        {
-                            <li class="d-flex justify-content-between border-bottom py-1">
-                                <span>Måltid @(i + 1)</span>
-                                <strong>@Model.Maltider[i] g</strong>
-                            </li>
-                        }
-                        <li class="d-flex justify-content-between pt-2">
-                            <span class="text-body-secondary">Sum</span>
-                            <span class="text-body-secondary">
-                                @Model.Maltider.Sum() g
-                            </span>
+                <ul class="rad-liste border-top">
+                    @for (var i = 0; i < Model.Maltider.Length; i++)
+                    {
+                        <li>
+                            <span class="flex-grow-1">Måltid @(i + 1)</span>
+                            <span class="hoyre"><strong>@Model.Maltider[i] g</strong></span>
                         </li>
-                    </ul>
-                }
-            </div>
-        </div>
+                    }
+                    <li>
+                        <span class="flex-grow-1 text-body-secondary">Sum</span>
+                        <span class="hoyre">@Model.Maltider.Sum() g</span>
+                    </li>
+                </ul>
+            }
+        </section>
 
-        @if (Model.Aktiv is { } plan)
+        @if (Model.Aktiv is not null)
         {
-            <div class="card border-danger mt-3">
-                <div class="card-body">
-                    <h2 class="h6 text-danger">Deaktiver planen</h2>
+            <section class="kort fare">
+                <div class="kort-hode">
+                    <h2>Deaktiver planen</h2>
+                </div>
+                <div class="kort-kropp">
                     <p class="small text-body-secondary">
                         Planen beholdes som historikk, men brukes ikke lenger.
                     </p>
@@ -96,15 +106,18 @@
                         </button>
                     </form>
                 </div>
-            </div>
+            </section>
         }
     </div>
 
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">@(Model.Aktiv is null ? "Ny fôrplan" : "Erstatt fôrplanen")</h2>
-                <p class="small text-body-secondary">
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+                <h2>@(Model.Aktiv is null ? "Ny fôrplan" : "Erstatt planen")</h2>
+            </div>
+            <div class="kort-kropp">
+                <p class="form-text mt-0">
                     Appen anbefaler ikke mengde. Den regner ut regelen du
                     legger inn.
                 </p>
@@ -112,9 +125,9 @@
                 <form method="post" asp-action="Ny" asp-route-dyrId="@Model.DyrId">
                     @Html.AntiForgeryToken()
 
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.Metode" class="form-label"></label>
                         <select asp-for="Ny.Metode" class="form-select" id="metode">
                             <option value="Gram">Fast mengde i gram</option>
@@ -122,18 +135,18 @@
                         </select>
                         <div class="form-text">
                             Prosentmetoden er levende: mengden følger vekten
-                            automatisk. Fast mengde står stille til du endrer den.
+                            automatisk. Fast mengde står stille.
                         </div>
                     </div>
 
-                    <div class="mb-3" data-metode="Gram">
+                    <div class="mb-2" data-metode="Gram">
                         <label asp-for="Ny.GramPerDag" class="form-label"></label>
                         <input asp-for="Ny.GramPerDag" class="form-control"
                                inputmode="numeric" placeholder="gram" />
                         <span asp-validation-for="Ny.GramPerDag" class="text-danger small"></span>
                     </div>
 
-                    <div class="mb-3" data-metode="Prosent">
+                    <div class="mb-2" data-metode="Prosent">
                         <label asp-for="Ny.Prosent" class="form-label"></label>
                         <input asp-for="Ny.Prosent" class="form-control"
                                inputmode="decimal" placeholder="%" />
@@ -141,14 +154,14 @@
                         <div class="form-text">Bruk komma: 5,0</div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.AntallMaltider" class="form-label"></label>
                         <input asp-for="Ny.AntallMaltider" class="form-control"
                                inputmode="numeric" />
                         <span asp-validation-for="Ny.AntallMaltider" class="text-danger small"></span>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.Fornavn" class="form-label"></label>
                         <input asp-for="Ny.Fornavn" class="form-control" />
                         <span asp-validation-for="Ny.Fornavn" class="text-danger small"></span>
@@ -160,10 +173,10 @@
                         <span asp-validation-for="Ny.Notat" class="text-danger small"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Lagre plan</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Lagre plan</button>
                 </form>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 

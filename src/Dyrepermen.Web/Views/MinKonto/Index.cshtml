@@ -1,29 +1,71 @@
+@using Dyrepermen.Application.Interfaces
+@inject IGjeldendeBruker Meg
 @model MinKontoVm
 @{
     ViewData["Tittel"] = "Min konto";
     var s = Model.Slett;
 }
 
-<h1 class="h4 mb-3">Min konto</h1>
+<div class="sidehode">
+    <div>
+        <h1>Min konto</h1>
+        <div class="undertittel">
+            Dine personopplysninger. Husstandens innstillinger ligger under
+            <a asp-controller="Innstilling" asp-action="Index">Innstillinger</a>.
+        </div>
+    </div>
+</div>
 
-<div style="max-width: 40rem;">
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">Data</h2>
-            <p class="small text-body-secondary">
+<div style="max-width: 34rem;">
+    <section class="kort">
+        <div class="kort-hode">
+            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-medlemmer" /></svg>
+            <h2>Profil</h2>
+        </div>
+        <ul class="rad-liste">
+            <li>
+                <span class="flex-grow-1">Visningsnavn</span>
+                <span class="hoyre">@Meg.Visningsnavn</span>
+            </li>
+            <li>
+                <span class="flex-grow-1">E-post</span>
+                <span class="hoyre">@Meg.Epost</span>
+            </li>
+            <li>
+                <span class="flex-grow-1">Husstand</span>
+                <span class="hoyre">@Meg.HusstandNavn</span>
+            </li>
+        </ul>
+        <div class="kort-kropp tett border-top">
+            <p class="form-text mb-2">
+                Endring av navn, e-post og passord kommer i en senere fase.
+                E-post er innloggingsnavnet, så bytte krever bekreftelse på
+                den nye adressen.
+            </p>
+        </div>
+    </section>
+
+    <section class="kort">
+        <div class="kort-hode">
+            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-informasjon" /></svg>
+            <h2>Data</h2>
+        </div>
+        <div class="kort-kropp">
+            <p class="small text-body-secondary mb-2">
                 Last ned alt før du sletter. Kostnaden er lav, angrefristen er null.
             </p>
             <a asp-action="LastNedData" class="btn btn-outline-secondary btn-sm">
                 Last ned alle data
             </a>
         </div>
-    </div>
+    </section>
 
-    <div class="card border-danger">
-        <div class="card-body">
-            <h2 class="h6 text-danger">Slett kontoen permanent</h2>
-
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <section class="kort fare">
+        <div class="kort-hode">
+            <h2>Slett kontoen permanent</h2>
+        </div>
+        <div class="kort-kropp">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
 
             <p class="small">
                 Navn, e-post og passord slettes. <strong>Husstandens data
@@ -33,21 +75,21 @@
 
             @if (s.ErSisteMedlem)
             {
-                <div class="alert alert-danger" role="alert">
+                <div class="alert alert-danger py-2" role="alert">
                     <strong>Du er eneste medlem.</strong>
                     Sletting fjerner også husstanden og alle data om
                     @s.AntallDyr @(s.AntallDyr == 1 ? "dyr" : "dyr").
                 </div>
             }
 
-            <p class="small text-body-secondary">
+            <p class="form-text">
                 Det finnes ingen angrefrist. Sletting er endelig.
             </p>
 
             <form method="post" asp-action="Slett">
                 @Html.AntiForgeryToken()
 
-                <div class="mb-3">
+                <div class="mb-2">
                     <label asp-for="Slett.Passord" class="form-label"></label>
                     @* Passord ma tastes pa nytt. Enheten kan sta ulast, og
                        vedvarende innlogging i 30 dager gjor dette viktigere,
@@ -72,17 +114,17 @@
                     </div>
                 }
 
-                <button type="submit" class="btn btn-danger">
+                <button type="submit" class="btn btn-danger btn-sm">
                     Slett kontoen min permanent
                 </button>
             </form>
         </div>
-    </div>
+    </section>
 
-    <p class="mt-3">
-        <a asp-controller="Innstilling" asp-action="Index"
-           class="text-body-secondary small">← Innstillinger</a>
-    </p>
+    <form method="post" action="/logg-ut" class="mt-3">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-outline-secondary btn-sm">Logg ut</button>
+    </form>
 </div>
 
 @section Skript {

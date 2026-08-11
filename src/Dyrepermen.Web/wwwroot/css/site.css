@@ -1,70 +1,513 @@
-html {
-    font-size: 14px;
+/* ======================================================================
+   Dyrepermen — designsystem
+
+   Lyst tema. Mork modus kommer senere, og alle farger er derfor definert
+   som variabler her. Da blir mork modus en ny blokk med de samme navnene,
+   ikke en gjennomgang av hver enkelt regel.
+
+   Avstandene er bevisst stramme. Standard Bootstrap-kort har mye luft, og
+   pa en side som skal leses raskt - "hva gjenstar i dag" - blir det mer
+   rulling enn oversikt.
+   ====================================================================== */
+
+:root {
+    --dp-bg: #f4f6f3;
+    --dp-flate: #ffffff;
+    --dp-flate-2: #fafbf9;
+    --dp-kant: #e2e6df;
+    --dp-kant-sterk: #cfd6ca;
+
+    --dp-tekst: #1a1d19;
+    --dp-tekst-svak: #697066;
+    --dp-tekst-hvit: #ffffff;
+
+    --dp-aksent: #2f6b46;
+    --dp-aksent-mork: #245437;
+    --dp-aksent-svak: #e7f0ea;
+
+    --dp-fare: #a4271f;
+    --dp-fare-svak: #fbeceb;
+    --dp-varsel: #8a5a00;
+    --dp-varsel-svak: #fdf3e0;
+
+    --dp-radius: 14px;
+    --dp-radius-sm: 9px;
+    --dp-radius-pille: 999px;
+
+    --dp-sidemeny: 250px;
+
+    /* Diskret dybde. Kort skal skille seg fra bakgrunnen, ikke sveve. */
+    --dp-skygge: 0 1px 2px rgba(26, 29, 25, .04);
 }
 
-@media (min-width: 768px) {
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 15px;
+}
+
+@media (min-width: 992px) {
     html {
         font-size: 16px;
     }
 }
 
 body {
+    margin: 0;
+    min-height: 100svh;
+    background: var(--dp-bg);
+    color: var(--dp-tekst);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--dp-aksent);
+}
+
+h1, h2, h3, h4 {
+    letter-spacing: -.01em;
+}
+
+/* --- Ikoner ----------------------------------------------------------
+   Inline SVG-sprite. Ingen ikonfont, ingen ekstra nedlasting, og de arver
+   farge fra teksten rundt. */
+
+.ikon {
+    width: 1.15em;
+    height: 1.15em;
+    flex: 0 0 auto;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ikon-lg {
+    width: 1.35em;
+    height: 1.35em;
+}
+
+/* --- Ramme ------------------------------------------------------------ */
+
+.dp-ramme {
+    display: flex;
     min-height: 100svh;
 }
 
-/* --- Sidemeny -------------------------------------------------------- */
-
-.sidemeny {
-    width: 260px;
+.dp-innhold {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 1rem;
 }
 
-.sidemeny-merke {
-    padding: 1rem 1.25rem;
-    font-weight: 600;
-    text-decoration: none;
-    color: inherit;
+@media (min-width: 992px) {
+    .dp-innhold {
+        padding: 1.25rem 1.5rem;
+    }
+}
+
+/* --- Sidemeny --------------------------------------------------------- */
+
+.sidemeny {
+    width: var(--dp-sidemeny);
+    background: var(--dp-flate);
 }
 
 @media (min-width: 992px) {
     .sidemeny {
         position: sticky;
         top: 0;
-        height: 100vh;
-        border-right: 1px solid var(--bs-border-color);
+        height: 100svh;
         flex-shrink: 0;
-    }
-}
-
-/* Beroringsmal minst 44 x 44 px pa mobil. Standard nav-link-padding er
-   for lav, og skuffen brukes med tommelen. */
-@media (max-width: 991.98px) {
-    .sidemeny .nav-link {
-        padding: 0.75rem 1rem;
-        min-height: 44px;
+        border-right: 1px solid var(--dp-kant);
         display: flex;
-        align-items: center;
-    }
-
-    /* Trygg sone pa iOS - ellers havner utloggingsknappen under
-       hjemindikatoren. */
-    .sidemeny .offcanvas-body > form {
-        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+        flex-direction: column;
     }
 }
 
-.nav-link[aria-current="page"] {
-    background-color: var(--bs-primary-bg-subtle);
-    color: var(--bs-emphasis-color);
+.sidemeny .offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+.sidemeny-merke {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: 1rem 1rem .75rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--dp-tekst);
+    text-decoration: none;
+}
+
+/* Husstandskortet: hvilken husstand du ser pa. Med flere husstander senere
+   blir dette en velger - derfor et kort og ikke bare en overskrift. */
+.husstandskort {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin: 0 .75rem .75rem;
+    padding: .6rem .75rem;
+    background: var(--dp-flate-2);
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius-sm);
+    text-decoration: none;
+    color: inherit;
+}
+
+.husstandskort:hover {
+    border-color: var(--dp-kant-sterk);
+}
+
+.husstandskort .merke {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    border-radius: var(--dp-radius-sm);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent);
+}
+
+.husstandskort .navn {
+    font-weight: 600;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.husstandskort .under {
+    font-size: .78rem;
+    color: var(--dp-tekst-svak);
+}
+
+.sidemeny-nav {
+    list-style: none;
+    margin: 0;
+    padding: 0 .75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidemeny-nav a {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .5rem .7rem;
+    border-radius: var(--dp-radius-sm);
+    color: var(--dp-tekst-svak);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.sidemeny-nav a:hover {
+    background: var(--dp-flate-2);
+    color: var(--dp-tekst);
+}
+
+.sidemeny-nav a[aria-current="page"] {
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent-mork);
     font-weight: 600;
 }
 
-/* Uten denne star det en tom, rod boks pa hvert skjema for forste innsending.
-   ASP.NET Core setter klassen selv nar det ikke finnes feil. */
-.validation-summary-valid {
-    display: none;
+/* Beroringsmal minst 44 px pa mobil. Standard padding er for lav, og
+   skuffen brukes med tommelen. */
+@media (max-width: 991.98px) {
+    .sidemeny-nav a {
+        min-height: 44px;
+    }
 }
 
-/* --- Sider uten innlogging ------------------------------------------- */
+.sidemeny-bunn {
+    margin-top: auto;
+    padding: .75rem;
+    border-top: 1px solid var(--dp-kant);
+}
+
+/* Brukerkortet nederst. Her ligger DINE innstillinger - husstandens ligger
+   i menyen over. Skillet er eierskap: personopplysninger mot delte data. */
+.brukerkort {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem;
+    border-radius: var(--dp-radius-sm);
+    text-decoration: none;
+    color: inherit;
+}
+
+.brukerkort:hover {
+    background: var(--dp-flate-2);
+}
+
+.brukerkort .initialer {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--dp-aksent);
+    color: var(--dp-tekst-hvit);
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.brukerkort .navn,
+.brukerkort .epost {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.brukerkort .navn {
+    font-weight: 600;
+    font-size: .9rem;
+    line-height: 1.2;
+}
+
+.brukerkort .epost {
+    font-size: .76rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Topplinje pa mobil ------------------------------------------------ */
+
+.topplinje {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .6rem .75rem;
+    background: var(--dp-flate);
+    border-bottom: 1px solid var(--dp-kant);
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+/* --- Kort -------------------------------------------------------------- */
+
+.kort {
+    background: var(--dp-flate);
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius);
+    box-shadow: var(--dp-skygge);
+}
+
+.kort + .kort {
+    margin-top: .85rem;
+}
+
+.kort-hode {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .8rem 1rem;
+    border-bottom: 1px solid var(--dp-kant);
+}
+
+.kort-hode h2,
+.kort-hode h1 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.kort-hode .ikon {
+    color: var(--dp-aksent);
+}
+
+.kort-hode .se-alle {
+    margin-left: auto;
+    font-size: .85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.kort-kropp {
+    padding: 1rem;
+}
+
+.kort-kropp.tett {
+    padding: .5rem 1rem;
+}
+
+/* Antallsmerke ved siden av seksjonstittelen, som viser hvor mye som
+   ligger bak "Se alle". */
+.antall {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 .4rem;
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent-mork);
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.antall.varsel {
+    background: var(--dp-varsel-svak);
+    color: var(--dp-varsel);
+}
+
+/* --- Lister i kort ------------------------------------------------------ */
+
+.rad-liste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.rad-liste > li {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .6rem 1rem;
+    border-bottom: 1px solid var(--dp-kant);
+}
+
+.rad-liste > li:last-child {
+    border-bottom: 0;
+}
+
+.rad-liste a.rad-lenke {
+    color: inherit;
+    text-decoration: none;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.rad-liste a.rad-lenke:hover .tittel {
+    text-decoration: underline;
+}
+
+.rad-liste .tittel {
+    font-weight: 600;
+}
+
+.rad-liste .under {
+    font-size: .82rem;
+    color: var(--dp-tekst-svak);
+}
+
+.hoyre {
+    margin-left: auto;
+    text-align: right;
+    white-space: nowrap;
+    font-size: .85rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Tomtilstander ------------------------------------------------------
+   Spesifiseres, ikke improviseres. Se plan kapittel 10.3. */
+
+.tomt {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    color: var(--dp-tekst-svak);
+    font-size: .9rem;
+}
+
+.tomt-stor {
+    padding: 2.5rem 1rem;
+}
+
+/* --- Merkelapper --------------------------------------------------------- */
+
+.merkelapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .12rem .5rem;
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-flate-2);
+    border: 1px solid var(--dp-kant);
+    font-size: .76rem;
+    color: var(--dp-tekst-svak);
+}
+
+.merkelapp.forfalt {
+    background: var(--dp-fare-svak);
+    border-color: transparent;
+    color: var(--dp-fare);
+    font-weight: 600;
+}
+
+/* --- Nokkeltall pa dyrekort ---------------------------------------------- */
+
+.dyrekort-tall {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: .5rem;
+}
+
+.dyrekort-tall .verdi {
+    font-weight: 700;
+}
+
+.dyrekort-tall .etikett {
+    display: block;
+    font-size: .76rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Faresone ------------------------------------------------------------ */
+
+.kort.fare {
+    border-color: #e9c9c6;
+}
+
+.kort.fare .kort-hode {
+    color: var(--dp-fare);
+    border-bottom-color: #f0d9d7;
+}
+
+/* --- Handleliste --------------------------------------------------------- */
+
+.handleliste-boks {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--dp-kant-sterk);
+    border-radius: 6px;
+    color: var(--dp-aksent);
+    font-weight: 700;
+    font-size: .85rem;
+    line-height: 1;
+}
+
+.handleliste-boks.kjopt {
+    border-color: var(--dp-aksent);
+    background: var(--dp-aksent-svak);
+}
+
+.kjopt-tekst {
+    text-decoration: line-through;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Sider uten innlogging ------------------------------------------------ */
 
 .apen-side {
     display: grid;
@@ -74,5 +517,177 @@ body {
 }
 
 .apen-kort {
-    width: min(26rem, 100%);
+    width: min(25rem, 100%);
+}
+
+/* --- Skjema --------------------------------------------------------------- */
+
+.form-label {
+    font-size: .85rem;
+    font-weight: 600;
+    margin-bottom: .25rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: var(--dp-radius-sm);
+    border-color: var(--dp-kant-sterk);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--dp-aksent);
+    box-shadow: 0 0 0 3px var(--dp-aksent-svak);
+}
+
+.form-text {
+    font-size: .8rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* Uten denne star det en tom, rod boks pa hvert skjema for forste
+   innsending. ASP.NET Core setter klassen selv nar det ikke finnes feil. */
+.validation-summary-valid {
+    display: none;
+}
+
+/* --- Knapper -------------------------------------------------------------- */
+
+.btn {
+    border-radius: var(--dp-radius-sm);
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: var(--dp-aksent);
+    border-color: var(--dp-aksent);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: var(--dp-aksent-mork);
+    border-color: var(--dp-aksent-mork);
+}
+
+.btn-outline-secondary {
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
+}
+
+.btn-lenke-fare {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--dp-fare);
+    font-size: .85rem;
+    font-weight: 600;
+}
+
+/* --- Sidehode ------------------------------------------------------------- */
+
+.sidehode {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: .85rem;
+}
+
+.sidehode h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.sidehode .undertittel {
+    color: var(--dp-tekst-svak);
+    font-size: .9rem;
+}
+
+.sidehode .handlinger {
+    margin-left: auto;
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+/* --- Rutenett ------------------------------------------------------------- */
+
+.dp-kolonner {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+    .dp-kolonner {
+        grid-template-columns: 2fr 1fr;
+        align-items: start;
+    }
+}
+
+.dp-kolonner > .kolonne > .kort:first-child {
+    margin-top: 0;
+}
+
+/* Bootstrap 5.3 har ikke min-w-0. Uten den sprenger lange navn og
+   e-postadresser sidemenyen i stedet for a bli forkortet. */
+.min-w-0 {
+    min-width: 0;
+}
+
+/* Husstandsvelgeren: kortet er en knapp nar man er med i flere husstander. */
+.husstandsvelger {
+    margin: 0 .75rem .75rem;
+}
+
+.husstandsvelger .husstandskort {
+    margin: 0;
+    background: var(--dp-flate-2);
+    cursor: pointer;
+}
+
+/* Radene i husstandsvelgeren speiler selve kortet: ikon, navn, rolle under.
+   Da ser listen ut som det man valgte fra, ikke som en fremmed meny. */
+.husstandsvalg {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem .6rem;
+    border-radius: var(--dp-radius-sm);
+}
+
+.husstandsvalg .merke {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    border-radius: var(--dp-radius-sm);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent);
+}
+
+.husstandsvalg .navn {
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.husstandsvalg .under {
+    font-size: .78rem;
+    color: var(--dp-tekst-svak);
+}
+
+.husstandsvalg.aktiv {
+    background: var(--dp-aksent-svak);
+}
+
+.husstandsvalg.aktiv .navn {
+    color: var(--dp-aksent-mork);
+}
+
+.husstandsvelger .dropdown-menu {
+    padding: .35rem;
+    border-color: var(--dp-kant);
+    border-radius: var(--dp-radius);
+    box-shadow: 0 4px 16px rgba(26, 29, 25, .08);
 }

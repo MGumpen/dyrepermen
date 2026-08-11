@@ -1,4 +1,5 @@
 using Dyrepermen.Application.Dtos;
+using Dyrepermen.Domain.Enums;
 
 namespace Dyrepermen.Application.Interfaces;
 
@@ -17,7 +18,14 @@ public interface IHusstandService
     /// bruker, lagres en invitasjon som loses inn ved registrering.
     /// </summary>
     Task<LeggTilResultat> LeggTilMedlem(
-        string epost, int utfortAvBrukerId, CancellationToken ct);
+        string epost, Husstandsrolle rolle, int utfortAvBrukerId,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Endrer rollen til et medlem. Den siste eieren kan ikke degraderes -
+    /// da ville innstillingene blitt last for alle.
+    /// </summary>
+    Task<bool> EndreRolle(int brukerId, Husstandsrolle rolle, CancellationToken ct);
 
     /// <summary>Sletter en ventende invitasjon. Innloste kan ikke angres.</summary>
     Task<bool> AngreInvitasjon(int invitasjonId, CancellationToken ct);

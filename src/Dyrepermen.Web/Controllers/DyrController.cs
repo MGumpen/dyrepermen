@@ -1,5 +1,6 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,13 +25,25 @@ public sealed class DyrController : Controller
     public async Task<IActionResult> Detaljer(int dyrId, CancellationToken ct)
     {
         var dyr = await _dyr.HentDetaljer(dyrId, ct);
-        return dyr is null ? NotFound() : View(dyr);
+        if (dyr is null)
+        {
+            return NotFound();
+        }
+
+        var sammendrag = await _dyr.HentSammendrag(dyrId, ct);
+        if (sammendrag is null)
+        {
+            return NotFound();
+        }
+
+        return View(new DyrDetaljerVm { Dyr = dyr, Sammendrag = sammendrag });
     }
 
     [HttpGet("ny")]
     public IActionResult Ny() => View(new NyttDyrVm());
 
     [HttpPost("ny")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Ny(NyttDyrVm vm, CancellationToken ct)
     {
@@ -78,6 +91,7 @@ public sealed class DyrController : Controller
     }
 
     [HttpPost("{dyrId:int}/rediger")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Rediger(
         int dyrId, RedigerDyrVm vm, CancellationToken ct)
@@ -111,6 +125,7 @@ public sealed class DyrController : Controller
     }
 
     [HttpPost("{dyrId:int}/deaktiver")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deaktiver(int dyrId, CancellationToken ct)
     {

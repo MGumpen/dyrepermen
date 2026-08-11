@@ -1,0 +1,193 @@
+@model ForsikringVm
+@{
+    ViewData["Tittel"] = "Forsikring";
+    var idag = DateOnly.FromDateTime(DateTime.Now);
+    var redigerer = Model.Ny.Id is not null;
+
+    string Kr(int belop) => belop.ToString("N0") + " kr";
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Forsikring</h1>
+        <div class="undertittel">
+            Poliser for husstandens dyr, med premie, dekning og egenandel.
+        </div>
+    </div>
+</div>
+
+<div class="dp-kolonner">
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
+                <h2>Poliser</h2>
+                @if (Model.Poliser.Count > 0)
+                {
+                    <span class="antall">@Model.Poliser.Count</span>
+                }
+            </div>
+
+            @if (Model.Poliser.Count == 0)
+            {
+                <div class="tomt">
+                    <p class="mb-1">Ingen forsikringer registrert.</p>
+                    <p class="mb-0" style="font-size:.85em">
+                        Legger du inn fornyelsesdato, dukker polisen opp under
+                        «Forfaller snart» 14 dager før.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var p in Model.Poliser)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">
+                                    @p.Selskap
+                                    <span class="text-body-secondary">· @p.DyreNavn</span>
+                                </span>
+                                <span class="under d-block">
+                                    @if (p.PoliseNr is not null)
+                                    {
+                                        <span>Polise @p.PoliseNr · </span>
+                                    }
+                                    <span>@Kr(p.ArspremieKr) i året</span>
+                                    @if (p.ForsikringsbelopKr > 0)
+                                    {
+                                        <span> · dekker @Kr(p.ForsikringsbelopKr)</span>
+                                    }
+                                </span>
+                                @* Egenandelen vises som to tall, ikke ett
+                                   sammenblandet. Det er hele poenget med a
+                                   skille fast og variabel. *@
+                                <span class="under d-block">
+                                    Egenandel: @Kr(p.EgenandelFastKr) fast
+                                    + @p.VariabelTekst av det overskytende
+                                </span>
+                            </span>
+                            <span class="hoyre">
+                                @if (p.FornyesDato is { } dato)
+                                {
+                                    @if (p.ErUtlopt(idag))
+                                    {
+                                        <span class="merkelapp forfalt">utløpt</span>
+                                    }
+                                    <span class="d-block">fornyes @($"{dato:d. MMM yyyy}")</span>
+                                }
+                                <span class="d-flex gap-2 justify-content-end mt-1">
+                                    <a asp-action="Rediger" asp-route-id="@p.Id">Endre</a>
+                                    <form method="post" asp-action="Slett" asp-route-id="@p.Id"
+                                          onsubmit="return confirm('Slette forsikringen hos @p.Selskap?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-lenke-fare">Slett</button>
+                                    </form>
+                                </span>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+                <h2>@(redigerer ? "Endre polise" : "Ny forsikring")</h2>
+            </div>
+            <div class="kort-kropp">
+                <form method="post" asp-action="Lagre">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Ny.Id" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.DyrId" class="form-label"></label>
+                        <select asp-for="Ny.DyrId" class="form-select">
+                            <option value="">Velg dyr</option>
+                            @foreach (var d in Model.DyrValg)
+                            {
+                                <option value="@d.Value">@d.Text</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Ny.DyrId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Selskap" class="form-label"></label>
+                        <input asp-for="Ny.Selskap" class="form-control"
+                               placeholder="For eksempel «Agria»" />
+                        <span asp-validation-for="Ny.Selskap" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.PoliseNr" class="form-label"></label>
+                        <input asp-for="Ny.PoliseNr" class="form-control" />
+                        <span asp-validation-for="Ny.PoliseNr" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.ArspremieKr" class="form-label"></label>
+                            <input asp-for="Ny.ArspremieKr" class="form-control"
+                                   inputmode="numeric" />
+                            <span asp-validation-for="Ny.ArspremieKr" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.ForsikringsbelopKr" class="form-label"></label>
+                            <input asp-for="Ny.ForsikringsbelopKr" class="form-control"
+                                   inputmode="numeric" />
+                            <span asp-validation-for="Ny.ForsikringsbelopKr" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.EgenandelFastKr" class="form-label"></label>
+                            <input asp-for="Ny.EgenandelFastKr" class="form-control"
+                                   inputmode="numeric" />
+                            <span asp-validation-for="Ny.EgenandelFastKr" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.EgenandelVariabelProsent" class="form-label"></label>
+                            <input asp-for="Ny.EgenandelVariabelProsent" class="form-control"
+                                   inputmode="decimal" />
+                            <span asp-validation-for="Ny.EgenandelVariabelProsent" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="form-text mb-2">
+                        Den variable egenandelen er andelen du betaler av det
+                        som overstiger den faste. Bruk komma: 20 eller 22,5.
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.FornyesDato" class="form-label"></label>
+                        <input asp-for="Ny.FornyesDato" class="form-control" />
+                        <div class="form-text">
+                            Settes denne, varsles fornyelsen 14 dager før.
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            @(redigerer ? "Lagre endringer" : "Lagre")
+                        </button>
+                        @if (redigerer)
+                        {
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Avbryt</a>
+                        }
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

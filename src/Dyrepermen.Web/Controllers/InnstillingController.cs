@@ -1,5 +1,7 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Domain.Enums;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.Extensions;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +23,7 @@ public sealed class InnstillingController : Controller
     }
 
     [HttpPost("lagre")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Lagre(InnstillingerVm vm, CancellationToken ct)
     {
@@ -47,9 +50,10 @@ public sealed class InnstillingController : Controller
     }
 
     [HttpPost("medlem")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> LeggTilMedlem(
-        string? nyttMedlemEpost, CancellationToken ct)
+        string? nyttMedlemEpost, Husstandsrolle rolle, CancellationToken ct)
     {
         var brukerId = User.BrukerId();
         if (brukerId is null)
@@ -64,7 +68,7 @@ public sealed class InnstillingController : Controller
         }
 
         var resultat = await _husstand.LeggTilMedlem(
-            nyttMedlemEpost, brukerId.Value, ct);
+            nyttMedlemEpost, rolle, brukerId.Value, ct);
 
         // Meldingen ved TilhorerAnnenHusstand er noytral med vilje. A svare
         // "personen tilhorer allerede en husstand" ville bekreftet for en
@@ -79,11 +83,8 @@ public sealed class InnstillingController : Controller
                     "Adressen er godkjent. Personen blir med automatisk når "
                     + "de registrerer seg.";
                 break;
-            case LeggTilResultat.AlleredeMedlem:
-                TempData["Melding"] = "Denne personen er allerede medlem.";
-                break;
             default:
-                TempData["Feil"] = "Denne adressen kan ikke legges til nå.";
+                TempData["Melding"] = "Denne personen er allerede medlem.";
                 break;
         }
 
@@ -91,6 +92,7 @@ public sealed class InnstillingController : Controller
     }
 
     [HttpPost("invitasjon/{invitasjonId:int}/angre")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AngreInvitasjon(
         int invitasjonId, CancellationToken ct)
@@ -104,6 +106,7 @@ public sealed class InnstillingController : Controller
     }
 
     [HttpPost("medlem/{brukerId:int}/fjern")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> FjernMedlem(
         int brukerId, CancellationToken ct)

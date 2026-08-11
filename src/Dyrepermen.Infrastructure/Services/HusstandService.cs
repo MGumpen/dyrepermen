@@ -1,6 +1,7 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Entities;
+using Dyrepermen.Domain.Enums;
 using Dyrepermen.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -10,8 +11,7 @@ namespace Dyrepermen.Infrastructure.Services;
 /// <summary>
 /// Merk at fornyelse av innloggingskapselen IKKE skjer her.
 /// <c>SignInManager</c> bor i ASP.NET Core-rammeverket, og a dra hele
-/// webrammeverket inn i datalaget for ett kall er feil vei. Controlleren
-/// kaller <c>RefreshSignInAsync</c> etter at denne har returnert.
+/// webrammeverket inn i datalaget for ett kall er feil vei.
 /// </summary>
 public sealed class HusstandService : IHusstandService
 {
@@ -34,7 +34,7 @@ public sealed class HusstandService : IHusstandService
     {
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
-        var husstand = new Husstand { Navn = navn };
+        var husstand = new Husstand { Navn = navn.Trim() };
         _db.Husstand.Add(husstand);
         await _db.SaveChangesAsync(ct);
 
@@ -46,8 +46,13 @@ public sealed class HusstandService : IHusstandService
             HusstandId = husstand.Id
         });
 
-        var bruker = await _db.Users.SingleAsync(u => u.Id == brukerId, ct);
-        bruker.HusstandId = husstand.Id;
+        // Den som oppretter husstanden bor i den.
+        _db.Husstandsmedlemskap.Add(new Husstandsmedlemskap
+        {
+            HusstandId = husstand.Id,
+            BrukerId = brukerId,
+            Rolle = Husstandsrolle.Beboer
+        });
 
         await _db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -78,11 +83,13 @@ public sealed class HusstandService : IHusstandService
             return null;
         }
 
-        var medlemmer = await _db.Users
-            .Where(u => u.HusstandId == id)
-            .OrderBy(u => u.Visningsnavn)
-            .Select(u => new Husstandsmedlem(
-                u.Id, u.Visningsnavn, u.Email, u.Id == brukerId))
+        var medlemmer = await _db.Husstandsmedlemskap
+            .Where(m => m.HusstandId == id)
+            .OrderBy(m => m.Rolle)
+            .ThenBy(m => m.Bruker.Visningsnavn)
+            .Select(m => new Husstandsmedlem(
+                m.BrukerId, m.Bruker.Visningsnavn, m.Bruker.Email,
+                m.BrukerId == brukerId, m.Rolle))
             .ToListAsync(ct);
 
         var ventende = await _db.HusstandInvitasjon
@@ -106,7 +113,8 @@ public sealed class HusstandService : IHusstandService
     }
 
     public async Task<LeggTilResultat> LeggTilMedlem(
-        string epost, int utfortAvBrukerId, CancellationToken ct)
+        string epost, Husstandsrolle rolle, int utfortAvBrukerId,
+        CancellationToken ct)
     {
         var husstandId = _husstand.HusstandId;
         var normalisert = epost.Trim().ToLowerInvariant();
@@ -116,53 +124,54 @@ public sealed class HusstandService : IHusstandService
 
         if (eksisterende is not null)
         {
-            if (eksisterende.HusstandId == husstandId)
+            var alt = await _db.Husstandsmedlemskap.AnyAsync(
+                m => m.HusstandId == husstandId && m.BrukerId == eksisterende.Id, ct);
+
+            if (alt)
             {
                 return LeggTilResultat.AlleredeMedlem;
             }
 
-            // ---------------------------------------------------------------
-            // Den viktigste linjen i metoden.
+            // -------------------------------------------------------------
+            // Her sto tidligere prosjektets viktigste sikkerhetssjekk: at
+            // adressen ikke allerede tilhorte en annen husstand.
             //
-            // Uten den kan hvem som helst taste inn e-postadressen til en
-            // fremmed bruker og flytte dem ut av deres egen husstand, siden
-            // husstand_id er en enkeltverdi. Den forrige husstanden mister et
-            // medlem uten varsel - og er det siste medlem, blir alle dataene
-            // utilgjengelige.
+            // Den var nodvendig fordi husstand_id var EN kolonne - a legge
+            // noen til i din husstand flyttet dem ut av deres egen, og var
+            // de siste medlem, ble dataene deres utilgjengelige.
             //
-            // Dette er ikke et teoretisk scenario. Det er den forventede
-            // oppforselen hvis sjekken mangler. Se plan kapittel 12.3.
-            // ---------------------------------------------------------------
-            if (eksisterende.HusstandId is not null)
+            // Med medlemskap i en egen tabell finnes ikke den faren lenger.
+            // A legge noen til her tar ingenting fra dem andre steder.
+            // Sjekken er derfor fjernet, ikke glemt. Se ADR 0009.
+            // -------------------------------------------------------------
+            _db.Husstandsmedlemskap.Add(new Husstandsmedlemskap
             {
-                _log.LogWarning(
-                    "Forsok pa a legge til bruker {BrukerId} som allerede "
-                    + "tilhorer en annen husstand", eksisterende.Id);
+                HusstandId = husstandId,
+                BrukerId = eksisterende.Id,
+                Rolle = rolle
+            });
 
-                return LeggTilResultat.TilhorerAnnenHusstand;
-            }
-
-            eksisterende.HusstandId = husstandId;
             await _db.SaveChangesAsync(ct);
 
             _log.LogInformation(
-                "Bruker {BrukerId} lagt til i husstand {HusstandId}",
-                eksisterende.Id, husstandId);
+                "Bruker {BrukerId} lagt til i husstand {HusstandId} som {Rolle}",
+                eksisterende.Id, husstandId, rolle);
 
             return LeggTilResultat.LagtTil;
         }
 
         // Adressen finnes ikke enna. Invitasjonen loses inn automatisk nar
         // noen registrerer seg med noyaktig denne adressen.
-        var alt = await _db.HusstandInvitasjon
+        var venter = await _db.HusstandInvitasjon
             .AnyAsync(i => i.Epost == normalisert && i.InnlostTid == null, ct);
 
-        if (!alt)
+        if (!venter)
         {
             _db.HusstandInvitasjon.Add(new HusstandInvitasjon
             {
                 HusstandId = husstandId,
                 Epost = normalisert,
+                Rolle = rolle,
                 OpprettetAvBrukerId = utfortAvBrukerId
             });
 
@@ -191,23 +200,23 @@ public sealed class HusstandService : IHusstandService
     {
         var husstandId = _husstand.HusstandId;
 
-        var bruker = await _db.Users.SingleOrDefaultAsync(
-            u => u.Id == brukerId && u.HusstandId == husstandId, ct);
+        var medlemskap = await _db.Husstandsmedlemskap.SingleOrDefaultAsync(
+            m => m.HusstandId == husstandId && m.BrukerId == brukerId, ct);
 
-        if (bruker is null)
+        if (medlemskap is null)
         {
             return false;
         }
 
-        // Applikasjonen skal ikke tillate en husstand uten medlemmer - da
-        // blir dataene utilgjengelige for alltid uten a bli slettet.
-        var antall = await _db.Users.CountAsync(u => u.HusstandId == husstandId, ct);
-        if (antall <= 1)
+        // En husstand ma ha minst en beboer. Uten det blir innstillingene
+        // og medlemslisten last for alle - gjester kan ikke endre dem.
+        if (medlemskap.Rolle == Husstandsrolle.Beboer
+            && await AntallBeboere(husstandId, ct) <= 1)
         {
             return false;
         }
 
-        bruker.HusstandId = null;
+        _db.Husstandsmedlemskap.Remove(medlemskap);
         await _db.SaveChangesAsync(ct);
 
         _log.LogInformation(
@@ -216,6 +225,36 @@ public sealed class HusstandService : IHusstandService
 
         return true;
     }
+
+    public async Task<bool> EndreRolle(
+        int brukerId, Husstandsrolle rolle, CancellationToken ct)
+    {
+        var husstandId = _husstand.HusstandId;
+
+        var medlemskap = await _db.Husstandsmedlemskap.SingleOrDefaultAsync(
+            m => m.HusstandId == husstandId && m.BrukerId == brukerId, ct);
+
+        if (medlemskap is null || medlemskap.Rolle == rolle)
+        {
+            return false;
+        }
+
+        // Samme regel som ved fjerning: den siste beboeren kan ikke
+        // degraderes til gjest.
+        if (medlemskap.Rolle == Husstandsrolle.Beboer
+            && await AntallBeboere(husstandId, ct) <= 1)
+        {
+            return false;
+        }
+
+        medlemskap.Rolle = rolle;
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    private Task<int> AntallBeboere(int husstandId, CancellationToken ct)
+        => _db.Husstandsmedlemskap.CountAsync(
+            m => m.HusstandId == husstandId && m.Rolle == Husstandsrolle.Beboer, ct);
 
     public async Task<bool> LagreInnstillinger(
         string husstandsnavn,
@@ -270,8 +309,12 @@ public sealed class HusstandService : IHusstandService
             return false;
         }
 
-        var bruker = await _db.Users.SingleAsync(u => u.Id == brukerId, ct);
-        bruker.HusstandId = invitasjon.HusstandId;
+        _db.Husstandsmedlemskap.Add(new Husstandsmedlemskap
+        {
+            HusstandId = invitasjon.HusstandId,
+            BrukerId = brukerId,
+            Rolle = invitasjon.Rolle
+        });
 
         invitasjon.InnlostAvBrukerId = brukerId;
         invitasjon.InnlostTid = DateTimeOffset.UtcNow;

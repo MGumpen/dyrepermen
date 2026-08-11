@@ -1,4 +1,5 @@
 using Dyrepermen.Domain.Abstractions;
+using Dyrepermen.Domain.Enums;
 
 namespace Dyrepermen.Domain.Entities;
 
@@ -17,6 +18,9 @@ public sealed class HusstandInvitasjon : IHusstandsbundet
 
     /// <summary>Normalisert til sma bokstaver for lagring.</summary>
     public string Epost { get; set; } = null!;
+
+    /// <summary>Rollen personen far nar invitasjonen loses inn.</summary>
+    public Husstandsrolle Rolle { get; set; } = Husstandsrolle.Gjest;
 
     /// <summary>Satt nar adressen registrerte seg.</summary>
     public int? InnlostAvBrukerId { get; set; }

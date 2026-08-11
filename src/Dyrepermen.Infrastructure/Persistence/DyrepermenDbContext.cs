@@ -26,6 +26,7 @@ public sealed class DyrepermenDbContext
     }
 
     public DbSet<Husstand> Husstand => Set<Husstand>();
+    public DbSet<Husstandsmedlemskap> Husstandsmedlemskap => Set<Husstandsmedlemskap>();
     public DbSet<HusstandInnstilling> HusstandInnstilling => Set<HusstandInnstilling>();
     public DbSet<HusstandInvitasjon> HusstandInvitasjon => Set<HusstandInvitasjon>();
     public DbSet<Dyr> Dyr => Set<Dyr>();
@@ -39,6 +40,7 @@ public sealed class DyrepermenDbContext
     public DbSet<Forsikring> Forsikring => Set<Forsikring>();
     public DbSet<Dokument> Dokument => Set<Dokument>();
     public DbSet<Handleliste> Handleliste => Set<Handleliste>();
+    public DbSet<Informasjon> Informasjon => Set<Informasjon>();
 
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -66,6 +68,9 @@ public sealed class DyrepermenDbContext
 
         b.Entity<Handleliste>()
          .HasQueryFilter(h => h.HusstandId == _husstand.HusstandId);
+
+        b.Entity<Informasjon>()
+         .HasQueryFilter(i => i.HusstandId == _husstand.HusstandId);
 
         b.Entity<HusstandInnstilling>()
          .HasQueryFilter(i => i.HusstandId == _husstand.HusstandId);

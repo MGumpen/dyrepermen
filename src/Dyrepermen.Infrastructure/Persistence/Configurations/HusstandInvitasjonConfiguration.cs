@@ -1,4 +1,5 @@
 using Dyrepermen.Domain.Entities;
+using Dyrepermen.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,6 +14,17 @@ public sealed class HusstandInvitasjonConfiguration
         b.Property(i => i.Id).UseIdentityAlwaysColumn();
 
         b.Property(i => i.Epost).HasMaxLength(256).IsRequired();
+
+        b.Property(i => i.Rolle)
+         .HasConversion(
+             v => v == Husstandsrolle.Beboer ? 'B' : 'G',
+             v => v == 'B' ? Husstandsrolle.Beboer : Husstandsrolle.Gjest)
+         .HasColumnType("char(1)")
+         // INGEN HasDefaultValue her. Beboer er CLR-standardverdien for
+         // enumen, sa EF ville utelatt kolonnen fra INSERT nar rollen er
+         // Beboer - og databasens standard 'G' ville slatt inn. Da ble en
+         // invitert beboer stille lagret som gjest.
+         .IsRequired();
 
         b.Property(i => i.OpprettetDato)
          .HasDefaultValueSql("CURRENT_DATE")

@@ -2,6 +2,7 @@ using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Enums;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,6 +28,7 @@ public sealed class ForplanController : Controller
     }
 
     [HttpPost("")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Ny(
         int dyrId, NyForplanVm ny, CancellationToken ct)
@@ -60,6 +62,7 @@ public sealed class ForplanController : Controller
     }
 
     [HttpPost("deaktiver")]
+    [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deaktiver(int dyrId, CancellationToken ct)
     {

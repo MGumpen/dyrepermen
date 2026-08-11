@@ -1,0 +1,26 @@
+@using Dyrepermen.Application.Interfaces
+@inject IGjeldendeBruker Meg
+@{
+    ViewData["Tittel"] = "Ingen tilgang";
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Du har ikke tilgang til dette</h1>
+    </div>
+</div>
+
+<section class="kort" style="max-width: 34rem;">
+    <div class="kort-kropp">
+        <p>
+            Du er <strong>gjest</strong> i @Meg.HusstandNavn. Da kan du se alt
+            og registrere vekt, fôring og medisindoser — men ikke endre dyr,
+            medlemmer eller innstillinger.
+        </p>
+        <p class="text-body-secondary small">
+            Trenger du å endre noe her, må noen som bor i husstanden gi deg
+            samme rolle. Er du med i flere husstander, kan du bytte i menyen.
+        </p>
+        <a href="/" class="btn btn-outline-secondary btn-sm">Til oversikten</a>
+    </div>
+</section>

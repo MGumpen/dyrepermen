@@ -7,151 +7,153 @@
     string Klokke(DateTimeOffset t) => t.ToLocalTime().ToString("d. MMM HH:mm");
 }
 
-<h1 class="h4 mb-1">Medisin</h1>
-<p class="text-body-secondary mb-3">
-    <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
-        @Model.DyrNavn
-    </a>
-</p>
-
-<div class="row g-3">
-    <div class="col-lg-7">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">Medisiner</h2>
-
-                @if (Model.Medisiner.Count == 0)
-                {
-                    <p class="text-body-secondary small mb-0">
-                        Ingen medisiner registrert.
-                    </p>
-                }
-                else
-                {
-                    <ul class="list-unstyled mb-0">
-                        @foreach (var m in Model.Medisiner)
-                        {
-                            var avsluttet = m.ErAvsluttet(idag);
-                            <li class="py-3 border-bottom @(avsluttet ? "opacity-50" : "")">
-                                <div class="d-flex justify-content-between gap-2 flex-wrap">
-                                    <div>
-                                        <strong>@m.Navn</strong>
-                                        <span class="text-body-secondary">· @m.Dose</span>
-                                        @if (avsluttet)
-                                        {
-                                            <span class="badge text-bg-secondary ms-1">avsluttet</span>
-                                        }
-
-                                        <div class="small text-body-secondary">
-                                            @if (m.IntervallTimer > 0)
-                                            {
-                                                @($"Hver {m.IntervallTimer}. time")
-                                            }
-                                            else
-                                            {
-                                                @:Ved behov
-                                            }
-                                        </div>
-
-                                        <div class="small mt-1">
-                                            @if (m.SisteDoseTid is { } siste)
-                                            {
-                                                <span class="text-body-secondary">
-                                                    Sist gitt @Klokke(siste)
-                                                    @(m.SisteDoseAv is null
-                                                        ? " av slettet bruker"
-                                                        : $" av {m.SisteDoseAv}")
-                                                </span>
-                                                @if (m.NesteDoseTidligst is { } neste)
-                                                {
-                                                    <span class="d-block text-body-secondary">
-                                                        Neste tidligst @Klokke(neste)
-                                                    </span>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <span class="text-body-secondary">
-                                                    Ingen doser logget ennå
-                                                </span>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    @if (!avsluttet)
-                                    {
-                                        <div class="d-flex flex-column gap-1 align-items-end">
-                                            <form method="post" asp-action="LoggDose"
-                                                  asp-route-dyrId="@Model.DyrId"
-                                                  asp-route-medisinId="@m.Id">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-primary btn-sm">
-                                                    Gi dose
-                                                </button>
-                                            </form>
-
-                                            @* Vises kun etter en advarsel om at det er
-                                               for tidlig. Overstyring skal vaere bevisst. *@
-                                            @if (bekreftFor == m.Id)
-                                            {
-                                                <form method="post" asp-action="LoggDose"
-                                                      asp-route-dyrId="@Model.DyrId"
-                                                      asp-route-medisinId="@m.Id"
-                                                      asp-route-bekreft="true"
-                                                      onsubmit="return confirm('Gi dosen likevel?');">
-                                                    @Html.AntiForgeryToken()
-                                                    <button type="submit"
-                                                            class="btn btn-outline-danger btn-sm">
-                                                        Gi likevel
-                                                    </button>
-                                                </form>
-                                            }
-
-                                            <form method="post" asp-action="Avslutt"
-                                                  asp-route-dyrId="@Model.DyrId"
-                                                  asp-route-medisinId="@m.Id"
-                                                  onsubmit="return confirm('Avslutte @m.Navn?');">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit"
-                                                        class="btn btn-link btn-sm text-body-secondary p-0">
-                                                    Avslutt
-                                                </button>
-                                            </form>
-                                        </div>
-                                    }
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
+<div class="sidehode">
+    <div>
+        <h1>Medisin</h1>
+        <div class="undertittel">
+            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
+                @Model.DyrNavn
+            </a>
         </div>
     </div>
+</div>
 
-    <div class="col-lg-5">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h6">Ny medisin</h2>
+<div class="dp-kolonner">
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-medisin" /></svg>
+                <h2>Medisiner</h2>
+                @if (Model.Medisiner.Count > 0)
+                {
+                    <span class="antall">@Model.Medisiner.Count</span>
+                }
+            </div>
 
+            @if (Model.Medisiner.Count == 0)
+            {
+                <div class="tomt">Ingen medisiner registrert.</div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var m in Model.Medisiner)
+                    {
+                        var avsluttet = m.ErAvsluttet(idag);
+                        <li class="@(avsluttet ? "opacity-50" : "")">
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">
+                                    @m.Navn <span class="text-body-secondary">· @m.Dose</span>
+                                    @if (avsluttet)
+                                    {
+                                        <span class="merkelapp ms-1">avsluttet</span>
+                                    }
+                                </span>
+                                <span class="under d-block">
+                                    @if (m.IntervallTimer > 0)
+                                    {
+                                        @($"Hver {m.IntervallTimer}. time")
+                                    }
+                                    else
+                                    {
+                                        @:Ved behov
+                                    }
+                                </span>
+                                <span class="under d-block">
+                                    @if (m.SisteDoseTid is { } siste)
+                                    {
+                                        @($"Sist gitt {Klokke(siste)}")
+                                        @(m.SisteDoseAv is null
+                                            ? " av slettet bruker"
+                                            : $" av {m.SisteDoseAv}")
+                                        @if (m.NesteDoseTidligst is { } neste)
+                                        {
+                                            <span class="d-block">
+                                                Neste tidligst @Klokke(neste)
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @:Ingen doser logget ennå
+                                    }
+                                </span>
+                            </span>
+
+                            @if (!avsluttet)
+                            {
+                                <span class="hoyre d-flex flex-column gap-1 align-items-end">
+                                    <form method="post" asp-action="LoggDose"
+                                          asp-route-dyrId="@Model.DyrId"
+                                          asp-route-medisinId="@m.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            Gi dose
+                                        </button>
+                                    </form>
+
+                                    @* Vises kun etter en advarsel om at det er for
+                                       tidlig. Overstyring skal vaere bevisst. *@
+                                    @if (bekreftFor == m.Id)
+                                    {
+                                        <form method="post" asp-action="LoggDose"
+                                              asp-route-dyrId="@Model.DyrId"
+                                              asp-route-medisinId="@m.Id"
+                                              asp-route-bekreft="true"
+                                              onsubmit="return confirm('Gi dosen likevel?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm">
+                                                Gi likevel
+                                            </button>
+                                        </form>
+                                    }
+
+                                    <form method="post" asp-action="Avslutt"
+                                          asp-route-dyrId="@Model.DyrId"
+                                          asp-route-medisinId="@m.Id"
+                                          onsubmit="return confirm('Avslutte @m.Navn?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="btn btn-link btn-sm text-body-secondary p-0">
+                                            Avslutt
+                                        </button>
+                                    </form>
+                                </span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+                <h2>Ny medisin</h2>
+            </div>
+            <div class="kort-kropp">
                 <form method="post" asp-action="Ny" asp-route-dyrId="@Model.DyrId">
                     @Html.AntiForgeryToken()
 
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.Navn" class="form-label"></label>
                         <input asp-for="Ny.Navn" class="form-control" />
                         <span asp-validation-for="Ny.Navn" class="text-danger small"></span>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.Dose" class="form-label"></label>
                         <input asp-for="Ny.Dose" class="form-control"
                                placeholder="1/2 tablett" />
                         <span asp-validation-for="Ny.Dose" class="text-danger small"></span>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label asp-for="Ny.IntervallTimer" class="form-label"></label>
                         <input asp-for="Ny.IntervallTimer" class="form-control"
                                inputmode="numeric" />
@@ -170,10 +172,10 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Lagre</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
                 </form>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 

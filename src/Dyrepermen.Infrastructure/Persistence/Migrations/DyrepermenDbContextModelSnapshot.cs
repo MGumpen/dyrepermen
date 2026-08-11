@@ -100,10 +100,6 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("email_confirmed");
 
-                    b.Property<int?>("HusstandId")
-                        .HasColumnType("integer")
-                        .HasColumnName("husstand_id");
-
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("lockout_enabled");
@@ -155,9 +151,6 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_asp_net_users");
-
-                    b.HasIndex("HusstandId")
-                        .HasDatabaseName("ix_bruker_husstand");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("ix_asp_net_users_epost");
@@ -496,18 +489,29 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("dyr_id");
 
-                    b.Property<int>("Egenandel")
+                    b.Property<int>("EgenandelFastKr")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
-                        .HasColumnName("egenandel");
+                        .HasColumnName("egenandel_fast_kr");
+
+                    b.Property<int>("EgenandelVariabelTidels")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("egenandel_variabel_tidels");
 
                     b.Property<DateOnly?>("FornyesDato")
                         .HasColumnType("date")
                         .HasColumnName("fornyes_dato");
 
+                    b.Property<int>("ForsikringsbelopKr")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("forsikringsbelop_kr");
+
                     b.Property<string>("PoliseNr")
-                        .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
                         .HasColumnName("polise_nr");
@@ -524,7 +528,14 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.HasIndex("DyrId")
                         .HasDatabaseName("ix_forsikring_dyr_id");
 
-                    b.ToTable("forsikring", (string)null);
+                    b.HasIndex("FornyesDato")
+                        .HasDatabaseName("ix_forsikring_fornyes")
+                        .HasFilter("fornyes_dato IS NOT NULL");
+
+                    b.ToTable("forsikring", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_forsikring_variabel", "egenandel_variabel_tidels BETWEEN 0 AND 1000");
+                        });
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Handleliste", b =>
@@ -685,6 +696,10 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnName("opprettet_dato")
                         .HasDefaultValueSql("CURRENT_DATE");
 
+                    b.Property<char>("Rolle")
+                        .HasColumnType("char(1)")
+                        .HasColumnName("rolle");
+
                     b.HasKey("Id")
                         .HasName("pk_husstand_invitasjon");
 
@@ -698,6 +713,103 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_husstand_invitasjon_opprettet_av_bruker_id");
 
                     b.ToTable("husstand_invitasjon", (string)null);
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Husstandsmedlemskap", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BrukerId")
+                        .HasColumnType("integer")
+                        .HasColumnName("bruker_id");
+
+                    b.Property<int>("HusstandId")
+                        .HasColumnType("integer")
+                        .HasColumnName("husstand_id");
+
+                    b.Property<DateOnly>("OpprettetDato")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("date")
+                        .HasColumnName("opprettet_dato")
+                        .HasDefaultValueSql("CURRENT_DATE");
+
+                    b.Property<char>("Rolle")
+                        .HasColumnType("char(1)")
+                        .HasColumnName("rolle");
+
+                    b.HasKey("Id")
+                        .HasName("pk_husstandsmedlemskap");
+
+                    b.HasIndex("BrukerId")
+                        .HasDatabaseName("ix_medlemskap_bruker");
+
+                    b.HasIndex("HusstandId", "BrukerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_medlemskap_husstand_bruker");
+
+                    b.ToTable("husstandsmedlemskap", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_medlemskap_rolle", "rolle IN ('B','G')");
+                        });
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Informasjon", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("DyrId")
+                        .HasColumnType("integer")
+                        .HasColumnName("dyr_id");
+
+                    b.Property<int>("HusstandId")
+                        .HasColumnType("integer")
+                        .HasColumnName("husstand_id");
+
+                    b.Property<int?>("OpprettetAvBrukerId")
+                        .HasColumnType("integer")
+                        .HasColumnName("opprettet_av_bruker_id");
+
+                    b.Property<DateOnly>("OpprettetDato")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("date")
+                        .HasColumnName("opprettet_dato")
+                        .HasDefaultValueSql("CURRENT_DATE");
+
+                    b.Property<string>("Tekst")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("tekst");
+
+                    b.Property<string>("Tittel")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("tittel");
+
+                    b.HasKey("Id")
+                        .HasName("pk_informasjon");
+
+                    b.HasIndex("DyrId")
+                        .HasDatabaseName("ix_informasjon_dyr_id");
+
+                    b.HasIndex("HusstandId")
+                        .HasDatabaseName("ix_informasjon_husstand");
+
+                    b.HasIndex("OpprettetAvBrukerId")
+                        .HasDatabaseName("ix_informasjon_opprettet_av_bruker_id");
+
+                    b.ToTable("informasjon", (string)null);
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Medisin", b =>
@@ -1042,17 +1154,6 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.Navigation("Dyr");
                 });
 
-            modelBuilder.Entity("Dyrepermen.Domain.Entities.Bruker", b =>
-                {
-                    b.HasOne("Dyrepermen.Domain.Entities.Husstand", "Husstand")
-                        .WithMany("Medlemmer")
-                        .HasForeignKey("HusstandId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_asp_net_users_husstand_husstand_id");
-
-                    b.Navigation("Husstand");
-                });
-
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Dokument", b =>
                 {
                     b.HasOne("Dyrepermen.Domain.Entities.Dyr", "Dyr")
@@ -1209,6 +1310,55 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.Navigation("OpprettetAv");
                 });
 
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Husstandsmedlemskap", b =>
+                {
+                    b.HasOne("Dyrepermen.Domain.Entities.Bruker", "Bruker")
+                        .WithMany("Medlemskap")
+                        .HasForeignKey("BrukerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_husstandsmedlemskap_users_bruker_id");
+
+                    b.HasOne("Dyrepermen.Domain.Entities.Husstand", "Husstand")
+                        .WithMany("Medlemskap")
+                        .HasForeignKey("HusstandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_husstandsmedlemskap_husstand_husstand_id");
+
+                    b.Navigation("Bruker");
+
+                    b.Navigation("Husstand");
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Informasjon", b =>
+                {
+                    b.HasOne("Dyrepermen.Domain.Entities.Dyr", "Dyr")
+                        .WithMany()
+                        .HasForeignKey("DyrId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_informasjon_dyr_dyr_id");
+
+                    b.HasOne("Dyrepermen.Domain.Entities.Husstand", "Husstand")
+                        .WithMany()
+                        .HasForeignKey("HusstandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_informasjon_husstand_husstand_id");
+
+                    b.HasOne("Dyrepermen.Domain.Entities.Bruker", "OpprettetAv")
+                        .WithMany()
+                        .HasForeignKey("OpprettetAvBrukerId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_informasjon_asp_net_users_opprettet_av_bruker_id");
+
+                    b.Navigation("Dyr");
+
+                    b.Navigation("Husstand");
+
+                    b.Navigation("OpprettetAv");
+                });
+
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Medisin", b =>
                 {
                     b.HasOne("Dyrepermen.Domain.Entities.Dyr", "Dyr")
@@ -1310,6 +1460,11 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
                 });
 
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Bruker", b =>
+                {
+                    b.Navigation("Medlemskap");
+                });
+
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Dyr", b =>
                 {
                     b.Navigation("Behandlinger");
@@ -1339,7 +1494,7 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Invitasjoner");
 
-                    b.Navigation("Medlemmer");
+                    b.Navigation("Medlemskap");
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Medisin", b =>

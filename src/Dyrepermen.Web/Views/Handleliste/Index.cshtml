@@ -1,0 +1,69 @@
+@model HandlelisteVm
+@{
+    ViewData["Tittel"] = "Handleliste";
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Handleliste</h1>
+        <div class="undertittel">Delt med hele husstanden.</div>
+    </div>
+</div>
+
+<div style="max-width: 38rem;">
+    <section class="kort">
+        <div class="kort-hode">
+            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+            <h2>Legg til</h2>
+        </div>
+        <div class="kort-kropp">
+            @* hx-on::after-request tommer feltet etter vellykket innsending.
+               Uten det star teksten igjen og neste punkt blir lett en dublett. *@
+            <form method="post" asp-action="Legg" class="row g-2 align-items-end"
+                  hx-post="@Url.Action("Legg")"
+                  hx-target="#liste" hx-swap="innerHTML"
+                  hx-on::after-request="if(event.detail.successful) this.reset()">
+                @Html.AntiForgeryToken()
+
+                <div class="col-12 col-sm">
+                    <label for="tekst" class="form-label">Hva trengs?</label>
+                    <input type="text" name="tekst" id="tekst" class="form-control"
+                           maxlength="120" required autocomplete="off"
+                           placeholder="For eksempel «tørrfôr»" />
+                </div>
+
+                <div class="col-4 col-sm-2">
+                    <label for="antall" class="form-label">Antall</label>
+                    <input type="number" name="antall" id="antall" class="form-control"
+                           value="1" min="1" max="99" />
+                </div>
+
+                <div class="col-8 col-sm-3">
+                    <label for="dyrId" class="form-label">Gjelder</label>
+                    <select name="dyrId" id="dyrId" class="form-select">
+                        <option value="">Felles</option>
+                        @foreach (var d in Model.Dyr)
+                        {
+                            <option value="@d.Value">@d.Text</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-sm-auto">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Legg til</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="kort">
+        <div class="kort-hode">
+            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-handleliste" /></svg>
+            <h2>På listen</h2>
+        </div>
+        @* htmx bytter kun innholdet i denne. *@
+        <div id="liste">
+            <partial name="_Liste" model="Model" />
+        </div>
+    </section>
+</div>
