@@ -1,4 +1,5 @@
 using Dyrepermen.Application.Dtos;
+using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Web.Extensions;
 using Dyrepermen.Web.Filtre;
@@ -77,11 +78,15 @@ public sealed class VektController : Controller
             return null;
         }
 
+        var historikk = await _vekt.HentFor(dyrId, ct);
+
         return new VektSideVm
         {
             DyrId = dyrId,
             DyrNavn = dyr.Navn,
-            Historikk = await _vekt.HentFor(dyrId, ct),
+            Historikk = historikk,
+            Graf = Vektgrafberegning.Beregn(
+                historikk.Select(h => (h.Dato, h.VektGram)).ToList()),
             Ny = ny
         };
     }

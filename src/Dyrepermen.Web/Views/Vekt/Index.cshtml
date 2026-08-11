@@ -17,6 +17,19 @@
 
 <div class="dp-kolonner">
     <div class="kolonne">
+        @if (Model.Graf is { } graf)
+        {
+            <section class="kort">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vekt" /></svg>
+                    <h2>Vektutvikling for @Model.DyrNavn</h2>
+                </div>
+                <div class="kort-kropp">
+                    <partial name="_Graf" model="graf" />
+                </div>
+            </section>
+        }
+
         <section class="kort">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vekt" /></svg>
