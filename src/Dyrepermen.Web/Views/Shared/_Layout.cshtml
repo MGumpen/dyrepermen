@@ -107,62 +107,65 @@
                     @* Husstandskortet: hvilken husstand du ser pa na.
                        Er du med i flere, blir det en velger. Rollen din kan
                        vaere ulik i hver - eier hjemme, gjest hos pappa. *@
-                    @if (Meg.Husstander.Count > 1)
-                    {
-                        <div class="dropdown husstandsvelger">
-                            <button class="husstandskort w-100 text-start border-0"
-                                    type="button" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                <span class="merke">
-                                    <svg class="ikon" aria-hidden="true"><use href="#i-hjem" /></svg>
-                                </span>
-                                <span class="min-w-0 flex-grow-1">
-                                    <span class="navn d-block">@Meg.HusstandNavn</span>
-                                    <span class="under">
-                                        @(Meg.KanEndre ? "Eier" : "Gjest") ·
-                                        @Meg.Husstander.Count husstander
-                                    </span>
-                                </span>
-                                <svg class="ikon" aria-hidden="true" style="transform:rotate(90deg)">
-                                    <use href="#i-chevron" />
-                                </svg>
-                            </button>
-
-                            <ul class="dropdown-menu w-100">
-                                @foreach (var h in Meg.Husstander)
-                                {
-                                    <li>
-                                        <form method="post" action="/husstand/bytt">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="husstandId" value="@h.Id" />
-                                            <input type="hidden" name="retur"
-                                                   value="@Context.Request.Path" />
-                                            <button type="submit"
-                                                    class="dropdown-item d-flex justify-content-between gap-2">
-                                                <span>@h.Navn</span>
-                                                <span class="text-body-secondary small">
-                                                    @(h.Rolle == Husstandsrolle.Eier ? "Eier" : "Gjest")
-                                                    @(h.ErAktiv ? " ✓" : "")
-                                                </span>
-                                            </button>
-                                        </form>
-                                    </li>
-                                }
-                            </ul>
-                        </div>
-                    }
-                    else
-                    {
-                        <a class="husstandskort" href="/innstillinger">
+                    @* Alltid en velger, ogsa med bare en husstand. Da er den
+                       samme knappen uansett, og du oppdager at det GAR an a
+                       vaere med i flere - i stedet for at menyen endrer seg
+                       under foettene pa deg forste gang noen legger deg til. *@
+                    <div class="dropdown husstandsvelger">
+                        <button class="husstandskort w-100 text-start border-0"
+                                type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                aria-label="Bytt husstand">
                             <span class="merke">
                                 <svg class="ikon" aria-hidden="true"><use href="#i-hjem" /></svg>
                             </span>
-                            <span class="min-w-0">
+                            <span class="min-w-0 flex-grow-1">
                                 <span class="navn d-block">@Meg.HusstandNavn</span>
-                                <span class="under">Husstand</span>
+                                <span class="under">
+                                    @(Meg.KanEndre ? "Eier" : "Gjest")@(Meg.Husstander.Count > 1
+                                        ? $" · {Meg.Husstander.Count} husstander" : "")
+                                </span>
                             </span>
-                        </a>
-                    }
+                            <svg class="ikon" aria-hidden="true" style="transform:rotate(90deg)">
+                                <use href="#i-chevron" />
+                            </svg>
+                        </button>
+
+                        <ul class="dropdown-menu w-100">
+                            <li><h6 class="dropdown-header">Dine husstander</h6></li>
+
+                            @foreach (var h in Meg.Husstander)
+                            {
+                                <li>
+                                    <form method="post" action="/husstand/bytt">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="husstandId" value="@h.Id" />
+                                        <input type="hidden" name="retur"
+                                               value="@Context.Request.Path" />
+                                        <button type="submit"
+                                                class="dropdown-item d-flex justify-content-between align-items-center gap-2 @(h.ErAktiv ? "active" : "")">
+                                            <span class="min-w-0 text-truncate">@h.Navn</span>
+                                            <span class="small opacity-75 text-nowrap">
+                                                @(h.Rolle == Husstandsrolle.Eier ? "Eier" : "Gjest")
+                                            </span>
+                                        </button>
+                                    </form>
+                                </li>
+                            }
+
+                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <a class="dropdown-item" href="/husstand/oppsett">
+                                    Opprett ny husstand
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/innstillinger">
+                                    Innstillinger for @Meg.HusstandNavn
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
 
                     <ul class="sidemeny-nav">
                         <li>
