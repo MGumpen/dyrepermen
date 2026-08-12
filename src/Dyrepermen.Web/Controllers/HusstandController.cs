@@ -36,9 +36,17 @@ public sealed class HusstandController : Controller
     {
         SettAktiv(husstandId);
 
-        // Kun lokale stier. Uten sjekken kan lenken sende brukeren til et
-        // fremmed nettsted etter innlogging - apen omdirigering.
-        return Url.IsLocalUrl(retur) ? Redirect(retur!) : RedirectToAction("Index", "Hjem");
+        // To sjekker, mot to ulike problemer.
+        //
+        // IsLocalUrl stenger apen omdirigering: uten den kan lenken sende
+        // brukeren til et fremmed nettsted.
+        //
+        // Returadresse.Seksjon kutter stien til seksjonen. Sto du pa /dyr/7 og
+        // bytter til en husstand uten dyr 7, ville du landet pa en feilside -
+        // sendt dit av appen selv. Na lander du pa dyrene i den nye
+        // husstanden. Se Returadresse for hvorfor en 404 likevel er riktig
+        // svar pa et bokmerke.
+        return Redirect(Url.IsLocalUrl(retur) ? Returadresse.Seksjon(retur) : "/");
     }
 
     /// <summary>
