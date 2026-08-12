@@ -86,7 +86,15 @@
                     @foreach (var sted in Model.Steder)
                     {
                         <li>
-                            <span class="flex-grow-1 min-w-0">
+                            @* Lenke rundt teksten, ikke rundt hele raden.
+                               Ringeknappen og "Endre" ma sta UTENFOR - en
+                               knapp inni en <a> er ugyldig markup, og
+                               klikkene ville konkurrert. Samme monster som
+                               dyrekortene. *@
+                            <a class="rad-lenke" asp-action="Detaljer"
+                               asp-route-id="@sted.Id"
+                               hx-get="@Url.Action("Detaljer", new { id = sted.Id })"
+                               hx-target="#dpdialog-innhold" hx-swap="innerHTML">
                                 <span class="tittel">@sted.Navn</span>
                                 <span class="under d-block">
                                     <span class="merkelapp type-@sted.Type.ToString().ToLowerInvariant()">
@@ -109,7 +117,7 @@
                                             ? "besøk" : "besøk") registrert
                                     </span>
                                 }
-                            </span>
+                            </a>
 
                             <span class="hoyre radhandlinger">
                                 @if (sted.TelefonLenke is { } nr)
@@ -125,11 +133,10 @@
                                         <span class="d-none d-sm-inline">@sted.Telefon</span>
                                     </a>
                                 }
-                                @if (Meg.KanEndre)
-                                {
-                                    <a class="btn btn-sm btn-outline-secondary"
-                                       asp-action="Rediger" asp-route-id="@sted.Id">Endre</a>
-                                }
+                                @* Ingen "Endre" her lenger. Den ligger i
+                                   kortet som apnes ved klikk, sammen med
+                                   resten av opplysningene. *@
+                                <svg class="ikon" aria-hidden="true"><use href="#i-chevron" /></svg>
                             </span>
                         </li>
                     }

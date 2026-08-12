@@ -1324,3 +1324,22 @@ h1, h2, h3, h4 {
     border-color: var(--dp-aksent-mork);
     color: var(--dp-aksent-mork);
 }
+
+/* Notatet i veterinaerkortet. Skilt fra faktalisten, fordi det er fritekst
+   og ikke et felt med etikett. */
+.dialog-notat {
+    margin-top: 1rem;
+    padding-top: .85rem;
+    border-top: 1px solid var(--dp-kant);
+}
+
+/* Linjeskift beholdes. Skriver noen tre punkter under hverandre, skal de
+   ikke bli til en eneste lang setning. */
+.dialog-notat p {
+    white-space: pre-line;
+}
+
+/* Faktalisten brukes ogsa i dialogen, der det er god plass til etiketten. */
+.dp-dialog .fakta dt {
+    max-width: none;
+}

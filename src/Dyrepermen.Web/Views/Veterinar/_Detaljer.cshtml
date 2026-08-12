@@ -1,0 +1,103 @@
+@using Dyrepermen.Application.Dtos
+@using Dyrepermen.Application.Interfaces
+@using Dyrepermen.Domain.Enums
+@inject IGjeldendeBruker Meg
+@model Veterinarrad
+@{
+    string Typenavn(Veterinartype t) => t switch
+    {
+        Veterinartype.Vakt => "Vakt",
+        Veterinartype.Sykehus => "Dyresykehus",
+        Veterinartype.Annet => "Annet",
+        _ => "Fast veterinær"
+    };
+}
+
+<div class="dialog-hode">
+    <div class="min-w-0">
+        <h2 class="h5 mb-1">@Model.Navn</h2>
+        <span class="merkelapp type-@Model.Type.ToString().ToLowerInvariant()">
+            @Typenavn(Model.Type)
+        </span>
+    </div>
+    <button type="button" class="btn lukkeknapp" aria-label="Lukk"
+            onclick="this.closest('dialog').close()">&times;</button>
+</div>
+
+<div class="dialog-kropp">
+    @* Ringeknappen oeverst og i full bredde. Apner du dette kortet klokka to
+       om natten, er det ikke apningstidene du leter etter. *@
+    @if (Model.TelefonLenke is { } nr)
+    {
+        <a class="btn ringknapp w-100 justify-content-center mb-3"
+           href="tel:@nr" aria-label="Ring @Model.Navn på @Model.Telefon">
+            <svg class="ikon" aria-hidden="true"><use href="#i-telefon" /></svg>
+            @Model.Telefon
+        </a>
+    }
+
+    <dl class="fakta">
+        @if (Model.Apningstider is { } tider)
+        {
+            <dt>Åpningstider</dt>
+            <dd>@tider</dd>
+        }
+
+        @if (Model.Adresse is { } adresse)
+        {
+            <dt>Adresse</dt>
+            <dd>@adresse</dd>
+        }
+
+        @if (Model.NettsideLenke is { } nettside)
+        {
+            <dt>Nettside</dt>
+            <dd>
+                @* rel="noopener" er ikke pynt: uten den far den apnede siden
+                   en referanse tilbake hit gjennom window.opener. *@
+                <a href="@nettside" target="_blank" rel="noopener noreferrer">
+                    @Model.Nettside
+                </a>
+            </dd>
+        }
+
+        @if (Model.Epost is { } epost)
+        {
+            <dt>E-post</dt>
+            <dd><a href="mailto:@epost">@epost</a></dd>
+        }
+
+        <dt>Besøk</dt>
+        <dd>
+            @if (Model.AntallBesok == 0)
+            {
+                <span class="tom">Ingen registrert</span>
+            }
+            else
+            {
+                @($"{Model.AntallBesok} registrert")
+            }
+        </dd>
+    </dl>
+
+    @if (Model.Notat is { } notat)
+    {
+        <div class="dialog-notat">
+            <h3 class="gruppe-tittel">Notat</h3>
+            @* Linjeskift beholdes. Skriver noen tre punkter under hverandre,
+               skal de ikke bli til en eneste lang setning. *@
+            <p class="mb-0">@notat</p>
+        </div>
+    }
+</div>
+
+<div class="dialog-fot">
+    <button type="button" class="btn btn-outline-secondary"
+            onclick="this.closest('dialog').close()">Lukk</button>
+    @if (Meg.KanEndre)
+    {
+        <a class="btn btn-primary" asp-action="Rediger" asp-route-id="@Model.Id">
+            Endre
+        </a>
+    }
+</div>

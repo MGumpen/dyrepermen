@@ -56,6 +56,33 @@ public sealed class VeterinarController : Controller
 
     // --- Steder -------------------------------------------------------------
 
+    /// <summary>
+    /// Alt som er registrert pa ett sted.
+    ///
+    /// Nettside, e-post, apningstider og notat ble lagret, men vistes ingen
+    /// steder utenom redigeringsskjemaet - man matte apne "Endre" for a lese
+    /// sin egen nettadresse.
+    ///
+    /// Ingen [KreverEier]: dette er lesing, og en gjest skal kunne finne
+    /// nummeret til vakten like godt som den som bor der.
+    /// </summary>
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> Detaljer(int id, CancellationToken ct)
+    {
+        var rad = await _veterinar.HentEn(id, ct);
+
+        if (rad is null)
+        {
+            return NotFound();
+        }
+
+        // Uten skript apnes ingen dialog, og da skal svaret vaere en vanlig
+        // side. Derfor er raden en lenke med href, ikke en bar knapp.
+        return Request.Headers.ContainsKey("HX-Request")
+            ? PartialView("_Detaljer", rad)
+            : View("Detaljer", rad);
+    }
+
     [HttpGet("ny")]
     [KreverEier]
     public IActionResult Ny() => View(Skjema, new NyVeterinarVm());

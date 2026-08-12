@@ -83,11 +83,15 @@
 
     @if (innlogget)
     {
-        @* En dialog for hele siden, ikke en per dyr. Innholdet hentes nar
-           den apnes, sa markupen er tom til den trengs. showModal() gir
-           fokusfelle, Esc-lukking og bakteppe uten en linje egen kode. *@
-        <dialog id="foringsdialog" class="dp-dialog">
-            <div id="foringsdialog-innhold"
+        @* EN dialog for hele appen, ikke en per funksjon. Innholdet hentes
+           nar den apnes, sa markupen er tom til den trengs. showModal() gir
+           fokusfelle, Esc-lukking og bakteppe uten en linje egen kode.
+
+           Brukes av foringsdialogen og av veterinaerkortet. Trengs den et
+           tredje sted, skal den gjenbrukes der ogsa - to nesten like dialoger
+           blir to steder a rette samme feil. *@
+        <dialog id="dpdialog" class="dp-dialog">
+            <div id="dpdialog-innhold"
                  hx-on::after-swap="const d = this.closest('dialog'); if (!d.open) d.showModal();"></div>
         </dialog>
 

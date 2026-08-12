@@ -129,7 +129,7 @@ public sealed class HjemController : Controller
             // registreringen lykkes. Feiler valideringen, ma svaret i stedet
             // tilbake i dialogen - ellers ville feilmeldingene erstattet hele
             // dyrelisten.
-            Response.Headers["HX-Retarget"] = "#foringsdialog-innhold";
+            Response.Headers["HX-Retarget"] = "#dpdialog-innhold";
             Response.Headers["HX-Reswap"] = "innerHTML";
 
             return PartialView("_Foringsdialog", new ForingsdialogVm(

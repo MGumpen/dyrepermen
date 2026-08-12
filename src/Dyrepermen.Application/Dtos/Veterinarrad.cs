@@ -25,4 +25,18 @@ public sealed record Veterinarrad(
     public string? TelefonLenke => Telefon is null
         ? null
         : new string(Telefon.Where(c => char.IsDigit(c) || c == '+').ToArray());
+
+    /// <summary>
+    /// Nettsiden som en adresse nettleseren forstar.
+    ///
+    /// Folk skriver "koba-vets.no", ikke "https://koba-vets.no". Uten
+    /// protokoll tolker nettleseren href-en som en RELATIV sti, og lenken
+    /// sender deg til /veterinar/koba-vets.no i stedet for ut av appen.
+    /// </summary>
+    public string? NettsideLenke => Nettside is null
+        ? null
+        : Nettside.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+          || Nettside.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            ? Nettside
+            : $"https://{Nettside}";
 }

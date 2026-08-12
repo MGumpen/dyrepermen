@@ -111,7 +111,7 @@
                                    asp-route-type="@Foringstype.Godbit"
                                    hx-get="@Url.Action("Foringsdialog", "Hjem",
                                        new { dyrId = dyr.Id, type = Foringstype.Godbit })"
-                                   hx-target="#foringsdialog-innhold" hx-swap="innerHTML"
+                                   hx-target="#dpdialog-innhold" hx-swap="innerHTML"
                                    aria-label="Registrer godbit til @dyr.Navn">
                                     <svg class="ikon" aria-hidden="true"><use href="#i-godbit" /></svg>
                                     Godbit
@@ -128,7 +128,7 @@
                                    asp-route-type="@Foringstype.Maltid"
                                    hx-get="@Url.Action("Foringsdialog", "Hjem",
                                        new { dyrId = dyr.Id, type = Foringstype.Maltid })"
-                                   hx-target="#foringsdialog-innhold" hx-swap="innerHTML"
+                                   hx-target="#dpdialog-innhold" hx-swap="innerHTML"
                                    aria-label="Gi @dyr.Navn mer mat">
                                     <svg class="ikon" aria-hidden="true"><use href="#i-forplan" /></svg>
                                     Gi mer

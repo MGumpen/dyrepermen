@@ -1,0 +1,21 @@
+@using Dyrepermen.Application.Dtos
+@model Veterinarrad
+@{
+    ViewData["Tittel"] = Model.Navn;
+}
+
+@* Uten skript apnes ingen dialog, og da havner man her i stedet - samme
+   innhold, som en vanlig side. Det er derfor raden i listen er en lenke med
+   href, ikke en bar knapp. *@
+<div class="sidehode">
+    <div>
+        <h1>@Model.Navn</h1>
+        <div class="undertittel">
+            <a asp-action="Index">Tilbake til veterinær</a>
+        </div>
+    </div>
+</div>
+
+<section class="kort" style="max-width: 34rem;">
+    <partial name="_Detaljer" model="Model" />
+</section>
