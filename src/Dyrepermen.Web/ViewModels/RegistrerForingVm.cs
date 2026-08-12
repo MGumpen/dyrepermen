@@ -13,13 +13,13 @@ public sealed class RegistrerForingVm
 {
     public Foringstype Type { get; set; }
 
-    [Range(1, 5000, ErrorMessage = "Mengden må være mellom 1 og 5000 gram")]
+    [Range(1, 5000, ErrorMessage = "Mengden må være mellom 1 og 5000 gram.")]
     [Display(Name = "Mengde i gram")]
     public int? MengdeGram { get; set; }
 
-    [StringLength(80, ErrorMessage = "Navnet kan ha høyst 80 tegn")]
+    [StringLength(80, ErrorMessage = "Navnet kan være høyst 80 tegn.")]
     public string? Fornavn { get; set; }
 
-    [StringLength(200, ErrorMessage = "Kommentaren kan ha høyst 200 tegn")]
+    [StringLength(200, ErrorMessage = "Kommentaren kan være høyst 200 tegn.")]
     public string? Kommentar { get; set; }
 }

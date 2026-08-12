@@ -22,10 +22,12 @@ Webapplikasjon for oppfølging av husstandens kjæledyr. ASP.NET Core MVC (.NET 
 | Domeneklasser, egenskaper, tabeller, kolonner | Norsk: `Dyr`, `VektGram`, `husstand_id` |
 | Tjenester, grensesnitt, metoder | Norsk: `IForplanService.BeregnAktiv` |
 | Rammeverkstyper og mønstre | Engelsk som rammeverket bruker: `DbContext`, `Controller`, `IAsyncLifetime` |
-| Grensesnittekst, feilmeldinger, e-post | Norsk bokmål |
+| Grensesnittekst, feilmeldinger, e-post | Norsk bokmål — moderat, ikke radikalt |
 | Kodekommentarer | Norsk |
 | Commit-meldinger | Norsk |
 | Ruter | Norsk: `/dyr`, `/handleliste`, `/logg-inn` |
+
+Brukerteksten er **moderat bokmål**: `dyrene`, `listen`, `vakten` — ikke `dyra`, `lista`, `vakta`. Ingen dialekt og ingen nynorskformer. Feilmeldinger er hele setninger med punktum, og bruker `kan være høyst N tegn` — samme formulering overalt. Tusenskille er mellomrom: `20 000`, ikke `20000`.
 
 Ikke bruk æ, ø eller å i klassenavn, filnavn, tabellnavn eller ruter. Skriv `Foring`, ikke `Fôring`. `Vetbesok`, ikke `Vetbesøk`. Æøå brukes kun i tekst som vises til brukeren.
 

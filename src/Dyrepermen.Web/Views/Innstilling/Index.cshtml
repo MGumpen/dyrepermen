@@ -145,8 +145,8 @@
             <div class="kort-kropp border-top">
                 <h3 class="h6">Legg til medlem</h3>
                 <p class="form-text mt-0">
-                    Personen blir med automatisk. Har de ikke konto ennå, skjer
-                    det når de registrerer seg med denne adressen.
+                    Personen blir med automatisk. Finnes det ingen konto på adressen
+                    ennå, skjer det ved registrering.
                 </p>
                 <form method="post" asp-action="LeggTilMedlem" class="row g-2">
                     @Html.AntiForgeryToken()
@@ -168,7 +168,7 @@
                     <div class="col-12">
                         <p class="form-text mt-0 mb-0">
                             <strong>Bor her</strong> — deler ansvaret og kan endre
-                            alt. <strong>Gjest</strong> — passer dyra av og til:
+                            alt. <strong>Gjest</strong> — passer dyrene av og til:
                             ser alt og kan registrere vekt, fôring og doser, men
                             ikke endre dyr, medlemmer eller innstillinger.
                         </p>

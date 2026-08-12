@@ -16,7 +16,7 @@ public sealed class NyForplanVm : IValidatableObject
     [Display(Name = "Prosent av kroppsvekt")]
     public decimal? Prosent { get; set; }
 
-    [Range(1, 20000, ErrorMessage = "Mengden må være mellom 1 og 20000 gram.")]
+    [Range(1, 20000, ErrorMessage = "Mengden må være mellom 1 og 20 000 gram.")]
     [Display(Name = "Gram per dag")]
     public int? GramPerDag { get; set; }
 
