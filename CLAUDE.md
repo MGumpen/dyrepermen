@@ -59,7 +59,8 @@ Ikke bruk æ, ø eller å i klassenavn, filnavn, tabellnavn eller ruter. Skriv `
 
 ## Sikkerhet — ufravikelig
 
-- `[ValidateAntiForgeryToken]` på alle POST-handlinger
+- `AutoValidateAntiforgeryToken` er globalt filter. `[ValidateAntiForgeryToken]` står likevel på hver POST-handling — som dokumentasjon av hva handlingen krever, ikke som beskyttelsen den hviler på
+- Sikkerhetshoder settes i `Sikkerhetshoder`-middleware, først i pipelinen så de dekker statiske filer og feilsider. CSP-en har `unsafe-inline` og `unsafe-eval` fordi visningene har inline `onclick` og htmx bruker `hx-on` — den stopper fremmede opphav, ikke innsprøytet skript
 - Feilmeldinger avslører ikke om en e-postadresse finnes eller hvilken husstand noe tilhører
 - Logg aldri passord, jobbnøkkel, tilkoblingsstreng eller e-postadresser. Logg bruker-ID
 - `SetApplicationName("dyrepermen")` er en intern nøkkelringidentifikator og skal **aldri** endres, heller ikke ved navnebytte

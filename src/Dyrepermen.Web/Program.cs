@@ -12,13 +12,21 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var norsk = new CultureInfo("nb-NO");
 
-builder.Services.AddControllersWithViews();
+// AutoValidateAntiforgeryToken globalt: antiforgery kreves pa ALLE usikre
+// metoder (POST, PUT, PATCH, DELETE), ikke bare der noen husket attributtet.
+//
+// De 39 eksplisitte [ValidateAntiForgeryToken] star igjen med vilje. De sier
+// hva handlingen krever, der handlingen er - men beskyttelsen hviler ikke
+// lenger pa at nummer 40 far det samme.
+builder.Services.AddControllersWithViews(o =>
+    o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 builder.Services.AddHttpContextAccessor();
 
 // Lokalt kommer denne fra "dotnet user-secrets", i produksjon fra
@@ -206,6 +214,10 @@ if (!krevSikkerKapsel)
 
 // Ma sta forst i pipelinen, for noe leser skjema eller klient-IP.
 app.UseForwardedHeaders();
+
+// Rett etter, sa hodene folger ALLE svar - ogsa statiske filer og feilsider.
+// Star den lenger ned, mangler de nettopp der de trengs mest.
+app.UseMiddleware<Sikkerhetshoder>();
 
 if (app.Environment.IsDevelopment())
 {
