@@ -1,0 +1,26 @@
+<!-- Kilden til app-ikonene. Samme pote som logo.svg, men uten sirkelen:
+     her fyller gronnfargen hele flaten.
+
+     Grunnen er at iOS og Android legger sin EGEN maske over ikonet, en
+     avrundet firkant. Et ikon med gjennomsiktige hjorner blir svart i
+     hjornene pa iOS, og en sirkel inni en avrundet firkant gir en liten
+     logo med mye luft rundt. Full flate gir samme uttrykk som faviconet
+     etter at masken er lagt pa.
+
+     Oppskriften for a lage PNG-ene pa nytt star i
+     docs/beslutninger/0011-app-ikoner.md.
+
+     NB: en XML-kommentar kan ikke inneholde to bindestreker etter
+     hverandre. Skriver du et kommandolinjeflagg her, blir hele fila
+     ugyldig, og gjengiveren viser en feilside i stedet for ikonet. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="Dyrepermen">
+  <rect width="64" height="64" fill="#3f6f4e"/>
+  <g fill="#f6f5f2">
+    <ellipse cx="22" cy="24" rx="5" ry="7"/>
+    <ellipse cx="42" cy="24" rx="5" ry="7"/>
+    <ellipse cx="14" cy="35" rx="4.5" ry="6"/>
+    <ellipse cx="50" cy="35" rx="4.5" ry="6"/>
+    <path d="M32 33c7 0 13 6 13 12 0 4-3 6-7 6-2 0-4-1-6-1s-4 1-6 1c-4 0-7-2-7-6 0-6 6-12 13-12z"/>
+  </g>
+</svg>

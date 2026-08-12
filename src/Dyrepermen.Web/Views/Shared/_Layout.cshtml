@@ -26,7 +26,22 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>@ViewData["Tittel"] – Dyrepermen</title>
+    @* SVG i fanen, PNG pa hjem-skjermen. iOS stotter IKKE SVG som
+       apple-touch-icon, og uten en PNG viser den en bokstav i stedet for
+       ikonet. Fila ligger ogsa pa /apple-touch-icon.png, som er der iOS
+       leter nar lenken mangler. *@
     <link rel="icon" href="~/img/logo.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" />
+
+    @* Navnet under ikonet pa hjem-skjermen. Uten den bruker iOS <title>,
+       som her ville blitt "Oversikt - Dyrepermen". *@
+    <meta name="apple-mobile-web-app-title" content="Dyrepermen" />
+
+    @* Farger nettleserens adresselinje pa Android og statuslinja nar appen
+       kjorer fra hjem-skjermen. *@
+    <meta name="theme-color" content="#3f6f4e" />
+
+    <link rel="manifest" href="~/site.webmanifest" />
 
     @* Stilene for oppstartsskjermen MA ligge inline. Ligger de i en ekstern
        fil, blinker det urenderte innholdet frem for overlegget far stil. *@
