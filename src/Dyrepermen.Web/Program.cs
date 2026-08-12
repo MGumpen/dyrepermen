@@ -4,6 +4,7 @@ using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Application.Services;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Infrastructure;
+using Dyrepermen.Web;
 using Dyrepermen.Infrastructure.Persistence;
 using Dyrepermen.Web.Middleware;
 using Microsoft.AspNetCore.Authorization;
@@ -80,11 +81,30 @@ builder.Services.AddIdentity<Bruker, IdentityRole<int>>(o =>
 {
     o.User.RequireUniqueEmail = true;
     o.SignIn.RequireConfirmedAccount = false;
-    o.Password.RequiredLength = 10;
+
+    // Reglene kommer fra Passordkrav, og BARE derfra. Settes de her for
+    // hand, sprikte de fra det skjemaet forteller brukeren - og det var
+    // nettopp det som gjorde at et gyldig passord ble avvist med et krav
+    // ingen hadde sett.
+    //
+    // De fire under ma settes eksplisitt. Identity har dem PA som standard,
+    // sa a la dem sta betyr a kreve tall, sma bokstaver og spesialtegn i
+    // stillhet.
+    o.Password.RequiredLength = Passordkrav.MinLengde;
+
+    // AV med vilje. Identity sin egen sjekk er ASCII-basert og godtar ikke
+    // AE, OE og AA som store bokstaver. StorBokstavValidator under gjor
+    // jobben i stedet, med char.IsUpper.
+    o.Password.RequireUppercase = false;
+    o.Password.RequireDigit = false;
+    o.Password.RequireLowercase = false;
+    o.Password.RequireNonAlphanumeric = false;
+    o.Password.RequiredUniqueChars = 1;
     o.Lockout.MaxFailedAccessAttempts = 5;
     o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
 .AddEntityFrameworkStores<DyrepermenDbContext>()
+.AddPasswordValidator<StorBokstavValidator>()
 .AddDefaultTokenProviders();
 
 // Den viktigste enkeltdetaljen for at "husk meg" skal virke i praksis.
@@ -255,3 +275,13 @@ using (var oppstart = app.Services.CreateScope())
 }
 
 app.Run();
+
+// Gjor Program synlig for WebApplicationFactory i testprosjektet. Med
+// top-level statements er klassen ellers intern og generert, og
+// WebApplicationFactory<Program> kompilerer ikke.
+//
+// Dette er den anbefalte maten fra ASP.NET-teamet, ikke en omvei: testene
+// skal starte NOEYAKTIG denne oppstarten, med samme middleware og samme
+// Identity-oppsett. En egen testoppstart ville testet noe annet enn det som
+// kjorer i produksjon.
+public partial class Program;

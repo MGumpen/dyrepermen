@@ -132,6 +132,11 @@ public sealed class KontoController : Controller
 
         await _paalogging.SignInAsync(bruker, isPersistent: true);
 
+        // Registreringen ender pa en helt annen side, og uten kvittering er
+        // det ikke opplagt at den gikk gjennom. Da gar man tilbake og prover
+        // igjen - og far beskjed om at adressen ikke kan brukes.
+        TempData["Melding"] = "Kontoen din er opprettet.";
+
         return lagtTil
             ? RedirectToAction("Index", "Hjem")
             : RedirectToAction("Oppsett", "Husstand");
@@ -153,19 +158,27 @@ public sealed class KontoController : Controller
     /// </summary>
     private static string Oversett(IdentityError feil) => feil.Code switch
     {
+        // Meldingen sier IKKE at adressen finnes fra for - det ville rope ut
+        // hvem som har konto her, jf. plan kapittel 15. Men den peker en vei
+        // videre, for uten det leser den som "adressen din er ugyldig", og
+        // den som allerede har konto blir staende og prove nye passord.
         "DuplicateUserName" or "DuplicateEmail" =>
-            "Denne adressen kan ikke brukes til registrering.",
-        "PasswordTooShort" =>
-            "Passordet må være minst 10 tegn.",
+            "Denne adressen kan ikke brukes til registrering. "
+            + "Har du allerede en konto, kan du logge inn i stedet.",
+        "PasswordTooShort" => Passordkrav.ForKort,
+        "PasswordRequiresUpper" => Passordkrav.ManglerStorBokstav,
+
+        // Disse tre er slatt AV i Program.cs. De star igjen fordi Identity
+        // kan sende dem hvis noen skrur reglene pa igjen - og da skal
+        // brukeren fa en norsk melding, ikke engelsk.
         "PasswordRequiresDigit" =>
             "Passordet må inneholde minst ett tall.",
         "PasswordRequiresLower" =>
-            "Passordet må inneholde minst en liten bokstav.",
-        "PasswordRequiresUpper" =>
-            "Passordet må inneholde minst en stor bokstav.",
+            "Passordet må inneholde minst én liten bokstav.",
         "PasswordRequiresNonAlphanumeric" =>
             "Passordet må inneholde minst ett spesialtegn.",
-        "InvalidEmail" =>
+
+        "InvalidEmail" or "InvalidUserName" =>
             "E-postadressen er ikke gyldig.",
         _ => "Registreringen kunne ikke fullføres."
     };

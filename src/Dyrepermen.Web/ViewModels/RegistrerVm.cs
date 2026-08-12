@@ -14,13 +14,27 @@ public sealed class RegistrerVm
     [Display(Name = "Visningsnavn")]
     public string Visningsnavn { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Kun lengden sjekkes her, og den leses fra <see cref="Passordkrav"/>.
+    ///
+    /// Kravet om stor bokstav sjekkes BEVISST ikke i nettleseren. Identity
+    /// bruker char.IsUpper, som godtar Ø og É like godt som A. Et regulaert
+    /// uttrykk her matte gjentatt den regelen i JavaScript, og et
+    /// "[A-Z]"-monster ville avvist passord serveren gjerne tar imot - altsa
+    /// samme klasse feil som den vi retter: klienten strengere enn serveren,
+    /// uten at noen oppdager det.
+    ///
+    /// Serveren avgjor. Skjemaet forteller regelen i klartekst, og
+    /// feilmeldingen fra Identity er presis nar den forst kommer.
+    /// </summary>
     [Required(ErrorMessage = "Velg et passord.")]
-    [StringLength(100, MinimumLength = 10,
-        ErrorMessage = "Passordet må være minst 10 tegn.")]
+    [StringLength(100, MinimumLength = Passordkrav.MinLengde,
+        ErrorMessage = Passordkrav.ForKort)]
     [DataType(DataType.Password)]
     [Display(Name = "Passord")]
     public string Passord { get; set; } = string.Empty;
 
+    [Required(ErrorMessage = "Gjenta passordet.")]
     [DataType(DataType.Password)]
     [Compare(nameof(Passord), ErrorMessage = "Passordene er ikke like.")]
     [Display(Name = "Gjenta passord")]

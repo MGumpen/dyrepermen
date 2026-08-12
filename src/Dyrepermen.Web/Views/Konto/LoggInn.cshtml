@@ -3,9 +3,12 @@
     ViewData["Tittel"] = "Logg inn";
 }
 
-@* Minimal side: logo, e-post, passord, husk meg, knapp og en diskret lenke
-   til registrering. Ingen markedsforing, ingen navigasjonsmeny.
-   Se plan kapittel 11.2. *@
+@* Minimal side: logo, e-post, passord, husk meg og to handlinger.
+   Ingen markedsforing, ingen navigasjonsmeny. Se plan kapittel 11.2.
+
+   Registrering var tidligere en gra smatekstlenke UNDER kortet, og folk
+   fant den ikke. Den star na som en egen knapp i kortet, pa linje med
+   innlogging: to veier videre, ikke en vei og en fotnote. *@
 <div class="apen-kort">
     <div class="text-center mb-4">
         <img src="~/img/logo.svg" alt="" width="72" height="72" />
@@ -40,12 +43,16 @@
 
                 <button type="submit" class="btn btn-primary w-100">Logg inn</button>
             </form>
+
+            <div class="skillelinje"><span>eller</span></div>
+
+            @* Lenke, ikke knapp - den navigerer. Ser ut som en knapp fordi
+               den er et likeverdig valg, ikke en fotnote. *@
+            <a asp-action="Registrer" class="btn btn-aksent-omriss w-100">
+                Opprett ny konto
+            </a>
         </div>
     </div>
-
-    <p class="text-center text-body-secondary small mt-3 mb-0">
-        Ny her? <a asp-action="Registrer">Opprett konto</a>
-    </p>
 </div>
 
 @section Skript {

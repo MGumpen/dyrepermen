@@ -1286,3 +1286,41 @@ h1, h2, h3, h4 {
     font-size: .8rem;
     color: var(--dp-tekst-svak);
 }
+
+/* --- Innlogging: to veier videre --------------------------------------- */
+
+/* Vannrett strek med et ord i midten. Skiller "logg inn" fra "opprett
+   konto" uten a rangere dem. */
+.skillelinje {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: 1.1rem 0;
+    color: var(--dp-tekst-svak);
+    font-size: .8rem;
+}
+
+.skillelinje::before,
+.skillelinje::after {
+    content: "";
+    flex: 1 1 0;
+    height: 1px;
+    background: var(--dp-kant);
+}
+
+/* Omrisset gir samme vekt som den fylte knappen uten a konkurrere med den.
+   Bootstrap sin btn-outline-primary ville blitt bla - temaet vart er
+   gronnt, og appen definerer kun .btn-primary pa nytt. */
+.btn-aksent-omriss {
+    border: 1px solid var(--dp-aksent);
+    color: var(--dp-aksent-mork);
+    background: transparent;
+    font-weight: 600;
+}
+
+.btn-aksent-omriss:hover,
+.btn-aksent-omriss:focus-visible {
+    background: var(--dp-aksent-svak);
+    border-color: var(--dp-aksent-mork);
+    color: var(--dp-aksent-mork);
+}
