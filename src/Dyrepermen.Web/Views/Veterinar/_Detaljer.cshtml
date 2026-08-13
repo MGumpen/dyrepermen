@@ -1,23 +1,15 @@
 @using Dyrepermen.Application.Dtos
+@using Dyrepermen.Application.Extensions
 @using Dyrepermen.Application.Interfaces
 @using Dyrepermen.Domain.Enums
 @inject IGjeldendeBruker Meg
 @model Veterinarrad
-@{
-    string Typenavn(Veterinartype t) => t switch
-    {
-        Veterinartype.Vakt => "Vakt",
-        Veterinartype.Sykehus => "Dyresykehus",
-        Veterinartype.Annet => "Annet",
-        _ => "Fast veterinær"
-    };
-}
 
 <div class="dialog-hode">
     <div class="min-w-0">
         <h2 class="h5 mb-1">@Model.Navn</h2>
         <span class="merkelapp type-@Model.Type.ToString().ToLowerInvariant()">
-            @Typenavn(Model.Type)
+            @Veterinarformat.Typenavn(Model.Type)
         </span>
     </div>
     <button type="button" class="btn lukkeknapp" aria-label="Lukk"

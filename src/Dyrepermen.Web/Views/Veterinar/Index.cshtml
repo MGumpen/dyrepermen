@@ -1,4 +1,5 @@
 @using Dyrepermen.Application.Dtos
+@using Dyrepermen.Application.Extensions
 @using Dyrepermen.Application.Interfaces
 @using Dyrepermen.Domain.Enums
 @using Dyrepermen.Web.ViewModels
@@ -7,14 +8,6 @@
 @{
     ViewData["Tittel"] = "Veterinær";
     var idag = DateOnly.FromDateTime(DateTime.Now);
-
-    string Typenavn(Veterinartype t) => t switch
-    {
-        Veterinartype.Vakt => "Vakt",
-        Veterinartype.Sykehus => "Dyresykehus",
-        Veterinartype.Annet => "Annet",
-        _ => "Fast veterinær"
-    };
 
     string Tid(Vetbesokrad b) => b.Klokkeslett is { } kl
         ? $"{b.Dato:d. MMM} kl. {kl:HH\\:mm}"
@@ -98,7 +91,7 @@
                                 <span class="tittel">@sted.Navn</span>
                                 <span class="under d-block">
                                     <span class="merkelapp type-@sted.Type.ToString().ToLowerInvariant()">
-                                        @Typenavn(sted.Type)
+                                        @Veterinarformat.Typenavn(sted.Type)
                                     </span>
                                     @if (sted.Apningstider is { } tider)
                                     {
