@@ -20,6 +20,14 @@ public sealed partial class Skjemaklient
         """name="__RequestVerificationToken"[^>]*value="([^"]+)""" + "\"")]
     private static partial Regex Tokenmonster();
 
+    /// <summary>
+    /// Vanlig GET med informasjonskapslene i behold. Klienten folger ikke
+    /// omdirigeringer, sa en side som krever innlogging svarer 302 - og en
+    /// test som venter 200, sier fra i stedet for a lese innloggingssiden
+    /// som om det var innholdet den ba om.
+    /// </summary>
+    public Task<HttpResponseMessage> Hent(string sti) => _klient.GetAsync(sti);
+
     public async Task<string> HentToken(string sti)
     {
         var html = await _klient.GetStringAsync(sti);
@@ -30,12 +38,22 @@ public sealed partial class Skjemaklient
     }
 
     /// <summary>Henter siden, legger ved tokenet, og poster.</summary>
-    public async Task<HttpResponseMessage> Post(
+    public Task<HttpResponseMessage> Post(
         string sti, Dictionary<string, string> felter)
+        => Post(sti, felter, tokenFra: sti);
+
+    /// <summary>
+    /// Samme, men der tokenet hentes fra en ANNEN side enn den det postes
+    /// til. Trengs nar handlingen har sin egen rute: skjemaet star pa
+    /// /husstand/oppsett og postes til /husstand/opprett, og en GET mot
+    /// sistnevnte finnes ikke.
+    /// </summary>
+    public async Task<HttpResponseMessage> Post(
+        string sti, Dictionary<string, string> felter, string tokenFra)
     {
         var felterMedToken = new Dictionary<string, string>(felter)
         {
-            ["__RequestVerificationToken"] = await HentToken(sti)
+            ["__RequestVerificationToken"] = await HentToken(tokenFra)
         };
 
         return await _klient.PostAsync(sti, new FormUrlEncodedContent(felterMedToken));

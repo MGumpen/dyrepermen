@@ -26,7 +26,19 @@ public sealed class Appfabrikk : WebApplicationFactory<Program>
         builder.ConfigureHostConfiguration(cfg =>
             cfg.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:Postgres"] = _tilkobling
+                ["ConnectionStrings:Postgres"] = _tilkobling,
+
+                // Testklienten snakker http mot localhost. Med
+                // CookieSecurePolicy.Always merkes innloggingskapselen
+                // Secure, og da lagrer ikke klienten den - foelgelig er hver
+                // eneste foresporsel etter innlogging uinnlogget, og en test
+                // som ber om dashbordet far 302 til innloggingssiden.
+                //
+                // Samme lever som web-tjenesten i infra/compose.yaml bruker,
+                // og av samme grunn: ingen TLS-terminator foran. Den er
+                // eksplisitt konfigurasjon nettopp for a kunne settes her,
+                // og applikasjonen nekter a starte med den av i Production.
+                ["Sikkerhet:KrevSikkerKapsel"] = "false"
             }));
 
         return base.CreateHost(builder);

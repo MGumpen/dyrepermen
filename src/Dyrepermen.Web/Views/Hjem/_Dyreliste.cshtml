@@ -44,7 +44,37 @@
                     <dl class="fakta">
                         @if (dyr.PorsjonGram is { } porsjon)
                         {
-                            @if (dyr.AlleMaltiderGitt)
+                            @* Uten foringslogg finnes det ingen framdrift a
+                               vise. Da sier kortet hva planen er, ikke hvor
+                               langt man er kommet i den. *@
+                            @if (!dyr.TellerMaltider)
+                            {
+                                <dt>Porsjon</dt>
+                                <dd>
+                                    @porsjon g
+                                    @* Ordene star som literal markup, ikke som
+                                       en streng fra et uttrykk. Razor
+                                       HTML-koder uttrykksverdier, og da blir
+                                       "maltider" til "m&#xE5;ltider" i kilden.
+                                       Det VISES riktig, men gjor teksten
+                                       uleselig for alt som leser HTML-en. *@
+                                    <span class="naar">
+                                        @if (dyr.AntallMaltider == 1)
+                                        {
+                                            <text>per måltid · 1 måltid om dagen</text>
+                                        }
+                                        else if (dyr.AntallMaltider > 1)
+                                        {
+                                            <text>per måltid · @dyr.AntallMaltider måltider om dagen</text>
+                                        }
+                                        else
+                                        {
+                                            <text>per måltid</text>
+                                        }
+                                    </span>
+                                </dd>
+                            }
+                            else if (dyr.AlleMaltiderGitt)
                             {
                                 <dt>Måltider</dt>
                                 <dd>

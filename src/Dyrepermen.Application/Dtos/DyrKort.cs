@@ -61,4 +61,17 @@ public sealed record DyrKort(
 
     public bool AlleMaltiderGitt =>
         AntallMaltider > 0 && MaltiderIDag >= AntallMaltider;
+
+    /// <summary>
+    /// Om en teller av typen "nr. 2 av 3" i det hele tatt betyr noe.
+    ///
+    /// Uten foringslogg registreres ingen maltider, og MaltiderIDag settes
+    /// til 0 av tjenesten. Telleren ville da statt pa "nr. 1 av 3" fra
+    /// morgen til kveld - et tall som ser ut som framdrift, men som aldri
+    /// beveger seg uansett hvor mange ganger dyret faktisk far mat.
+    ///
+    /// Er den av, skal kortet vise hva planen SIER - porsjon og antall
+    /// maltider - i stedet for a late som om den folger med.
+    /// </summary>
+    public bool TellerMaltider => ForingsloggAktiv && AntallMaltider > 0;
 }
