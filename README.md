@@ -30,12 +30,12 @@ dotnet user-secrets set "ConnectionStrings:Postgres" \
 
 # 3. Start databasen (eller "docker compose up -d" for hele appen)
 docker compose up -d db
-
-# 4. Opprett skjemaet. Migrasjoner kjøres aldri ved oppstart.
-dotnet ef database update \
-  --project src/Dyrepermen.Infrastructure \
-  --startup-project src/Dyrepermen.Web
 ```
+
+Skjemaet trenger du ikke opprette. Appen kjører migrasjonene ved oppstart —
+se [ADR 0010](docs/beslutninger/0010-migrasjoner-ved-oppstart.md). `MigrateAsync`
+leser `__EFMigrationsHistory` og kjører bare det som mangler, så en omstart
+uten nye migrasjoner gjør ingenting.
 
 Mangler steg 2, stopper appen ved oppstart med en melding som viser
 kommandoen på nytt.
@@ -83,9 +83,9 @@ Vil du bare ha databasen, navngir du tjenesten: `docker compose up -d db`.
 
 Appen ligger på **<http://localhost:8080>** — http, ikke https.
 
-**Skjemaet må finnes fra før.** Appen migrerer ikke ved oppstart, verken her
-eller lokalt. Har du kjørt `down -v` og slettet databasen, må du starte `db`
-alene og kjøre `dotnet ef database update` fra maskinen først.
+**Skjemaet kommer av seg selv.** Appen migrerer ved oppstart, her som lokalt.
+Har du kjørt `down -v` og slettet databasen, er `docker compose up -d` nok —
+`web` venter på at `db` er frisk, og legger inn skjemaet på nytt.
 
 ### Hvorfor http virker her, men ikke lokalt
 
@@ -137,7 +137,7 @@ Har du ingen lokal PostgreSQL, kan du sette `POSTGRES_PORT=5432` i
 |---|---|
 | `main` | Produksjon. Kun stabil, utgivelsesklar kode |
 | `dev` | Integrasjon. Alt arbeid samles her før produksjon |
-| `feature/mvp` | Første versjon av appen |
+| `feature/*` | Én branch per arbeidsstykke |
 
 Arbeidsflyt: `feature/*` → `dev` → `main`. `Bygg og test` kjører på alle
 brancher og pull requests.
@@ -176,16 +176,18 @@ MVP-avgrensning — utrulling er fase 8, helt til slutt. Akseptansekriteriene i
 | — | Flere husstander per bruker med gjesterolle, informasjonssider, designgjennomgang |
 
 Dashbordet gjør **seks** databasespørringer uansett antall dyr. Kravet i
-kapittel 16 er at ingenting skal vokse med antall dyr; nye kilder slås sammen
-med de eksisterende framfor å legges til per rad.
+kapittel 16 er ikke tallet, men at ingenting skal vokse med antall dyr: en ny
+kilde koster høyst én fast rundtur, og helst ingen fordi den slås sammen med
+en spørring som allerede finnes.
 
-**144 tester grønne.** Enhetstester for ren logikk, integrasjonstester mot
+**222 tester grønne.** Enhetstester for ren logikk, integrasjonstester mot
 ekte PostgreSQL via Testcontainers. Aldri EF Core InMemory.
 
-To fail-closed prøver holder sikkerheten på plass av seg selv:
-`Modellfullstendighet` sammenligner `IHusstandsbundet`-typene i Domain mot
-EF-modellen, og `RolleTester` går gjennom hver eneste `POST`-handling og
-feiler hvis en mangler `[KreverEier]` uten å stå på den bevisste gjestelisten.
+To fail-closed prøver holder sikkerheten på plass av seg selv: `FilterTester`
+sammenligner `IHusstandsbundet`-typene i Domain mot EF-modellen og krever
+query-filter på hver av dem, og `RolleTester` går gjennom hver eneste
+`POST`-handling og feiler hvis en mangler `[KreverEier]` uten å stå på den
+bevisste gjestelisten.
 
 ### Gjenstår
 

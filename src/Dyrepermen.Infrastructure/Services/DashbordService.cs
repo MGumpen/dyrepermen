@@ -232,7 +232,7 @@ public sealed class DashbordService : IDashbordService
             .OrderBy(p => p.Dato)
             .ToList();
 
-        // Sporring 4. De fem oeverste aktive punktene pa handlelisten.
+        // Sporring 5. De fem oeverste aktive punktene pa handlelisten.
         var handleliste = await _handleliste.HentAktive(AntallPaHandleliste, ct);
 
         // Sporring 6. Husstandsbryteren for godbitloggen.

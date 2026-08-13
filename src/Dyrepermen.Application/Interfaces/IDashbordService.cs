@@ -5,7 +5,11 @@ namespace Dyrepermen.Application.Interfaces;
 public interface IDashbordService
 {
     /// <summary>
-    /// Ytelseskrav: hoyst fire databasesporringer totalt, uansett antall dyr.
+    /// Ytelseskrav: et fast antall databasesporringer, uansett antall dyr.
+    /// I dag seks. Kravet er ikke tallet, men at det ikke vokser med raden -
+    /// en ny kilde koster hoyst en fast rundtur, og helst ingen fordi den
+    /// slas sammen med en sporring som allerede finnes.
+    ///
     /// Dashbordet er den mest besokte siden, og databasen skalerer til null
     /// mellom okter. Se plan kapittel 10.3.
     /// </summary>

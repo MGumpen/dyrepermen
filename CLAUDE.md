@@ -47,8 +47,18 @@ Ikke bruk æ, ø eller å i klassenavn, filnavn, tabellnavn eller ruter. Skriv `
 `Web → Application → Domain` og `Infrastructure → Application → Domain`. Domain refererer ingenting.
 
 - **Controllere er tynne.** De mapper mellom ViewModel og tjeneste. Ingen forretningsregler, ingen `DbContext` direkte.
-- **Forretningslogikk i `Dyrepermen.Application`**, bak grensesnittene i plan kapittel 6.6.
+- **Grensesnittene bor i `Application/Interfaces`, implementasjonene i `Infrastructure/Services`.** Tjenestene spør databasen, og `DbContext` hører hjemme i Infrastructure — se ADR 0007. Application inneholder kun grensesnittene, DTO-ene og `Husstandskontekst`. Ny tjeneste: grensesnitt i Application, klasse i Infrastructure, registrering i `LeggTilInfrastruktur()`.
+- **Ren logikk uten databasetilgang ligger i `Application/Extensions`** — `Tidssone`, `Maltidsfordeling`, `Vektgrafberegning`, `Vektformat`, `Alderformat`. Det er disse enhetstestene dekker. Kan en regel skilles ut hit, skal den hit.
 - **Legger du en EF Core-avhengighet i Domain, er lagdelingen borte.** Ingenting feiler — du må passe på selv.
+
+### Web-oppsett som ikke er synlig i en controller
+
+Fire ting settes i `Program.cs` og gjelder alt. Leser du bare controlleren, ser du dem ikke.
+
+- **`FallbackPolicy` krever innlogging overalt.** En ny controller er låst med mindre den merkes `[AllowAnonymous]`. Fail closed med vilje.
+- **Kun `MapControllers`.** All ruting er attributtruting med norske ruter. En controller uten rutattributt er utilgjengelig — den dukker ikke opp på `{controller}/{action}`.
+- **`HusstandMiddleware` kjører etter `UseAuthentication` og før alt som leser `IHusstandContext`.** Kjører den ikke, står `HusstandId` på 0, og hvert eneste query-filter gir tomt resultat. Symptomet er en tom app, ikke en feilmelding.
+- **Kulturen er fast `nb-NO` med `RequestCultureProviders.Clear()`.** Desimalskilletegnet er komma. Fjernes tømmingen, leser ASP.NET Core `Accept-Language`, og en engelsk nettleser sender punktum inn i et skjema som venter komma.
 
 ## Datalag
 
@@ -71,30 +81,43 @@ Ikke bruk æ, ø eller å i klassenavn, filnavn, tabellnavn eller ruter. Skriv `
 
 ## Kommandoer
 
+Rotfila `compose.yaml` peker på `infra/compose.yaml` med `include`. Kjør derfor `docker compose` fra repo-roten uten `-f`. Det finnes ingen profiler — `up` uten tjenestenavn starter både `db` og `web`.
+
 ```bash
-# Lokal database
-docker compose -f infra/compose.yaml up -d db
+# Førstegangsoppsett, én gang per maskin
+cp infra/.env.example infra/.env
+dotnet user-secrets set "ConnectionStrings:Postgres" \
+  "Host=localhost;Port=5434;Database=dyrepermen;Username=dyrepermen;Password=utvikling;Maximum Pool Size=10" \
+  --project src/Dyrepermen.Web
 
-# Kjør appen
-dotnet run --project src/Dyrepermen.Web
+# Daglig utvikling: kun databasen i container, appen utenfor
+docker compose up -d db
+dotnet run --project src/Dyrepermen.Web        # https://localhost:7171
 
-# Hele stakken i container
-docker compose -f infra/compose.yaml --profile full up --build
+# Hele stakken i container — eneste måten å verifisere Dockerfile
+docker compose up -d --build                   # http://localhost:8080
+docker compose logs -f web
+docker compose down                            # -v sletter databasen
 
-# Migrasjon
+# Migrasjon. "database update" trengs sjelden — appen migrerer ved oppstart
 dotnet ef migrations add <navn> \
   --project src/Dyrepermen.Infrastructure \
   --startup-project src/Dyrepermen.Web \
   --output-dir Persistence/Migrations
 
-dotnet ef database update \
-  --project src/Dyrepermen.Infrastructure \
-  --startup-project src/Dyrepermen.Web
-
 # Bygg og test
 dotnet build
 dotnet test
+dotnet test tests/Dyrepermen.Application.Tests    # kun enhetstester, raskt
+dotnet test tests/Dyrepermen.Integration.Tests    # krever at Docker kjører
+dotnet test --filter "FullyQualifiedName~VektgrafTester"
+dotnet test --filter "FullyQualifiedName~VektgrafTester.Hoyere_vekt_gir_lavere_Y"
 ```
+
+- **Databaseporten er 5434, ikke 5432.** En lokalt installert PostgreSQL binder `127.0.0.1:5432`, som vinner over Dockers `*:5432` — verste utfall er at du migrerer feil database uten at noe sier fra. Se ADR 0006.
+- **Bruk `https` lokalt.** Innloggingskapselen er `CookieSecurePolicy.Always`, så innlogging virker ikke over `http://localhost`. I containeren serveres http på 8080, og `Sikkerhet__KrevSikkerKapsel=false` settes *kun* der. Appen nekter å starte med den avslått i Production.
+- Mangler tilkoblingsstrengen, stopper appen ved oppstart med en melding som gjentar kommandoen.
+- Integrasjonstestene starter sin egen PostgreSQL med Testcontainers og rører aldri utviklingsdatabasen.
 
 ## Pakker
 
@@ -106,6 +129,18 @@ Sentral pakkestyring i `Directory.Packages.props`. **Legg aldri `Version` i en `
 - **Bruk aldri EF Core InMemory.** Den håndhever ikke constraints og gir grønne tester på kode som feiler i produksjon
 - Hver testklasse er uavhengig av rekkefølge og av andre testers data
 - Ny entitet med husstandstilknytning → legg til i isolasjonstesten samme commit
+- `Appfabrikk` starter den **ekte** appen med `WebApplicationFactory<Program>` — samme middleware, samme Identity-oppsett. Bytt aldri ut oppstarten i en test; da tester du noe annet enn det som kjører. Klienten følger ikke omdirigeringer, fordi 302 mot 200 *er* målingen
+- `DatabaseFixture` kjører migrasjonene i containeren. Feiler en migrasjon, feiler hele suiten med én gang
+
+### Prøvene som holder seg selv i orden
+
+Tre tester feiler når noen glemmer noe. De skal aldri «fikses» ved å legge typen inn i et unntak uten at det er et bevisst valg.
+
+| Prøve | Fanger |
+|---|---|
+| `FilterTester.Alle_husstandsbundne_entiteter_har_query_filter` | `IHusstandsbundet` uten query-filter i `DyrepermenDbContext` |
+| `FilterTester.Alle_husstandsbundne_typer_er_med_i_modellen` | Entitet som mangler i EF-modellen — da hjelper ikke filterprøven |
+| `RolleTester` | `POST`-handling uten `[KreverEier]` som ikke står på den bevisste gjestelisten |
 
 ## Arbeidsflyt
 
@@ -116,7 +151,9 @@ Sentral pakkestyring i `Directory.Packages.props`. **Legg aldri `Version` i en `
 5. Commit på norsk, imperativ form: «Legg til vektregistrering»
 6. Push utløser `Bygg og test` på alle brancher
 
-Rødt bygg blokkerer. Ikke omgå det.
+Brancher: `feature/*` → `dev` → `main`. `main` er produksjon.
+
+Rødt bygg blokkerer. Ikke omgå det. CI bygger `Release` med `TreatWarningsAsErrors`, så en advarsel som bare ga gult lokalt, stopper bygget der.
 
 Utrulling skjer fra Render, som bygger branchen tjenesten er koblet til — ikke fra GitHub Actions. Skjemaet legges inn ved oppstart, se ADR 0010.
 
