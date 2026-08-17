@@ -32,44 +32,6 @@ public sealed class DashbordvisningTester : IAsyncLifetime
     }
 
     /// <summary>
-    /// Registrerer en fersk bruker med egen husstand, og returnerer klienten
-    /// hennes innlogget.
-    ///
-    /// Begge stegene trengs. Registreringen oppretter kontoen og logger inn,
-    /// men uten invitasjon lander brukeren pa oppsettsiden - dashbordet er
-    /// stengt til husstanden finnes, og en test som hopper over steg to far
-    /// 302 i stedet for siden den skulle lest.
-    /// </summary>
-    private async Task<Skjemaklient> InnloggetKlient()
-    {
-        var klient = new Skjemaklient(_app.LagKlient());
-
-        var registrert = await klient.Post("/registrer", new Dictionary<string, string>
-        {
-            ["Epost"] = $"dash-{Guid.NewGuid():N}@example.test",
-            ["Visningsnavn"] = "Testbruker",
-            ["Passord"] = "Passord123",
-            ["BekreftPassord"] = "Passord123"
-        });
-
-        Assert.True(
-            Skjemaklient.GikkGjennom(registrert),
-            $"Registreringen feilet: {await Skjemaklient.Feilmeldinger(registrert)}");
-
-        // Skjemaet star pa /husstand/oppsett og postes til /husstand/opprett.
-        var opprettet = await klient.Post(
-            "/husstand/opprett",
-            new Dictionary<string, string> { ["Navn"] = "Testhusstanden" },
-            tokenFra: "/husstand/oppsett");
-
-        Assert.True(
-            Skjemaklient.GikkGjennom(opprettet),
-            $"Husstanden ble ikke opprettet: {await Skjemaklient.Feilmeldinger(opprettet)}");
-
-        return klient;
-    }
-
-    /// <summary>
     /// Oppretter et dyr med fast fôrmengde i gram, og returnerer id-en.
     /// Gram og ikke prosent: da er porsjonen det samme tallet uansett om
     /// dyret har en vekt registrert.
@@ -77,42 +39,15 @@ public sealed class DashbordvisningTester : IAsyncLifetime
     private static async Task<int> DyrMedForplan(
         Skjemaklient klient, int gramPerDag, int antallMaltider)
     {
-        var lagret = await klient.Post("/dyr/ny", new Dictionary<string, string>
-        {
-            ["Navn"] = "Luna",
-            ["Art"] = ((int)Art.Hund).ToString(),
-            ["Kjonn"] = ((int)Kjonn.Tispe).ToString()
-        });
-
-        Assert.True(
-            Skjemaklient.GikkGjennom(lagret),
-            $"Dyret ble ikke lagret: {await Skjemaklient.Feilmeldinger(lagret)}");
-
-        // Id-en star i omdirigeringen: /dyr/{id}.
-        var dyrId = int.Parse(
-            lagret.Headers.Location!.ToString().Split('/').Last());
-
-        var plan = await klient.Post(
-            $"/dyr/{dyrId}/forplan",
-            new Dictionary<string, string>
-            {
-                ["Metode"] = ((int)Formetode.Gram).ToString(),
-                ["GramPerDag"] = gramPerDag.ToString(),
-                ["AntallMaltider"] = antallMaltider.ToString()
-            },
-            tokenFra: $"/dyr/{dyrId}/forplan");
-
-        Assert.True(
-            Skjemaklient.GikkGjennom(plan),
-            $"Fôrplanen ble ikke lagret: {await Skjemaklient.Feilmeldinger(plan)}");
-
+        var dyrId = await Testoppsett.NyttDyr(klient);
+        await Testoppsett.ForplanIGram(klient, dyrId, gramPerDag, antallMaltider);
         return dyrId;
     }
 
     [Fact]
     public async Task Uten_foringslogg_viser_kortet_porsjon_og_antall_maltider()
     {
-        var klient = await InnloggetKlient();
+        var klient = await Testoppsett.InnloggetKlient(_app);
 
         // 159 g pa 3 maltider gir 53 g per maltid. Foringsloggen er av som
         // standard - den er en funksjonsbryter man ma sla PA.
@@ -136,30 +71,12 @@ public sealed class DashbordvisningTester : IAsyncLifetime
     [Fact]
     public async Task Med_foringslogg_teller_kortet_maltidene()
     {
-        var klient = await InnloggetKlient();
+        var klient = await Testoppsett.InnloggetKlient(_app);
 
         var dyrId = await DyrMedForplan(klient, gramPerDag: 159, antallMaltider: 3);
 
         // Bryteren star per dyr, pa redigeringsskjemaet.
-        var pa = await klient.Post(
-            $"/dyr/{dyrId}/rediger",
-            new Dictionary<string, string>
-            {
-                ["Navn"] = "Luna",
-                ["Art"] = ((int)Art.Hund).ToString(),
-                ["Kjonn"] = ((int)Kjonn.Tispe).ToString(),
-                ["ForingsloggAktiv"] = "true",
-
-                // Ma vaere med. Skjemaet poster begge bryterne, og utelates
-                // denne binder den til false - da forsvinner porsjonen, og
-                // testen ville feilet pa noe helt annet enn det den maler.
-                ["ForplanAktiv"] = "true"
-            },
-            tokenFra: $"/dyr/{dyrId}/rediger");
-
-        Assert.True(
-            Skjemaklient.GikkGjennom(pa),
-            $"Kunne ikke sla pa foringsloggen: {await Skjemaklient.Feilmeldinger(pa)}");
+        await Testoppsett.SlaPaForingslogg(klient, dyrId);
 
         var svar = await klient.Hent("/");
         var html = await svar.Content.ReadAsStringAsync();

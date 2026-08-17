@@ -7,16 +7,7 @@
     var naa = DateTimeOffset.UtcNow;
 }
 
-<div class="sidehode">
-    <div>
-        <h1>Fôring</h1>
-        <div class="undertittel">
-            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
-                @Model.DyrNavn
-            </a>
-        </div>
-    </div>
-</div>
+<partial name="_Dyrhode" model='new DyrhodeVm("Fôring", Model.DyrId, Model.DyrNavn)' />
 
 <div class="dp-kolonner">
     <div class="kolonne">

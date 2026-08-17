@@ -5,16 +5,7 @@
     var r = Model.Resultat;
 }
 
-<div class="sidehode">
-    <div>
-        <h1>Fôrplan</h1>
-        <div class="undertittel">
-            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
-                @Model.DyrNavn
-            </a>
-        </div>
-    </div>
-</div>
+<partial name="_Dyrhode" model='new DyrhodeVm("Fôrplan", Model.DyrId, Model.DyrNavn)' />
 
 <div class="dp-kolonner">
     <div class="kolonne">
@@ -157,7 +148,7 @@
                     <div class="mb-2">
                         <label asp-for="Ny.AntallMaltider" class="form-label"></label>
                         <input asp-for="Ny.AntallMaltider" class="form-control"
-                               inputmode="numeric" />
+                               inputmode="numeric" placeholder="2" />
                         <span asp-validation-for="Ny.AntallMaltider" class="text-danger small"></span>
                     </div>
 

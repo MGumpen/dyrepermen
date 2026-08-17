@@ -4,16 +4,7 @@
     ViewData["Tittel"] = $"Vekt – {Model.DyrNavn}";
 }
 
-<div class="sidehode">
-    <div>
-        <h1>Vekt</h1>
-        <div class="undertittel">
-            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
-                @Model.DyrNavn
-            </a>
-        </div>
-    </div>
-</div>
+<partial name="_Dyrhode" model='new DyrhodeVm("Vekt", Model.DyrId, Model.DyrNavn)' />
 
 <div class="dp-kolonner">
     <div class="kolonne">

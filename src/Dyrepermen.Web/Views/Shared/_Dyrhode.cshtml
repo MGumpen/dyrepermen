@@ -1,0 +1,25 @@
+@using Dyrepermen.Web.ViewModels
+@model DyrhodeVm
+
+@* Samme oppbygning som hodet pa dyresiden selv: tittel og undertittel til
+   venstre, knappen til hoyre. Undersidene skal ikke se ut som en egen slags
+   side - de skal se ut som stedet man nettopp kom fra.
+
+   Navnet star som undertittel og er ren tekst, ikke lenke. For VAR det en
+   lenke, men uten at noe sa slik ut, og da fant ingen den. Na er det knappen
+   som navigerer, og undertittelen gjor bare det den ser ut som: sier hvilket
+   dyr siden gjelder. *@
+<div class="sidehode">
+    <div class="min-w-0">
+        <h1>@Model.Tittel</h1>
+        <div class="undertittel">@Model.DyrNavn</div>
+    </div>
+    <div class="handlinger">
+        <a asp-controller="Dyr" asp-action="Detaljer"
+           asp-route-dyrId="@Model.DyrId"
+           class="btn btn-outline-secondary btn-sm">
+            <svg class="ikon" aria-hidden="true"><use href="#i-tilbake" /></svg>
+            Tilbake
+        </a>
+    </div>
+</div>

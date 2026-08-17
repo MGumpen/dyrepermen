@@ -3,15 +3,9 @@
     ViewData["Tittel"] = $"Rediger {Model.Navn}";
 }
 
-<div class="sidehode">
-    <div>
-        <h1>Rediger @Model.Navn</h1>
-    </div>
-    <div class="handlinger">
-        <a asp-action="Detaljer" asp-route-dyrId="@Model.Id"
-           class="btn btn-outline-secondary btn-sm">Tilbake</a>
-    </div>
-</div>
+@* Hadde allerede en tilbakeknapp, men ute til hoyre og med bare "Tilbake" -
+   som ikke sier hvor. Samme hode som de andre undersidene na. *@
+<partial name="_Dyrhode" model='new DyrhodeVm("Rediger", Model.Id, Model.Navn)' />
 
 <div style="max-width: 34rem;">
     <form method="post" asp-action="Rediger" asp-route-dyrId="@Model.Id">

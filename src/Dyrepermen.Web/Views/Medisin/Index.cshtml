@@ -7,16 +7,7 @@
     string Klokke(DateTimeOffset t) => t.ToLocalTime().ToString("d. MMM HH:mm");
 }
 
-<div class="sidehode">
-    <div>
-        <h1>Medisin</h1>
-        <div class="undertittel">
-            <a asp-controller="Dyr" asp-action="Detaljer" asp-route-dyrId="@Model.DyrId">
-                @Model.DyrNavn
-            </a>
-        </div>
-    </div>
-</div>
+<partial name="_Dyrhode" model='new DyrhodeVm("Medisin", Model.DyrId, Model.DyrNavn)' />
 
 <div class="dp-kolonner">
     <div class="kolonne">
@@ -156,9 +147,9 @@
                     <div class="mb-2">
                         <label asp-for="Ny.IntervallTimer" class="form-label"></label>
                         <input asp-for="Ny.IntervallTimer" class="form-control"
-                               inputmode="numeric" />
+                               inputmode="numeric" placeholder="For eksempel «12»" />
                         <span asp-validation-for="Ny.IntervallTimer" class="text-danger small"></span>
-                        <div class="form-text">0 betyr ved behov.</div>
+                        <div class="form-text">Tomt eller 0 betyr ved behov.</div>
                     </div>
 
                     <div class="row g-2">
