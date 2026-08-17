@@ -41,6 +41,12 @@
 
     --dp-sidemeny: 250px;
 
+    /* Avstanden mellom kort, seksjoner og kolonner - ETT tall.
+       Den sto tidligere som .85rem fire steder og var ikke til a justere
+       uten a finne alle fire. Verre: mellom to dp-kolonner-rader fantes den
+       ikke i det hele tatt, fordi gap bare virker inne i et rutenett. */
+    --dp-kortavstand: .6rem;
+
     /* Diskret dybde. Kort skal skille seg fra bakgrunnen, ikke sveve. */
     --dp-skygge: 0 1px 2px rgba(26, 29, 25, .04);
 }
@@ -348,15 +354,18 @@ h1, h2, h3, h4 {
     box-shadow: var(--dp-skygge);
 }
 
+/* Luft MELLOM kort, ikke inni dem. Kortene skal leses som adskilte bokser,
+   og da er avstanden mellom dem det som gjor jobben - ikke polstring langs
+   innsiden, som bare gjor hver boks hoyere uten a skille dem tydeligere. */
 .kort + .kort {
-    margin-top: .85rem;
+    margin-top: var(--dp-kortavstand);
 }
 
 .kort-hode {
     display: flex;
     align-items: center;
     gap: .55rem;
-    padding: .8rem 1rem;
+    padding: .6rem .9rem;
     border-bottom: 1px solid var(--dp-kant);
 }
 
@@ -418,7 +427,7 @@ h1, h2, h3, h4 {
     display: flex;
     align-items: center;
     gap: .65rem;
-    padding: .6rem 1rem;
+    padding: .5rem .9rem;
     border-bottom: 1px solid var(--dp-kant);
 }
 
@@ -458,7 +467,7 @@ h1, h2, h3, h4 {
    Spesifiseres, ikke improviseres. Se plan kapittel 10.3. */
 
 .tomt {
-    padding: 1.5rem 1rem;
+    padding: 1.1rem .9rem;
     text-align: center;
     color: var(--dp-tekst-svak);
     font-size: .9rem;
@@ -520,7 +529,7 @@ h1, h2, h3, h4 {
 
 .dyrerutenett {
     display: grid;
-    gap: .85rem;
+    gap: var(--dp-kortavstand);
     grid-template-columns: 1fr;
 }
 
@@ -984,6 +993,7 @@ h1, h2, h3, h4 {
     font-size: .9rem;
 }
 
+
 .sidehode .handlinger {
     margin-left: auto;
     display: flex;
@@ -995,8 +1005,13 @@ h1, h2, h3, h4 {
 
 .dp-kolonner {
     display: grid;
-    gap: .85rem;
+    gap: var(--dp-kortavstand);
     grid-template-columns: 1fr;
+    /* Gap virker bare INNE i rutenettet. Uten bunnmarg la neste rad - eller
+       neste kort - klistret inntil den forrige, og pa mobil, der kolonnene
+       stables, ble overgangen mellom to rader den eneste stedet i hele
+       dashbordet uten luft. */
+    margin-bottom: var(--dp-kortavstand);
 }
 
 @media (min-width: 992px) {
@@ -1010,6 +1025,57 @@ h1, h2, h3, h4 {
     margin-top: 0;
 }
 
+/* --- Bunnen av dashbordet ------------------------------------------------
+   Handlelisten er den eneste boksen her som vokser fritt: tre punkter i dag,
+   tjue i morgen. Derfor har den sin egen kolonne pa PC, med egen hoyde. La
+   den ligge i samme stabel som forsikring og veterinaer, ville hvert nye
+   punkt dyttet de to nedover - og de skal sta stille. */
+.dp-bunn {
+    display: grid;
+    gap: var(--dp-kortavstand);
+    grid-template-columns: 1fr;
+    margin-bottom: var(--dp-kortavstand);
+}
+
+/* Gap gjor jobben mellom kortene her. Uten dette legger .kort + .kort en
+   margin oppa, og avstanden blir dobbel. */
+.dp-bunn .kort + .kort {
+    margin-top: 0;
+}
+
+/* Mobil: kolonnene loses opp med display:contents, slik at alle fire kortene
+   blir direkte barn av rutenettet og kan sorteres hver for seg.
+
+   Uten dette ville handlelisten havnet NEDERST - etter forsikring og
+   veterinaer - fordi den ligger i den andre kolonnen. Rekkefolgen her er den
+   som gjelder pa mobil: forfall, handleliste, forsikring, veterinaer sist. */
+@media (max-width: 991.98px) {
+    .dp-bunn-venstre,
+    .dp-bunn-hoyre {
+        display: contents;
+    }
+
+    .bunn-forfall { order: 1; }
+    .bunn-handleliste { order: 2; }
+    .bunn-forsikring { order: 3; }
+    .bunn-veterinar { order: 4; }
+}
+
+@media (min-width: 992px) {
+    .dp-bunn {
+        grid-template-columns: 1fr 1fr;
+        /* Kolonnene starter i topp hver for seg i stedet for a strekkes til
+           samme hoyde. Det er nettopp det som gjor hoydene uavhengige. */
+        align-items: start;
+    }
+
+    /* Inne i en kolonne er kortene vanlige blokker igjen, og trenger sin
+       egen avstand - gap virker bare mellom kolonnene. */
+    .dp-bunn-venstre > .kort + .kort {
+        margin-top: var(--dp-kortavstand);
+    }
+}
+
 /* Like brede kolonner. Brukes der de to boksene er like viktige. */
 @media (min-width: 992px) {
     .dp-kolonner.likt {
@@ -1020,7 +1086,7 @@ h1, h2, h3, h4 {
 /* En seksjon er et kort uten ramme: overskrift og innhold, men uten en boks
    rundt en boks. */
 .seksjon {
-    margin-bottom: .85rem;
+    margin-bottom: var(--dp-kortavstand);
 }
 
 .seksjon-hode {

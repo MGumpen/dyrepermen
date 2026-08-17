@@ -61,11 +61,21 @@
     }
 </section>
 
-@* Forfall og handleliste deler bredden likt. De er like viktige, og ingen av
-   dem trenger mer plass enn den andre. *@
-<div class="dp-kolonner likt">
-    <div class="kolonne">
-        <section class="kort">
+@* Bunnen av dashbordet: forfall, forsikring og veterinaer i venstre kolonne,
+   handlelisten alene i hoyre.
+
+   Handlelisten er den eneste av dem som vokser fritt - den kan ha tre punkter
+   i dag og tjue i morgen. La den ligge over eller under de andre, ville hvert
+   nye punkt dyttet forsikring og veterinaer nedover, og de to ville flyttet
+   seg pa en side som ellers star stille. Med hver sin kolonne er hoydene
+   uavhengige.
+
+   Rekkefolgen i markupen er MOBILREKKEFOLGEN: forfall, handleliste,
+   forsikring, veterinaer nederst. Pa PC flytter CSS handlelisten over i
+   hoyre kolonne. *@
+<div class="dp-bunn">
+    <div class="dp-bunn-venstre">
+        <section class="kort bunn-forfall">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-klokke" /></svg>
                 <h2>Forfaller snart</h2>
@@ -115,10 +125,120 @@
                 </ul>
             }
         </section>
+
+        <section class="kort bunn-forsikring">
+    <div class="kort-hode">
+        @* Samme skjold som Forsikring har i sidemenyen. Et eget ikon
+           her ville gjort at menyvalget og kortet sa ut som to ting. *@
+        <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
+        <h2>Forsikring</h2>
+        @if (Model.Forsikringer.Count > 0)
+        {
+            <span class="antall">@Model.Forsikringer.Count</span>
+        }
+        <a class="se-alle" asp-controller="Forsikring" asp-action="Index">Se alle</a>
     </div>
 
-    <div class="kolonne">
-        <section class="kort">
+    @if (Model.Forsikringer.Count == 0)
+    {
+        <div class="tomt">
+            <p class="mb-1">Ingen forsikringer registrert.</p>
+            <p class="mb-0" style="font-size:.85em">
+                Her står selskap, premie og egenandel for hvert dyr.
+            </p>
+        </div>
+    }
+    else
+    {
+        <ul class="rad-liste">
+            @foreach (var f in Model.Forsikringer)
+            {
+                <li>
+                    <span class="flex-grow-1 min-w-0">
+                        <span class="tittel">@f.DyreNavn</span>
+                        <span class="under d-block">
+                            @f.Selskap · egenandel
+                            @f.EgenandelFastKr.ToString("N0") kr + @f.VariabelTekst
+                        </span>
+                    </span>
+                    <span class="hoyre">
+                        <span class="d-block">@f.ArspremieKr.ToString("N0") kr</span>
+                        <span class="under">per år</span>
+                    </span>
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+        <section class="kort bunn-veterinar">
+    <div class="kort-hode">
+        <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-veterinar" /></svg>
+        <h2>Veterinær</h2>
+        @if (Model.Veterinarer.Count > 0)
+        {
+            <span class="antall">@Model.Veterinarer.Count</span>
+        }
+        <a class="se-alle" asp-controller="Veterinar" asp-action="Index">Se alle</a>
+    </div>
+
+    @if (Model.Veterinarer.Count == 0)
+    {
+        <div class="tomt">
+            <p class="mb-1">Ingen numre lagret ennå.</p>
+            <p class="mb-0" style="font-size:.85em">
+                Legger du inn veterinæren og vakten med telefonnummer,
+                står de her – ett trykk unna.
+            </p>
+        </div>
+    }
+    else
+    {
+        <ul class="rad-liste">
+            @* Fastveterinæren først, vakten rett under. Rekkefølgen
+               kommer fra tjenesten, som sorterer på enumverdien og
+               ikke på tegnet databasen lagrer. *@
+            @foreach (var sted in Model.Veterinarer)
+            {
+                <li>
+                    <span class="flex-grow-1 min-w-0">
+                        <span class="tittel">@sted.Navn</span>
+                        <span class="under d-block">
+                            <span class="merkelapp type-@sted.Type.ToString().ToLowerInvariant()">
+                                @Veterinarformat.Typenavn(sted.Type)
+                            </span>
+                            @if (sted.Apningstider is { } tider)
+                            {
+                                <span class="ms-1">@tider</span>
+                            }
+                        </span>
+                    </span>
+                    <span class="hoyre">
+                        @* Nummeret ER knappen. Ett trykk skal holde.
+
+                           Nummeret vises ogsa pa smal skjerm, i
+                           motsetning til pa veterinaersiden der det
+                           skjules under 576 px. Her er det hele
+                           poenget med kortet: skal man lese nummeret
+                           opp for noen, eller taste det pa en annen
+                           telefon, hjelper et ikon ingenting. *@
+                        <a class="btn ringknapp" href="tel:@sted.TelefonLenke"
+                           aria-label="Ring @sted.Navn på @sted.Telefon">
+                            <svg class="ikon" aria-hidden="true">
+                                <use href="#i-telefon" />
+                            </svg>
+                            @sted.Telefon
+                        </a>
+                    </span>
+                </li>
+            }
+        </ul>
+    }
+        </section>
+    </div>
+
+    <div class="dp-bunn-hoyre">
+        <section class="kort bunn-handleliste">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-handleliste" /></svg>
                 <h2>Handleliste</h2>

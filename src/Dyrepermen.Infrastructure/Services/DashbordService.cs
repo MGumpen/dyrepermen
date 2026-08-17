@@ -244,12 +244,59 @@ public sealed class DashbordService : IDashbordService
             .Select(i => (bool?)i.GodbitloggAktiv)
             .FirstOrDefaultAsync(ct) ?? true;
 
-        // Seks sporringer, og tallet star stille uansett hvor mange dyr
+        // Sporring 7. Forsikringene som gjelder na.
+        //
+        // Kunne ikke slas sammen med sporring 3. Den henter fornyelser
+        // innenfor varselvinduet - altsa de som snart gar ut. Dette er det
+        // motsatte utvalget: de som fortsatt lopet, inkludert alle uten
+        // fornyelsesdato i det hele tatt.
+        var gjeldendeForsikringer = await _db.Forsikring
+            .Where(f => f.FornyesDato == null || f.FornyesDato >= idag)
+            .OrderBy(f => f.Dyr.Navn)
+            .ThenBy(f => f.Selskap)
+            .Select(f => new ForsikringRad(
+                f.Id, f.DyrId, f.Dyr.Navn, f.Selskap, f.PoliseNr,
+                f.ArspremieKr, f.ForsikringsbelopKr, f.EgenandelFastKr,
+                f.EgenandelVariabelTidels, f.FornyesDato))
+            .ToListAsync(ct);
+
+        // Sporring 8. Stedene som kan ringes.
+        //
+        // Kunne ikke slas sammen med sporring 4 heller. Den henter besok
+        // innenfor varselvinduet; dette er alle steder husstanden har lagret,
+        // ogsa de uten et eneste besok. Det er nettopp vakta man aldri har
+        // brukt som skal sta der klokka to om natten.
+        //
+        // Filtreres pa telefon i SQL: et sted uten nummer har ingenting a
+        // gjore i en liste hvis eneste formal er a ringes.
+        var vetRaa = await _db.Veterinar
+            .Where(v => v.Telefon != null)
+            .OrderBy(v => v.Navn)
+            .Select(v => new Veterinarrad(
+                v.Id, v.Navn, v.Type, v.Telefon, v.Adresse, v.Nettside,
+                v.Epost, v.Apningstider, v.Notat,
+                // Korrelert undersporring, ingen rundtur per rad.
+                v.Besok.Count))
+            .ToListAsync(ct);
+
+        // Sorteres HER, ikke i SQL. Type har HasConversion, sa databasen
+        // sorterer pa det lagrede tegnet - 'A', 'F', 'S', 'V' - og da havner
+        // Annet oeverst og vakta nest sist. Samme felle som i
+        // VeterinarService.Hent, og den er stille: listen kommer sortert,
+        // bare feil sortert.
+        var veterinarer = vetRaa
+            .OrderBy(v => v.Type)
+            .ThenBy(v => v.Navn)
+            .ToList();
+
+        // Atte sporringer, og tallet star stille uansett hvor mange dyr
         // husstanden har. Det er det taket i kapittel 16 handler om: en ny
-        // kilde koster en fast rundtur, aldri en per rad. Trengs en kilde
-        // til, skal den slas sammen med en eksisterende sporring - slik
+        // kilde koster hoyst en fast rundtur, aldri en per rad. Kan en kilde
+        // slas sammen med en eksisterende sporring, skal den det - slik
         // vetbesok henter bade timer og oppfolging i samme kall.
-        return new Dashbord(dyr, forfaller, handleliste, godbit);
+        return new Dashbord(
+            dyr, forfaller, handleliste, godbit,
+            gjeldendeForsikringer, veterinarer);
     }
 
     private static string TypeTekst(BehandlingType type, string? preparat)

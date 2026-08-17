@@ -6,7 +6,7 @@ public interface IDashbordService
 {
     /// <summary>
     /// Ytelseskrav: et fast antall databasesporringer, uansett antall dyr.
-    /// I dag seks. Kravet er ikke tallet, men at det ikke vokser med raden -
+    /// I dag atte. Kravet er ikke tallet, men at det ikke vokser med raden -
     /// en ny kilde koster hoyst en fast rundtur, og helst ingen fordi den
     /// slas sammen med en sporring som allerede finnes.
     ///
