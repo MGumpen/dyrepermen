@@ -48,7 +48,10 @@ public sealed class ForplanController : Controller
             // verdien lagres i tidels prosent: 50.
             erProsent ? (int)Math.Round(ny.Prosent!.Value * 10) : null,
             erProsent ? null : ny.GramPerDag,
-            ny.AntallMaltider,
+            // Tomt felt betyr to maltider. Standarden ligger her og ikke som
+            // ferdig utfylt verdi i skjemaet, slik at brukeren slipper a
+            // viske ut en toer for a skrive noe annet.
+            ny.AntallMaltider ?? 2,
             ny.Fornavn,
             ny.Notat), ct);
 

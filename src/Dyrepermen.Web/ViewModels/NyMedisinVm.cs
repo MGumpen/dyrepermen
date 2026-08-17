@@ -14,9 +14,12 @@ public sealed class NyMedisinVm
     [Display(Name = "Dose")]
     public string Dose { get; set; } = string.Empty;
 
+    // Nullbar sa feltet star tomt med plassholder. Som int rendret det "0",
+    // og brukeren matte viske ut nullen for hun kunne skrive. Tomt felt
+    // tolkes som 0 - altsa ingen fast gjentakelse.
     [Range(0, 8760, ErrorMessage = "Intervallet må være mellom 0 og 8760 timer.")]
     [Display(Name = "Intervall i timer")]
-    public int IntervallTimer { get; set; }
+    public int? IntervallTimer { get; set; }
 
     [Required(ErrorMessage = "Velg en startdato.")]
     [DataType(DataType.Date)]

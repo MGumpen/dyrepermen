@@ -11,7 +11,7 @@
     <div>
         <h1>Forsikring</h1>
         <div class="undertittel">
-            Poliser for husstandens dyr, med premie, dekning og egenandel.
+            Forsikringer for husstandens dyr, med premie, dekning og egenandel.
         </div>
     </div>
 </div>
@@ -21,7 +21,7 @@
         <section class="kort">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
-                <h2>Poliser</h2>
+                <h2>Aktive forsikringer</h2>
                 @if (Model.Poliser.Count > 0)
                 {
                     <span class="antall">@Model.Poliser.Count</span>
@@ -31,10 +31,10 @@
             @if (Model.Poliser.Count == 0)
             {
                 <div class="tomt">
-                    <p class="mb-1">Ingen forsikringer registrert.</p>
+                    <p class="mb-1">Ingen aktive forsikringer.</p>
                     <p class="mb-0" style="font-size:.85em">
-                        Legger du inn fornyelsesdato, dukker polisen opp under
-                        «Forfaller snart» 14 dager før.
+                        Legger du inn fornyelsesdato, dukker forsikringen opp
+                        under «Forfaller snart» 14 dager før.
                     </p>
                 </div>
             }
@@ -127,7 +127,8 @@
 
                     <div class="mb-2">
                         <label asp-for="Ny.PoliseNr" class="form-label"></label>
-                        <input asp-for="Ny.PoliseNr" class="form-control" />
+                        <input asp-for="Ny.PoliseNr" class="form-control"
+                               placeholder="For eksempel «12345678»" />
                         <span asp-validation-for="Ny.PoliseNr" class="text-danger small"></span>
                     </div>
 
@@ -135,13 +136,13 @@
                         <div class="col-6 mb-2">
                             <label asp-for="Ny.ArspremieKr" class="form-label"></label>
                             <input asp-for="Ny.ArspremieKr" class="form-control"
-                                   inputmode="numeric" />
+                                   inputmode="numeric" placeholder="4 200" />
                             <span asp-validation-for="Ny.ArspremieKr" class="text-danger small"></span>
                         </div>
                         <div class="col-6 mb-2">
                             <label asp-for="Ny.ForsikringsbelopKr" class="form-label"></label>
                             <input asp-for="Ny.ForsikringsbelopKr" class="form-control"
-                                   inputmode="numeric" />
+                                   inputmode="numeric" placeholder="60 000" />
                             <span asp-validation-for="Ny.ForsikringsbelopKr" class="text-danger small"></span>
                         </div>
                     </div>
@@ -150,13 +151,13 @@
                         <div class="col-6 mb-2">
                             <label asp-for="Ny.EgenandelFastKr" class="form-label"></label>
                             <input asp-for="Ny.EgenandelFastKr" class="form-control"
-                                   inputmode="numeric" />
+                                   inputmode="numeric" placeholder="1 500" />
                             <span asp-validation-for="Ny.EgenandelFastKr" class="text-danger small"></span>
                         </div>
                         <div class="col-6 mb-2">
                             <label asp-for="Ny.EgenandelVariabelProsent" class="form-label"></label>
                             <input asp-for="Ny.EgenandelVariabelProsent" class="form-control"
-                                   inputmode="decimal" />
+                                   inputmode="decimal" placeholder="20" />
                             <span asp-validation-for="Ny.EgenandelVariabelProsent" class="text-danger small"></span>
                         </div>
                     </div>

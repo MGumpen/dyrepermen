@@ -38,8 +38,9 @@ public sealed class MedisinController : Controller
             return vm is null ? NotFound() : View(nameof(Index), vm);
         }
 
+        // Tomt intervall betyr 0 - ingen fast gjentakelse.
         var ok = await _medisin.Registrer(new NyMedisin(
-            dyrId, ny.Navn, ny.Dose, ny.IntervallTimer,
+            dyrId, ny.Navn, ny.Dose, ny.IntervallTimer ?? 0,
             ny.StartDato, ny.SluttDato), ct);
 
         if (!ok)

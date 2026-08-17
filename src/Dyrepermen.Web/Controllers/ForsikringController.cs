@@ -61,16 +61,19 @@ public sealed class ForsikringController : Controller
             return View(nameof(Index), await Bygg(ny, ct));
         }
 
+        // Tomt tallfelt betyr null pa vei inn, og skal lagres som 0. Feltene
+        // er nullbare for at skjemaet skal sta tomt med plassholder framfor
+        // a vise en null brukeren ma viske ut for hun kan skrive.
         var ok = await _forsikring.Lagre(new NyForsikring(
             ny.Id,
             ny.DyrId,
             ny.Selskap,
             ny.PoliseNr,
-            ny.ArspremieKr,
-            ny.ForsikringsbelopKr,
-            ny.EgenandelFastKr,
+            ny.ArspremieKr ?? 0,
+            ny.ForsikringsbelopKr ?? 0,
+            ny.EgenandelFastKr ?? 0,
             // 20 % skrives som 20 og lagres som 200 tidels.
-            (int)Math.Round(ny.EgenandelVariabelProsent * 10),
+            (int)Math.Round((ny.EgenandelVariabelProsent ?? 0) * 10),
             ny.FornyesDato), ct);
 
         if (!ok)

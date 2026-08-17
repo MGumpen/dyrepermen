@@ -33,10 +33,13 @@ public sealed class HandlelisteController : Controller
     [HttpPost("")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Legg(
-        string tekst, int antall, int? dyrId, CancellationToken ct)
+        string tekst, int? antall, int? dyrId, CancellationToken ct)
     {
+        // Tomt antall betyr ett. Standarden ligger her og ikke som ferdig
+        // utfylt verdi i feltet, slik at ettallet ikke ma viskes ut for man
+        // kan skrive noe annet.
         await _liste.Legg(
-            new NyttPunkt(tekst ?? "", antall, dyrId, User.BrukerId()), ct);
+            new NyttPunkt(tekst ?? "", antall ?? 1, dyrId, User.BrukerId()), ct);
 
         return await Svar(ct);
     }

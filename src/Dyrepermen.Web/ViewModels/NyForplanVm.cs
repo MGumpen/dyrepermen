@@ -20,9 +20,16 @@ public sealed class NyForplanVm : IValidatableObject
     [Display(Name = "Gram per dag")]
     public int? GramPerDag { get; set; }
 
+    /// <summary>
+    /// Nullbar, ikke 2. Tallet 2 er en fornuftig standard, men som ferdig
+    /// utfylt verdi ma den viskes ut for man kan skrive 3 - og det gjelder
+    /// hver gang. Na star 2 som plassholder i stedet, og tomt felt tolkes
+    /// som 2 i controlleren. Brukeren far samme standard uten a matte
+    /// fjerne noe.
+    /// </summary>
     [Range(1, 6, ErrorMessage = "Antall måltider må være mellom 1 og 6.")]
     [Display(Name = "Antall måltider per dag")]
-    public int AntallMaltider { get; set; } = 2;
+    public int? AntallMaltider { get; set; }
 
     [StringLength(80, ErrorMessage = "Navnet kan være høyst 80 tegn.")]
     [Display(Name = "Fôrets navn")]

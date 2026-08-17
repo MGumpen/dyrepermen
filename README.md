@@ -175,12 +175,12 @@ MVP-avgrensning — utrulling er fase 8, helt til slutt. Akseptansekriteriene i
 | 6d | Handlinger direkte på dashbordet: porsjon for neste måltid, gi mat, godbit, avkryssing av handleliste |
 | — | Flere husstander per bruker med gjesterolle, informasjonssider, designgjennomgang |
 
-Dashbordet gjør **seks** databasespørringer uansett antall dyr. Kravet i
+Dashbordet gjør **åtte** databasespørringer uansett antall dyr. Kravet i
 kapittel 16 er ikke tallet, men at ingenting skal vokse med antall dyr: en ny
 kilde koster høyst én fast rundtur, og helst ingen fordi den slås sammen med
 en spørring som allerede finnes.
 
-**222 tester grønne.** Enhetstester for ren logikk, integrasjonstester mot
+**237 tester grønne.** Enhetstester for ren logikk, integrasjonstester mot
 ekte PostgreSQL via Testcontainers. Aldri EF Core InMemory.
 
 To fail-closed prøver holder sikkerheten på plass av seg selv: `FilterTester`
