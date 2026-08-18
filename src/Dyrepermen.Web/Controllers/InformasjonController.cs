@@ -17,16 +17,33 @@ public sealed class InformasjonController : Controller
 {
     private readonly IInformasjonService _info;
     private readonly IDyrService _dyr;
+    private readonly IUtskriftService _utskrift;
 
-    public InformasjonController(IInformasjonService info, IDyrService dyr)
+    public InformasjonController(
+        IInformasjonService info, IDyrService dyr, IUtskriftService utskrift)
     {
         _info = info;
         _dyr = dyr;
+        _utskrift = utskrift;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken ct)
         => View(await Bygg(new NyttNotatVm(), ct));
+
+    /// <summary>
+    /// Utskriftsvennlig samleside for alle dyrene.
+    ///
+    /// Egen side og ikke en @media print-regel pa Index: utskriften har et
+    /// annet innhold enn skjermen, ikke bare et annet utseende. Den tar med
+    /// vekthistorikk, behandlinger og forsikringer som ikke star der, og
+    /// utelater notatskjemaet og navigasjonen.
+    ///
+    /// Ingen parametre. Alle dyr blir med, hver gang.
+    /// </summary>
+    [HttpGet("utskrift")]
+    public async Task<IActionResult> Utskrift(CancellationToken ct)
+        => View(await _utskrift.Hent(ct));
 
     [HttpGet("{id:int}/rediger")]
     public async Task<IActionResult> Rediger(int id, CancellationToken ct)

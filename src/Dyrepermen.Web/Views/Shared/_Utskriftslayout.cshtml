@@ -1,0 +1,47 @@
+@using Dyrepermen.Application.Interfaces
+@inject IGjeldendeBruker Meg
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Tittel"] – Dyrepermen</title>
+    <link rel="icon" href="~/img/logo.svg" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="utskrift">
+    @* Egen layout uten sidemeny, brukerkort og topplinje. De hoerer til
+       navigasjonen i appen, og har ingenting pa et ark a gjore. *@
+    <div class="utskrift-ark">
+        <header class="utskrift-hode">
+            <div>
+                <h1>@Meg.HusstandNavn</h1>
+                <p class="utskrift-undertittel">
+                    Dyrepermen · skrevet ut @DateTime.Now.ToString("d. MMMM yyyy")
+                </p>
+            </div>
+
+            @* Skjules ved utskrift. Den er til for a starte utskriften, og
+               skal ikke ligge som en gra boks oeverst pa arket. *@
+            <div class="utskrift-knapper">
+                <button type="button" class="btn btn-primary btn-sm"
+                        onclick="window.print()">
+                    Lagre som PDF
+                </button>
+                <a asp-controller="Informasjon" asp-action="Index"
+                   class="btn btn-outline-secondary btn-sm">Tilbake</a>
+            </div>
+        </header>
+
+        @RenderBody()
+    </div>
+
+    @* Apner utskriftsdialogen av seg selv. Kom man hit via knappen, er det
+       nettopp den man var ute etter - da skal man slippe a lete etter den.
+       Feiler den, eller lukker man den, star siden der med knappen sin. *@
+    <script>
+        window.addEventListener('load', function () { window.print(); });
+    </script>
+</body>
+</html>

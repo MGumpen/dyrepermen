@@ -1,0 +1,243 @@
+@using Dyrepermen.Application.Dtos
+@using Dyrepermen.Application.Extensions
+@using Dyrepermen.Domain.Enums
+@model Utskrift
+@{
+    ViewData["Tittel"] = "Utskrift";
+    Layout = "_Utskriftslayout";
+    var idag = DateOnly.FromDateTime(DateTime.Now);
+
+    string Dato(DateOnly d) => d.ToString("d. MMMM yyyy");
+
+    string Behandlingsnavn(BehandlingType t) => t switch
+    {
+        BehandlingType.Vaksine => "Vaksine",
+        BehandlingType.Ormekur => "Ormekur",
+        BehandlingType.Flatt => "Flåttmiddel",
+        BehandlingType.Kloklipp => "Kloklipp",
+        BehandlingType.Tannrens => "Tannrens",
+        _ => "Behandling"
+    };
+}
+
+@if (Model.Dyr.Count == 0)
+{
+    <p class="tomt">Ingen dyr registrert.</p>
+}
+
+@foreach (var side in Model.Dyr)
+{
+    var d = side.Dyr;
+
+    @* Hvert dyr starter oeverst pa et nytt ark. Uten dette flyter to dyr
+       sammen midt pa en side, og permen blir uleselig som oppslagsverk. *@
+    <section class="utskrift-dyr">
+        <h2>@d.Navn</h2>
+
+        <div class="utskrift-blokk">
+            <h3>Om dyret</h3>
+            <dl class="utskrift-fakta">
+                <dt>Art</dt><dd>@d.Art</dd>
+                <dt>Kjønn</dt><dd>@d.Kjonn@(d.Kastrert ? " · kastrert" : "")</dd>
+                @if (d.Rase is { } rase)
+                {
+                    <dt>Rase</dt><dd>@rase</dd>
+                }
+                @if (d.Fodselsdato is { } fodt)
+                {
+                    <dt>Født</dt>
+                    <dd>@Dato(fodt) · @Alderformat.Tekst(fodt, idag)</dd>
+                }
+                @if (d.ChipNr is { } chip)
+                {
+                    <dt>Chipnummer</dt><dd>@chip</dd>
+                }
+                @if (d.RegNrNkk is { } nkk)
+                {
+                    <dt>Reg.nr. NKK</dt><dd>@nkk</dd>
+                }
+            </dl>
+        </div>
+
+        @if (side.Forplan is { } plan)
+        {
+            <div class="utskrift-blokk">
+                <h3>Fôrplan</h3>
+                <dl class="utskrift-fakta">
+                    <dt>Mengde</dt>
+                    <dd>
+                        @if (plan.Metode == Formetode.Gram)
+                        {
+                            @($"{plan.GramPerDag} g per dag")
+                        }
+                        else
+                        {
+                            @($"{(plan.ProsentTidels ?? 0) / 10.0:0.#} % av kroppsvekt")
+                        }
+                        @($" · fordelt på {plan.AntallMaltider} måltider")
+                    </dd>
+                    @if (plan.Fornavn is { } fornavn)
+                    {
+                        <dt>Fôr</dt><dd>@fornavn</dd>
+                    }
+                    @if (plan.Notat is { } notat)
+                    {
+                        <dt>Notat</dt><dd>@notat</dd>
+                    }
+                </dl>
+            </div>
+        }
+
+        <div class="utskrift-blokk">
+            <h3>Vekt</h3>
+            @if (side.Vekter.Count == 0)
+            {
+                <p class="utskrift-tomt">Ingen vekt registrert.</p>
+            }
+            else
+            {
+                @if (side.Graf is { } graf)
+                {
+                    @* Samme partial som vektsiden. Grafen er inline SVG og
+                       skrives ut som vektor - skarp uansett oppløsning. *@
+                    <partial name="/Views/Vekt/_Graf.cshtml" model="graf" />
+                }
+
+                <table class="utskrift-tabell">
+                    <thead>
+                        <tr><th>Dato</th><th>Vekt</th><th>Registrert av</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in side.Vekter)
+                        {
+                            <tr>
+                                <td>@Dato(v.Dato)</td>
+                                <td>@Vektformat.TilKiloTekst(v.VektGram)</td>
+                                <td>@(v.RegistrertAv ?? "slettet bruker")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        @if (side.Behandlinger.Count > 0)
+        {
+            <div class="utskrift-blokk">
+                <h3>Behandlinger</h3>
+                <table class="utskrift-tabell">
+                    <thead>
+                        <tr><th>Dato</th><th>Type</th><th>Preparat</th><th>Neste</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in side.Behandlinger)
+                        {
+                            <tr>
+                                <td>@Dato(b.Dato)</td>
+                                <td>@Behandlingsnavn(b.Type)</td>
+                                <td>@(b.Preparat ?? "–")</td>
+                                <td>@(b.NesteDato is { } n ? Dato(n) : "–")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (side.Medisiner.Count > 0)
+        {
+            <div class="utskrift-blokk">
+                <h3>Medisiner</h3>
+                <table class="utskrift-tabell">
+                    <thead>
+                        <tr><th>Medisin</th><th>Dose</th><th>Intervall</th><th>Periode</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in side.Medisiner)
+                        {
+                            <tr class="@(m.ErAvsluttet(idag) ? "avsluttet" : "")">
+                                <td>@m.Navn</td>
+                                <td>@m.Dose</td>
+                                <td>@(m.IntervallTimer > 0
+                                        ? $"hver {m.IntervallTimer}. time"
+                                        : "ved behov")</td>
+                                @* "8. august 2026 -" leser som en manglende
+                                   verdi. Uten sluttdato loper medisinen
+                                   fortsatt, og da sier vi det. *@
+                                <td>
+                                    @if (m.SluttDato is { } slutt)
+                                    {
+                                        @($"{Dato(m.StartDato)} – {Dato(slutt)}")
+                                    }
+                                    else
+                                    {
+                                        @($"fra {Dato(m.StartDato)}")
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (side.Forsikringer.Count > 0)
+        {
+            <div class="utskrift-blokk">
+                <h3>Forsikring</h3>
+                @foreach (var f in side.Forsikringer)
+                {
+                    <dl class="utskrift-fakta">
+                        <dt>Selskap</dt><dd>@f.Selskap</dd>
+                        @if (f.PoliseNr is { } nr)
+                        {
+                            <dt>Forsikringsnummer</dt><dd>@nr</dd>
+                        }
+                        <dt>Årspremie</dt><dd>@f.ArspremieKr.ToString("N0") kr</dd>
+                        <dt>Forsikringsbeløp</dt>
+                        <dd>@f.ForsikringsbelopKr.ToString("N0") kr</dd>
+                        <dt>Egenandel</dt>
+                        <dd>
+                            @f.EgenandelFastKr.ToString("N0") kr fast,
+                            deretter @f.VariabelTekst
+                        </dd>
+                        @if (f.FornyesDato is { } fornyes)
+                        {
+                            <dt>Fornyes</dt><dd>@Dato(fornyes)</dd>
+                        }
+                    </dl>
+                }
+            </div>
+        }
+
+        @if (side.Notater.Count > 0)
+        {
+            <div class="utskrift-blokk">
+                <h3>Notater</h3>
+                @foreach (var n in side.Notater)
+                {
+                    <div class="utskrift-notat">
+                        <strong>@n.Tittel</strong>
+                        <p>@n.Tekst</p>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+}
+
+@if (Model.FellesNotater.Count > 0)
+{
+    <section class="utskrift-dyr">
+        <h2>Felles</h2>
+        <div class="utskrift-blokk">
+            @foreach (var n in Model.FellesNotater)
+            {
+                <div class="utskrift-notat">
+                    <strong>@n.Tittel</strong>
+                    <p>@n.Tekst</p>
+                </div>
+            }
+        </div>
+    </section>
+}

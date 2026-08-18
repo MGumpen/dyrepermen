@@ -206,6 +206,29 @@
                 </form>
             </div>
         </section>
+
+        @* Under notatskjemaet, i hoyre kolonne pa PC. Pa mobil stables
+           kolonnene, og kortet havner nederst - der man er ferdig med a lese
+           og kan ta med seg alt ut. *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-informasjon" /></svg>
+                <h2>Hele permen</h2>
+            </div>
+
+            <div class="kort-kropp">
+                <p class="form-text mt-0">
+                    Alt om alle dyrene på ett dokument: opplysninger, fôrplan,
+                    vekt med graf, behandlinger, medisiner, forsikring og
+                    notater. Hvert dyr starter på en ny side.
+                </p>
+
+                <a asp-action="Utskrift" class="btn btn-primary btn-sm">
+                    <svg class="ikon" aria-hidden="true"><use href="#i-informasjon" /></svg>
+                    Lagre informasjon som PDF
+                </a>
+            </div>
+        </section>
     </div>
 </div>
 

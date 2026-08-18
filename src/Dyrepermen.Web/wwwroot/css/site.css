@@ -1431,3 +1431,165 @@ h1, h2, h3, h4 {
 .dp-dialog .fakta dt {
     max-width: none;
 }
+
+/* --- Utskrift -----------------------------------------------------------
+   Egen side, ikke bare et annet utseende pa informasjonssiden: arket har et
+   ANNET INNHOLD - vekthistorikk, behandlinger og forsikringer som ikke star
+   pa skjermen, og uten notatskjema og navigasjon. */
+
+.utskrift {
+    background: var(--dp-flate);
+}
+
+.utskrift-ark {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+}
+
+.utskrift-hode {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: .75rem;
+    border-bottom: 2px solid var(--dp-aksent);
+}
+
+.utskrift-hode h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.utskrift-undertittel {
+    margin: .15rem 0 0;
+    color: var(--dp-tekst-svak);
+    font-size: .85rem;
+}
+
+.utskrift-knapper {
+    display: flex;
+    gap: .5rem;
+    flex: 0 0 auto;
+}
+
+/* HVERT DYR STARTER OEVERST PA ET NYTT ARK.
+   break-before er den gjeldende egenskapen; page-break-before star igjen
+   fordi eldre Safari og Firefox fortsatt leser den. Uten begge flyter to dyr
+   sammen midt pa en side. */
+.utskrift-dyr {
+    break-before: page;
+    page-break-before: always;
+}
+
+/* ...men ikke det forste. Ellers begynner utskriften med et blankt ark. */
+.utskrift-dyr:first-of-type {
+    break-before: auto;
+    page-break-before: auto;
+}
+
+.utskrift-dyr h2 {
+    margin: 0 0 .75rem;
+    padding-bottom: .35rem;
+    border-bottom: 1px solid var(--dp-kant-sterk);
+    font-size: 1.25rem;
+}
+
+.utskrift-blokk {
+    margin-bottom: 1.1rem;
+    /* En overskrift alene nederst pa arket, med innholdet pa neste side, er
+       verre enn et litt kortere ark. */
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.utskrift-blokk h3 {
+    margin: 0 0 .4rem;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--dp-aksent-mork);
+}
+
+/* Etikett og verdi i to spalter. Etikettene er korte og like lange nok til
+   at en fast venstrespalte leser bedre enn en flytende. */
+.utskrift-fakta {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: .15rem .75rem;
+    margin: 0 0 .5rem;
+    font-size: .9rem;
+}
+
+.utskrift-fakta dt {
+    color: var(--dp-tekst-svak);
+    font-weight: 500;
+}
+
+.utskrift-fakta dd {
+    margin: 0;
+}
+
+.utskrift-tabell {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+
+.utskrift-tabell th,
+.utskrift-tabell td {
+    padding: .3rem .4rem;
+    border-bottom: 1px solid var(--dp-kant);
+    text-align: left;
+    vertical-align: top;
+}
+
+.utskrift-tabell th {
+    color: var(--dp-tekst-svak);
+    font-weight: 600;
+}
+
+.utskrift-tabell tr.avsluttet td {
+    color: var(--dp-tekst-svak);
+}
+
+.utskrift-notat {
+    margin-bottom: .6rem;
+    font-size: .9rem;
+}
+
+.utskrift-notat p {
+    margin: .1rem 0 0;
+    white-space: pre-wrap;
+}
+
+.utskrift-tomt {
+    margin: 0;
+    color: var(--dp-tekst-svak);
+    font-size: .9rem;
+}
+
+@media print {
+    /* Knappene er til for a STARTE utskriften. De skal ikke ligge som en
+       gra boks oeverst pa arket man nettopp lagde. */
+    .utskrift-knapper {
+        display: none;
+    }
+
+    .utskrift-ark {
+        max-width: none;
+        padding: 0;
+    }
+
+    /* Marg settes av utskriftsdialogen, ikke her. Nettleseren legger til
+       topptekst og bunntekst i den samme margen. */
+    .utskrift {
+        background: #fff;
+    }
+
+    /* Grafen er SVG og skalerer fritt, men uten en tydelig bredde blir den
+       sa bred som arket og dermed uforholdsmessig hoy. */
+    .vektgraf {
+        max-width: 30rem;
+    }
+}
