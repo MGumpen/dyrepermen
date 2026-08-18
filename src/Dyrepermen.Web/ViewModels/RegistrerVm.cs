@@ -11,7 +11,10 @@ public sealed class RegistrerVm
 
     [Required(ErrorMessage = "Skriv inn et navn.")]
     [StringLength(60, ErrorMessage = "Navnet kan være høyst 60 tegn.")]
-    [Display(Name = "Visningsnavn")]
+    // Egenskapen heter Visningsnavn - det er navnet de andre i husstanden
+    // ser. Men for den som fyller ut skjemaet er det bare navnet hennes,
+    // og "Visningsnavn" er et ord fra systemet, ikke fra virkeligheten.
+    [Display(Name = "Navn")]
     public string Visningsnavn { get; set; } = string.Empty;
 
     /// <summary>
