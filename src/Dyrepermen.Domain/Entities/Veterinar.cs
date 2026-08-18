@@ -40,8 +40,25 @@ public sealed class Veterinar : IHusstandsbundet
 
     public string? Epost { get; set; }
 
-    /// <summary>Fritekst. "Man-fre 08-16, lor 10-14" lar seg ikke modellere.</summary>
-    public string? Apningstider { get; set; }
+    // Apningstid per ukedag, som fritekst. En tom dag betyr stengt.
+    //
+    // Sju kolonner og ikke en samletekst: da kan grensesnittet vise kun de
+    // dagene som faktisk er fylt ut, og brukeren slipper a formatere selv.
+    // Fritekst per dag og ikke fra/til-klokkeslett fordi "10-14, 16-20" og
+    // "Dognapent" begge er vanlige, og ingen av dem er to tidspunkter.
+    public string? ApentMandag { get; set; }
+
+    public string? ApentTirsdag { get; set; }
+
+    public string? ApentOnsdag { get; set; }
+
+    public string? ApentTorsdag { get; set; }
+
+    public string? ApentFredag { get; set; }
+
+    public string? ApentLordag { get; set; }
+
+    public string? ApentSondag { get; set; }
 
     public string? Notat { get; set; }
 

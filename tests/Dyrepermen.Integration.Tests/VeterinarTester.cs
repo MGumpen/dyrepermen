@@ -33,7 +33,8 @@ public sealed class VeterinarTester
     }
 
     private static NyVeterinar Sted(string navn, Veterinartype type)
-        => new(navn, type, "55 12 34 56", null, null, null, null, null);
+        => new(navn, type, "55 12 34 56", null, null, null,
+               Apningstider.Tom, null);
 
     [Fact]
     public async Task Husstand_ser_ikke_annen_husstands_veterinaerer()
@@ -243,7 +244,7 @@ public sealed class VeterinarTester
 
         Assert.False(await t.Opprett(
             new NyVeterinar("   ", Veterinartype.Fast,
-                null, null, null, null, null, null), default));
+                null, null, null, null, Apningstider.Tom, null), default));
 
         Assert.False(await t.OpprettBesok(new NyttVetbesok(
             dyrId, null, null, new DateOnly(2026, 1, 1), null,

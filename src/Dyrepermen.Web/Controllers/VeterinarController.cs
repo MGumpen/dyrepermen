@@ -107,7 +107,13 @@ public sealed class VeterinarController : Controller
             Adresse = rad.Adresse,
             Nettside = rad.Nettside,
             Epost = rad.Epost,
-            Apningstider = rad.Apningstider,
+            ApentMandag = rad.Apningstider.Mandag,
+            ApentTirsdag = rad.Apningstider.Tirsdag,
+            ApentOnsdag = rad.Apningstider.Onsdag,
+            ApentTorsdag = rad.Apningstider.Torsdag,
+            ApentFredag = rad.Apningstider.Fredag,
+            ApentLordag = rad.Apningstider.Lordag,
+            ApentSondag = rad.Apningstider.Sondag,
             Notat = rad.Notat
         });
     }
@@ -124,7 +130,12 @@ public sealed class VeterinarController : Controller
 
         var input = new NyVeterinar(
             ny.Navn, ny.Type, ny.Telefon, ny.Adresse,
-            ny.Nettside, ny.Epost, ny.Apningstider, ny.Notat);
+            ny.Nettside, ny.Epost,
+            new Apningstider(
+                ny.ApentMandag, ny.ApentTirsdag, ny.ApentOnsdag,
+                ny.ApentTorsdag, ny.ApentFredag, ny.ApentLordag,
+                ny.ApentSondag),
+            ny.Notat);
 
         var ok = ny.Id is { } id
             ? await _veterinar.Oppdater(id, input, ct)

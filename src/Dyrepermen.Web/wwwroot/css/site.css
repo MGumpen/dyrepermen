@@ -1309,6 +1309,28 @@ h1, h2, h3, h4 {
     color: var(--dp-tekst-hvit);
 }
 
+/* Apningstider: dagsnavnet skal skille seg fra klokkeslettet, og dagene fra
+   hverandre. Uten dette flyter "Man 08-16 Tir 08-16 Ons 10-14, 16-20" sammen
+   til en eneste tallrekke - verst nettopp for de dagene som har komma i seg. */
+/* Dag og klokkeslett henger sammen. Uten nowrap brekker linjen midt i
+   tiden, og "Tor 08-" blir staende alene pa slutten av en rad. */
+.apningsdag {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.apningsdag .dag {
+    font-weight: 600;
+    color: var(--dp-tekst);
+}
+
+/* Skilletegn mellom dager, ikke etter den siste. */
+.apningsdag + .apningsdag::before {
+    content: "·";
+    margin-right: .3rem;
+    opacity: .45;
+}
+
 /* Typen skiller stedene fra hverandre. Vakta skal vaere til a se pa avstand
    nar noe har skjedd - derfor egen farge, ikke bare en ekstra tekstlinje. */
 .merkelapp.type-vakt {

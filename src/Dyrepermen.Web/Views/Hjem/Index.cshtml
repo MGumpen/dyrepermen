@@ -207,9 +207,11 @@
                             <span class="merkelapp type-@sted.Type.ToString().ToLowerInvariant()">
                                 @Veterinarformat.Typenavn(sted.Type)
                             </span>
-                            @if (sted.Apningstider is { } tider)
+                            @foreach (var dag in sted.Apningstider.Utfylte)
                             {
-                                <span class="ms-1">@tider</span>
+                                <span class="ms-1 apningsdag">
+                                    <span class="dag">@dag.Kortdag</span> @dag.Tid
+                                </span>
                             }
                         </span>
                     </span>

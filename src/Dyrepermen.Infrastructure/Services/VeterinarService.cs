@@ -24,7 +24,12 @@ public sealed class VeterinarService : IVeterinarService
             .OrderBy(v => v.Navn)
             .Select(v => new Veterinarrad(
                 v.Id, v.Navn, v.Type, v.Telefon, v.Adresse, v.Nettside,
-                v.Epost, v.Apningstider, v.Notat,
+                v.Epost,
+                new Apningstider(
+                    v.ApentMandag, v.ApentTirsdag, v.ApentOnsdag,
+                    v.ApentTorsdag, v.ApentFredag, v.ApentLordag,
+                    v.ApentSondag),
+                v.Notat,
                 // Korrelert undersporring - ingen ekstra rundtur per rad.
                 v.Besok.Count))
             .ToListAsync(ct);
@@ -47,7 +52,12 @@ public sealed class VeterinarService : IVeterinarService
             .Where(v => v.Id == veterinarId)
             .Select(v => new Veterinarrad(
                 v.Id, v.Navn, v.Type, v.Telefon, v.Adresse, v.Nettside,
-                v.Epost, v.Apningstider, v.Notat, v.Besok.Count))
+                v.Epost,
+                new Apningstider(
+                    v.ApentMandag, v.ApentTirsdag, v.ApentOnsdag,
+                    v.ApentTorsdag, v.ApentFredag, v.ApentLordag,
+                    v.ApentSondag),
+                v.Notat, v.Besok.Count))
             .SingleOrDefaultAsync(ct);
 
     public async Task<bool> Opprett(NyVeterinar input, CancellationToken ct)
@@ -68,7 +78,13 @@ public sealed class VeterinarService : IVeterinarService
             Adresse = input.Adresse.TomTilNull(),
             Nettside = input.Nettside.TomTilNull(),
             Epost = input.Epost.TomTilNull(),
-            Apningstider = input.Apningstider.TomTilNull(),
+            ApentMandag = input.Apningstider.Mandag.TomTilNull(),
+            ApentTirsdag = input.Apningstider.Tirsdag.TomTilNull(),
+            ApentOnsdag = input.Apningstider.Onsdag.TomTilNull(),
+            ApentTorsdag = input.Apningstider.Torsdag.TomTilNull(),
+            ApentFredag = input.Apningstider.Fredag.TomTilNull(),
+            ApentLordag = input.Apningstider.Lordag.TomTilNull(),
+            ApentSondag = input.Apningstider.Sondag.TomTilNull(),
             Notat = input.Notat.TomTilNull(),
             OpprettetDato = DateOnly.FromDateTime(DateTime.UtcNow)
         });
@@ -101,7 +117,13 @@ public sealed class VeterinarService : IVeterinarService
         rad.Adresse = input.Adresse.TomTilNull();
         rad.Nettside = input.Nettside.TomTilNull();
         rad.Epost = input.Epost.TomTilNull();
-        rad.Apningstider = input.Apningstider.TomTilNull();
+        rad.ApentMandag = input.Apningstider.Mandag.TomTilNull();
+        rad.ApentTirsdag = input.Apningstider.Tirsdag.TomTilNull();
+        rad.ApentOnsdag = input.Apningstider.Onsdag.TomTilNull();
+        rad.ApentTorsdag = input.Apningstider.Torsdag.TomTilNull();
+        rad.ApentFredag = input.Apningstider.Fredag.TomTilNull();
+        rad.ApentLordag = input.Apningstider.Lordag.TomTilNull();
+        rad.ApentSondag = input.Apningstider.Sondag.TomTilNull();
         rad.Notat = input.Notat.TomTilNull();
 
         await _db.SaveChangesAsync(ct);

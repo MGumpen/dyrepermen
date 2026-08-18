@@ -29,10 +29,19 @@
     }
 
     <dl class="fakta">
-        @if (Model.Apningstider is { } tider)
+        @if (Model.Apningstider.Finnes)
         {
             <dt>Åpningstider</dt>
-            <dd>@tider</dd>
+            <dd>
+                @* Her er det plass til hele dagsnavnet, og til en linje per
+                   dag. Kortet apnes nettopp for a lese detaljene. *@
+                @foreach (var dag in Model.Apningstider.Utfylte)
+                {
+                    <span class="d-block">
+                        <span class="dag">@dag.Dag</span> @dag.Tid
+                    </span>
+                }
+            </dd>
         }
 
         @if (Model.Adresse is { } adresse)

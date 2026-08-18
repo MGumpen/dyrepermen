@@ -274,7 +274,12 @@ public sealed class DashbordService : IDashbordService
             .OrderBy(v => v.Navn)
             .Select(v => new Veterinarrad(
                 v.Id, v.Navn, v.Type, v.Telefon, v.Adresse, v.Nettside,
-                v.Epost, v.Apningstider, v.Notat,
+                v.Epost,
+                new Apningstider(
+                    v.ApentMandag, v.ApentTirsdag, v.ApentOnsdag,
+                    v.ApentTorsdag, v.ApentFredag, v.ApentLordag,
+                    v.ApentSondag),
+                v.Notat,
                 // Korrelert undersporring, ingen rundtur per rad.
                 v.Besok.Count))
             .ToListAsync(ct);

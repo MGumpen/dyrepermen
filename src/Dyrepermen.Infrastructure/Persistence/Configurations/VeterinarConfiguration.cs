@@ -20,7 +20,12 @@ public sealed class VeterinarConfiguration : IEntityTypeConfiguration<Veterinar>
         b.Property(v => v.Adresse).HasMaxLength(200);
         b.Property(v => v.Nettside).HasMaxLength(200);
         b.Property(v => v.Epost).HasMaxLength(200);
-        b.Property(v => v.Apningstider).HasMaxLength(200);
+        // Apningstid per dag. 40 tegn rommer "10-14, 16-20" med god margin.
+        foreach (var dag in new[] { "Mandag", "Tirsdag", "Onsdag", "Torsdag",
+                                    "Fredag", "Lordag", "Sondag" })
+        {
+            b.Property<string>("Apent" + dag).HasMaxLength(40);
+        }
         b.Property(v => v.Notat).HasMaxLength(500);
 
         b.Property(v => v.OpprettetDato)

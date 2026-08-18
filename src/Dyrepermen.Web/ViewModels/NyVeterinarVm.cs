@@ -37,9 +37,34 @@ public sealed class NyVeterinarVm
     [Display(Name = "E-post")]
     public string? Epost { get; set; }
 
-    [StringLength(200)]
-    [Display(Name = "Åpningstider")]
-    public string? Apningstider { get; set; }
+    // Apningstid per ukedag. Tom dag betyr stengt.
+    [StringLength(40, ErrorMessage = "Åpningstiden kan være høyst 40 tegn.")]
+    [Display(Name = "Mandag")]
+    public string? ApentMandag { get; set; }
+
+    [StringLength(40, ErrorMessage = "Åpningstiden kan være høyst 40 tegn.")]
+    [Display(Name = "Tirsdag")]
+    public string? ApentTirsdag { get; set; }
+
+    [StringLength(40, ErrorMessage = "Åpningstiden kan være høyst 40 tegn.")]
+    [Display(Name = "Onsdag")]
+    public string? ApentOnsdag { get; set; }
+
+    [StringLength(40, ErrorMessage = "Åpningstiden kan være høyst 40 tegn.")]
+    [Display(Name = "Torsdag")]
+    public string? ApentTorsdag { get; set; }
+
+    [StringLength(40, ErrorMessage = "Åpningstiden kan være høyst 40 tegn.")]
+    [Display(Name = "Fredag")]
+    public string? ApentFredag { get; set; }
+
+    [StringLength(40, ErrorMessage = "Åpningstiden kan være høyst 40 tegn.")]
+    [Display(Name = "Lørdag")]
+    public string? ApentLordag { get; set; }
+
+    [StringLength(40, ErrorMessage = "Åpningstiden kan være høyst 40 tegn.")]
+    [Display(Name = "Søndag")]
+    public string? ApentSondag { get; set; }
 
     [StringLength(500)]
     [Display(Name = "Notat")]

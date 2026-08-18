@@ -11,7 +11,7 @@ public sealed record Veterinarrad(
     string? Adresse,
     string? Nettside,
     string? Epost,
-    string? Apningstider,
+    Apningstider Apningstider,
     string? Notat,
 
     /// <summary>Hvor mange besok som peker hit. Vises som kontekst i listen.</summary>

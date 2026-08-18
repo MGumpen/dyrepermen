@@ -26,8 +26,7 @@
         <div class="row g-3">
             <div class="col-12 col-md-7">
                 <label asp-for="Navn" class="form-label"></label>
-                <input asp-for="Navn" class="form-control" autofocus
-                       placeholder="Bergen Dyreklinikk" />
+                <input asp-for="Navn" class="form-control" autofocus />
                 <span asp-validation-for="Navn" class="text-danger small"></span>
             </div>
 
@@ -44,7 +43,7 @@
                 @* type=tel gir talltastatur pa mobil. Ingen formatvalidering -
                    utenlandske numre og kortnumre skal ogsa ga gjennom. *@
                 <input asp-for="Telefon" class="form-control" type="tel"
-                       inputmode="tel" placeholder="55 12 34 56" />
+                       inputmode="tel" />
                 <span asp-validation-for="Telefon" class="text-danger small"></span>
             </div>
 
@@ -54,19 +53,64 @@
                 <span asp-validation-for="Adresse" class="text-danger small"></span>
             </div>
 
-            <div class="col-12 col-md-6">
-                <label asp-for="Apningstider" class="form-label"></label>
-                <input asp-for="Apningstider" class="form-control"
-                       placeholder="Man–fre 08–16, lør 10–14" />
+            <div class="col-12">
+                <label class="form-label">Åpningstider</label>
+                @* Ett felt per dag. Dagene man lar sta tomme er stengt, og
+                   vises ikke i oversikten - da slipper brukeren a skrive
+                   "man-fre 08-16, lor 10-14" og formatere det selv. *@
+                <div class="row g-2">
+                    <div class="col-6 col-sm-4 col-lg-3">
+                        <label asp-for="ApentMandag" class="form-label"></label>
+                        <input asp-for="ApentMandag" class="form-control"
+                               placeholder="08–16" />
+                        <span asp-validation-for="ApentMandag" class="text-danger small"></span>
+                    </div>
+                    <div class="col-6 col-sm-4 col-lg-3">
+                        <label asp-for="ApentTirsdag" class="form-label"></label>
+                        <input asp-for="ApentTirsdag" class="form-control"
+                               placeholder="08–16" />
+                        <span asp-validation-for="ApentTirsdag" class="text-danger small"></span>
+                    </div>
+                    <div class="col-6 col-sm-4 col-lg-3">
+                        <label asp-for="ApentOnsdag" class="form-label"></label>
+                        <input asp-for="ApentOnsdag" class="form-control"
+                               placeholder="08–16" />
+                        <span asp-validation-for="ApentOnsdag" class="text-danger small"></span>
+                    </div>
+                    <div class="col-6 col-sm-4 col-lg-3">
+                        <label asp-for="ApentTorsdag" class="form-label"></label>
+                        <input asp-for="ApentTorsdag" class="form-control"
+                               placeholder="08–16" />
+                        <span asp-validation-for="ApentTorsdag" class="text-danger small"></span>
+                    </div>
+                    <div class="col-6 col-sm-4 col-lg-3">
+                        <label asp-for="ApentFredag" class="form-label"></label>
+                        <input asp-for="ApentFredag" class="form-control"
+                               placeholder="08–16" />
+                        <span asp-validation-for="ApentFredag" class="text-danger small"></span>
+                    </div>
+                    <div class="col-6 col-sm-4 col-lg-3">
+                        <label asp-for="ApentLordag" class="form-label"></label>
+                        <input asp-for="ApentLordag" class="form-control"
+                               placeholder="08–16" />
+                        <span asp-validation-for="ApentLordag" class="text-danger small"></span>
+                    </div>
+                    <div class="col-6 col-sm-4 col-lg-3">
+                        <label asp-for="ApentSondag" class="form-label"></label>
+                        <input asp-for="ApentSondag" class="form-control"
+                               placeholder="08–16" />
+                        <span asp-validation-for="ApentSondag" class="text-danger small"></span>
+                    </div>
+                </div>
                 <div class="form-text">
-                    Fritekst. Skriv det som står på nettsiden deres.
+                    Fyll inn dagene stedet er åpent. Tomme dager regnes som
+                    stengt og vises ikke.
                 </div>
             </div>
 
             <div class="col-12 col-md-6">
                 <label asp-for="Nettside" class="form-label"></label>
-                <input asp-for="Nettside" class="form-control" type="url"
-                       placeholder="https://…" />
+                <input asp-for="Nettside" class="form-control" type="url" />
             </div>
 
             <div class="col-12 col-md-6">
@@ -77,8 +121,7 @@
 
             <div class="col-12">
                 <label asp-for="Notat" class="form-label"></label>
-                <textarea asp-for="Notat" class="form-control" rows="2"
-                          placeholder="Parkering bak bygget. Spør etter Anne."></textarea>
+                <textarea asp-for="Notat" class="form-control" rows="2"></textarea>
             </div>
         </div>
 

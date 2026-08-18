@@ -11,7 +11,7 @@ public sealed class VeterinarlenkeTester
 {
     private static Veterinarrad Sted(string? telefon = null, string? nettside = null)
         => new(1, "Klinikken", Veterinartype.Fast, telefon, null,
-               nettside, null, null, null, 0);
+               nettside, null, Apningstider.Tom, null, 0);
 
     [Theory]
     [InlineData("koba-vets.no", "https://koba-vets.no")]

@@ -9,5 +9,5 @@ public sealed record NyVeterinar(
     string? Adresse,
     string? Nettside,
     string? Epost,
-    string? Apningstider,
+    Apningstider Apningstider,
     string? Notat);
