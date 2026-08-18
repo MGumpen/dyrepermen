@@ -52,7 +52,7 @@
                                 <span class="under d-block">
                                     @if (p.PoliseNr is not null)
                                     {
-                                        <span>Polise @p.PoliseNr · </span>
+                                        <span>Forsikringsnummer @p.PoliseNr · </span>
                                     }
                                     <span>@Kr(p.ArspremieKr) i året</span>
                                     @if (p.ForsikringsbelopKr > 0)
@@ -97,7 +97,7 @@
         <section class="kort">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
-                <h2>@(redigerer ? "Endre polise" : "Ny forsikring")</h2>
+                <h2>@(redigerer ? "Endre forsikring" : "Ny forsikring")</h2>
             </div>
             <div class="kort-kropp">
                 <form method="post" asp-action="Lagre">
