@@ -126,7 +126,7 @@ builder.Services.AddDataProtection()
     .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
 // Sikker kapsel er standard. Eneste grunn til a sla den av er lokal
-// container-kjoring over http (docker compose --profile full), der det ikke
+// container-kjoring over http (docker compose up -d), der det ikke
 // star noen TLS-terminator foran slik Render har. Med Always settes
 // innloggingskapselen aldri over http, og innlogging virker ikke i det hele
 // tatt - uten at noe sier fra om hvorfor.

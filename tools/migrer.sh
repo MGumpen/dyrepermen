@@ -2,9 +2,20 @@
 #
 # Genererer et idempotent migrasjonsskript og kjorer det.
 #
-# Migrasjoner kjores ALDRI ved oppstart av applikasjonen. Et idempotent
-# skript gir kontroll over nar skjemaendringer skjer, og unngar at to
-# instanser migrerer samtidig. Se plan kapittel 14.3.
+# TRENGS IKKE I DAGLIG BRUK. Applikasjonen migrerer selv ved oppstart, rett
+# for app.Run() i Program.cs - se ADR 0010. Bade lokalt, i containeren og pa
+# Render er det nok a starte appen.
+#
+# Skriptet finnes for de tilfellene der oppstartsmigrering ikke holder:
+#
+#   - Appen skaleres ut. Oppstartsmigrering forutsetter EN instans; kjorer to
+#     instanser oppstart samtidig, migrerer de samtidig. Da ma kallet ut av
+#     Program.cs og skjemaet legges inn her forst, som eget steg.
+#   - Du vil se hvilken SQL en migrasjon faktisk gir, for den kjores.
+#   - Skjemaet skal legges inn i en database appen ikke har tilgang til.
+#
+# Skriptet er idempotent: det leser __EFMigrationsHistory og kjorer bare det
+# som mangler, akkurat som MigrateAsync gjor ved oppstart.
 #
 # Bruk:
 #   tools/migrer.sh                 skriv skriptet, ikke kjor det
