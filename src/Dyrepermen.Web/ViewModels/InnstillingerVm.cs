@@ -21,6 +21,7 @@ public sealed class InnstillingerVm
     [Display(Name = "Send varsler på e-post")]
     public bool VarslerAktiv { get; set; }
 
+    [Display(Name = "Vis godbitknapp")]
     public bool GodbitloggAktiv { get; set; }
 
     [EmailAddress(ErrorMessage = "Dette ser ikke ut som en e-postadresse.")]
