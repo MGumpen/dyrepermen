@@ -9,15 +9,7 @@
 
     string Dato(DateOnly d) => d.ToString("d. MMMM yyyy");
 
-    string Behandlingsnavn(BehandlingType t) => t switch
-    {
-        BehandlingType.Vaksine => "Vaksine",
-        BehandlingType.Ormekur => "Ormekur",
-        BehandlingType.Flatt => "Flåttmiddel",
-        BehandlingType.Kloklipp => "Kloklipp",
-        BehandlingType.Tannrens => "Tannrens",
-        _ => "Behandling"
-    };
+    string Behandlingsnavn(BehandlingType t) => Behandlingsformat.Navn(t);
 }
 
 @if (Model.Dyr.Count == 0)

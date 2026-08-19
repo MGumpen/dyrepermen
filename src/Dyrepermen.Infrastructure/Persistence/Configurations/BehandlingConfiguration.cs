@@ -23,12 +23,14 @@ public sealed class BehandlingConfiguration : IEntityTypeConfiguration<Behandlin
                 : v == BehandlingType.Ormekur ? 'O'
                 : v == BehandlingType.Flatt ? 'F'
                 : v == BehandlingType.Kloklipp ? 'K'
-                : 'T',
+                : v == BehandlingType.Tannrens ? 'T'
+                : 'A',
              v => v == 'V' ? BehandlingType.Vaksine
                 : v == 'O' ? BehandlingType.Ormekur
                 : v == 'F' ? BehandlingType.Flatt
                 : v == 'K' ? BehandlingType.Kloklipp
-                : BehandlingType.Tannrens)
+                : v == 'T' ? BehandlingType.Tannrens
+                : BehandlingType.Annet)
          .HasColumnType("char(1)")
          .IsRequired();
 
@@ -43,6 +45,6 @@ public sealed class BehandlingConfiguration : IEntityTypeConfiguration<Behandlin
          .HasDatabaseName("ix_behandling_neste");
 
         b.ToTable(t => t.HasCheckConstraint(
-            "ck_behandling_type", "type IN ('V','O','F','K','T')"));
+            "ck_behandling_type", "type IN ('V','O','F','K','T','A')"));
     }
 }

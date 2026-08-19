@@ -114,19 +114,7 @@ public sealed class DyrService : IDyrService
     }
 
     private static string Behandlingstekst(BehandlingType type, string? preparat)
-    {
-        var navn = type switch
-        {
-            BehandlingType.Vaksine => "Vaksine",
-            BehandlingType.Ormekur => "Ormekur",
-            BehandlingType.Flatt => "Flåttmiddel",
-            BehandlingType.Kloklipp => "Kloklipp",
-            BehandlingType.Tannrens => "Tannrens",
-            _ => "Behandling"
-        };
-
-        return preparat is null ? navn : $"{navn} – {preparat}";
-    }
+        => Behandlingsformat.MedPreparat(type, preparat);
 
     /// <summary>
     /// Samme regel som ForplanService. Uten vektgrunnlag sier den fra

@@ -1,21 +1,19 @@
+@using Dyrepermen.Application.Extensions
 @model BehandlingSideVm
 @{
     ViewData["Tittel"] = $"Behandlinger – {Model.DyrNavn}";
     var idag = DateOnly.FromDateTime(DateTime.Now);
 
-    // Norske etiketter bygges her, ikke som Display-attributter pa enumen.
-    // Domenelaget skal ikke baere presentasjonsmetadata.
-    var typer = new List<SelectListItem>
-    {
-        new("Vaksine", nameof(BehandlingType.Vaksine)),
-        new("Ormekur", nameof(BehandlingType.Ormekur)),
-        new("Flåttmiddel", nameof(BehandlingType.Flatt)),
-        new("Kloklipp", nameof(BehandlingType.Kloklipp)),
-        new("Tannrens", nameof(BehandlingType.Tannrens))
-    };
-
-    string TypeTekst(BehandlingType t) =>
-        typer.First(x => x.Value == t.ToString()).Text;
+    // Etikettene kommer fra Behandlingsformat, ikke fra Display-attributter
+    // pa enumen - domenelaget skal ikke baere presentasjonsmetadata. Listen
+    // bygges av enumverdiene selv, sa en ny type dukker opp her uten at noen
+    // ma huske a legge den til.
+    //
+    // Verdien er NAVNET, ikke tallet. GetEnumSelectList ville skrevet
+    // <option value="0">, og da binder ikke feltet mot enumnavnet.
+    var typer = Enum.GetValues<BehandlingType>()
+        .Select(t => new SelectListItem(Behandlingsformat.Navn(t), t.ToString()))
+        .ToList();
 }
 
 <partial name="_Dyrhode" model='new DyrhodeVm("Behandlinger", Model.DyrId, Model.DyrNavn)' />
@@ -44,7 +42,7 @@
                         <li>
                             <span class="flex-grow-1 min-w-0">
                                 <span class="tittel">
-                                    @TypeTekst(rad.Type)@(rad.Preparat is null ? "" : $" – {rad.Preparat}")
+                                    @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat)
                                 </span>
                                 <span class="under d-block">
                                     @($"{rad.Dato:d. MMMM yyyy}")
@@ -100,6 +98,9 @@
                         <input asp-for="Ny.Preparat" class="form-control"
                                placeholder="For eksempel «Milbemax»" />
                         <span asp-validation-for="Ny.Preparat" class="text-danger small"></span>
+                        <div class="form-text">
+                            Velger du «Annet», skriver du her hva behandlingen var.
+                        </div>
                     </div>
 
                     <div class="row g-2">

@@ -305,19 +305,7 @@ public sealed class DashbordService : IDashbordService
     }
 
     private static string TypeTekst(BehandlingType type, string? preparat)
-    {
-        var navn = type switch
-        {
-            BehandlingType.Vaksine => "Vaksine",
-            BehandlingType.Ormekur => "Ormekur",
-            BehandlingType.Flatt => "Flåttmiddel",
-            BehandlingType.Kloklipp => "Kloklipp",
-            BehandlingType.Tannrens => "Tannrens",
-            _ => "Behandling"
-        };
-
-        return preparat is null ? navn : $"{navn} – {preparat}";
-    }
+        => Behandlingsformat.MedPreparat(type, preparat);
 
     /// <summary>
     /// Samme regel som ForplanService, og med vilje samme returtype: da deler
