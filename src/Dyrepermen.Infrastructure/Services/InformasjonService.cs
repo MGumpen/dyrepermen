@@ -159,7 +159,7 @@ public sealed class InformasjonService : IInformasjonService
             d.SisteVekt?.VektGram,
             d.SisteVekt?.Dato,
             d.Medisiner,
-            ForplanTekst(
+            Forplanformat.Sammendrag(
                 d.Forplan?.Metode,
                 d.Forplan?.ProsentTidels,
                 d.Forplan?.GramPerDag,
@@ -167,38 +167,5 @@ public sealed class InformasjonService : IInformasjonService
                 d.SisteVekt?.VektGram),
             notater.Where(n => n.DyrId == d.Id).ToList()))
             .ToList();
-    }
-
-    /// <summary>
-    /// Samme regel som ForplanService, men uttrykt som tekst. Uten
-    /// vektgrunnlag sier den fra i stedet for a vise et tall uten dekning.
-    /// </summary>
-    private static string? ForplanTekst(
-        Formetode? metode, int? prosentTidels, int? gramPerDag,
-        int? antallMaltider, int? sisteVektGram)
-    {
-        if (metode is null)
-        {
-            return null;
-        }
-
-        var maltider = antallMaltider ?? 2;
-
-        if (metode == Formetode.Gram)
-        {
-            return $"{gramPerDag} g/dag fordelt på {maltider} måltider";
-        }
-
-        if (sisteVektGram is null)
-        {
-            return "Prosentplan – mangler vektregistrering";
-        }
-
-        var gram = (int)Math.Round(
-            sisteVektGram.Value * prosentTidels!.Value / 1000.0,
-            MidpointRounding.AwayFromZero);
-
-        return $"{gram} g/dag fordelt på {maltider} måltider "
-             + $"({prosentTidels.Value / 10.0:0.#} % av kroppsvekt)";
     }
 }

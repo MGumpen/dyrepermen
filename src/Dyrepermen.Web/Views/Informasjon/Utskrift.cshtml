@@ -66,14 +66,10 @@
                 <dl class="utskrift-fakta">
                     <dt>Mengde</dt>
                     <dd>
-                        @if (plan.Metode == Formetode.Gram)
-                        {
-                            @($"{plan.GramPerDag} g per dag")
-                        }
-                        else
-                        {
-                            @($"{(plan.ProsentTidels ?? 0) / 10.0:0.#} % av kroppsvekt")
-                        }
+                        @* Samme regeltekst som pa forplansiden. Sto den to
+                           steder, ville utskriften og skjermen sagt hver sitt. *@
+                        @Forplanformat.Regel(
+                            plan.Metode, plan.ProsentTidels, plan.GramPerDag)
                         @($" · fordelt på {plan.AntallMaltider} måltider")
                     </dd>
                     @if (plan.Fornavn is { } fornavn)

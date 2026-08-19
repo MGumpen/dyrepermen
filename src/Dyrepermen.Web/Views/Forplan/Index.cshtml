@@ -13,6 +13,15 @@
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-forplan" /></svg>
                 <h2>I dag</h2>
+                @if (Model.Aktiv is { } metode)
+                {
+                    @* Metoden er det forste sporsmalet et tall som dette
+                       reiser. Den star derfor i hodet, ikke som en fotnote. *@
+                    <span class="merkelapp">
+                        @(metode.Metode == Formetode.Prosent
+                            ? "Følger vekten" : "Fast mengde")
+                    </span>
+                }
             </div>
 
             @* Fire tilstander, spesifisert i plan kapittel 8.1.
@@ -30,8 +39,15 @@
                     <div class="alert alert-warning py-2 mb-0" role="status">
                         <strong>Registrer en vekt for å regne ut mengden.</strong>
                         <div class="small mt-1">
-                            Planen er prosentbasert, og da trengs det en
-                            vektregistrering å regne fra.
+                            @* Regelen vises selv om tallet ikke lar seg regne
+                               ut. Brukeren skal kunne se HVA planen er, ikke
+                               bare at den mangler noe. *@
+                            Planen er
+                            @(Model.Aktiv is { } uten
+                                ? Forplanformat.Regel(
+                                    uten.Metode, uten.ProsentTidels, uten.GramPerDag)
+                                : "prosentbasert"),
+                            og da trengs det en vektregistrering å regne fra.
                         </div>
                         <a asp-controller="Vekt" asp-action="Index"
                            asp-route-dyrId="@Model.DyrId"
@@ -46,36 +62,118 @@
                 <div class="kort-kropp">
                     <div class="dyrekort-tall mt-0">
                         <span>
-                            <span class="verdi fs-3">@r.GramPerDag g</span>
+                            <span class="verdi fs-3">@Forplanformat.Gramtekst(r.GramPerDag)</span>
                             <span class="etikett">per dag</span>
                         </span>
                     </div>
-
-                    @if (r.GrunnlagVektGram is { } grunnlag)
-                    {
-                        @* Vektgrunnlaget skal alltid vises sammen med
-                           resultatet. Et tall uten synlig grunnlag er et tall
-                           ingen tor stole pa. *@
-                        <p class="form-text mb-0 mt-1">
-                            Regnet fra @Vektformat.TilKiloTekst(grunnlag),
-                            målt @($"{r.GrunnlagDato:d. MMM yyyy}")
-                        </p>
-                    }
                 </div>
+
+                @if (Model.Aktiv is { } plan)
+                {
+                    @* Grunnlaget for utregningen. Et tall uten synlig grunnlag
+                       er et tall ingen tor stole pa - og den som ikke la inn
+                       planen selv, kan ellers ikke se om mengden folger vekten
+                       eller star stille. *@
+                    <div class="kort-kropp border-top">
+                        @if (plan.Metode == Formetode.Prosent)
+                        {
+                            <p class="mb-1">
+                                <strong>
+                                    @Forplanformat.Regel(
+                                        plan.Metode, plan.ProsentTidels, plan.GramPerDag)
+                                </strong>
+                            </p>
+
+                            @if (r.GrunnlagVektGram is { } grunnlag)
+                            {
+                                @* Begge leddene star i regnestykket, sa
+                                   brukeren kan regne etter selv. *@
+                                <p class="mb-1 text-body-secondary">
+                                    @Forplanformat.Utregning(
+                                        grunnlag, plan.ProsentTidels ?? 0, r.GramPerDag)
+                                </p>
+                                <p class="form-text mb-0">
+                                    Basert på vekt fra @($"{r.GrunnlagDato:d. MMM yyyy}"),
+                                    oppdateres automatisk ved ny vekt.
+                                </p>
+                            }
+                        }
+                        else
+                        {
+                            <p class="mb-1">
+                                <strong>
+                                    Fast mengde:
+                                    @Forplanformat.Regel(
+                                        plan.Metode, plan.ProsentTidels, plan.GramPerDag)
+                                </strong>
+                            </p>
+                            <p class="form-text mb-0">
+                                Mengden står stille uansett hva vekten gjør. Skal
+                                den endres, må planen erstattes.
+                            </p>
+                        }
+                    </div>
+                }
 
                 <ul class="rad-liste border-top">
                     @for (var i = 0; i < Model.Maltider.Length; i++)
                     {
                         <li>
                             <span class="flex-grow-1">Måltid @(i + 1)</span>
-                            <span class="hoyre"><strong>@Model.Maltider[i] g</strong></span>
+                            <span class="hoyre">
+                                <strong>@Forplanformat.Gramtekst(Model.Maltider[i])</strong>
+                            </span>
                         </li>
                     }
                     <li>
                         <span class="flex-grow-1 text-body-secondary">Sum</span>
-                        <span class="hoyre">@Model.Maltider.Sum() g</span>
+                        <span class="hoyre">@Forplanformat.Gramtekst(Model.Maltider.Sum())</span>
                     </li>
                 </ul>
+
+                <div class="kort-kropp">
+                    <p class="form-text mt-0 mb-0">
+                        @* Forklarer hvorfor maltidene kan ha ulikt antall gram.
+                           Uten dette ser [134, 134, 133] ut som en feil. *@
+                        Dagsmengden er delt på @Model.Maltider.Length
+                        @(Model.Maltider.Length == 1 ? "måltid" : "måltider").
+                        Går den ikke opp, legges grammene som blir til overs på
+                        de første måltidene, slik at summen blir nøyaktig
+                        dagsmengden.
+                    </p>
+                </div>
+
+                @if (Model.Aktiv is { } om
+                     && (om.Fornavn is not null || om.Notat is not null))
+                {
+                    @* Fornavn og notat ble lagret, men sto ingen steder pa
+                       siden der planen leses. *@
+                    <ul class="rad-liste border-top">
+                        @if (om.Fornavn is { } fornavn)
+                        {
+                            <li>
+                                <span class="flex-grow-1 text-body-secondary">Fôr</span>
+                                <span class="hoyre">@fornavn</span>
+                            </li>
+                        }
+                        @if (om.Notat is { } notat)
+                        {
+                            <li>
+                                <span class="flex-grow-1 text-body-secondary">Notat</span>
+                                <span class="hoyre">@notat</span>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (Model.Aktiv is { } lagt)
+                {
+                    <div class="kort-kropp border-top">
+                        <p class="form-text mt-0 mb-0">
+                            Planen ble lagt inn @($"{lagt.OpprettetDato:d. MMM yyyy}").
+                        </p>
+                    </div>
+                }
             }
         </section>
 
