@@ -3,6 +3,7 @@ using System;
 using Dyrepermen.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Dyrepermen.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(DyrepermenDbContext))]
-    partial class DyrepermenDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906070220_LeggTilOvergangsforplan")]
+    partial class LeggTilOvergangsforplan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -429,19 +432,15 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("dyr_id");
 
-                    b.Property<DateOnly?>("EndretDato")
-                        .HasColumnType("date")
-                        .HasColumnName("endret_dato");
-
                     b.Property<string>("Fornavn")
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
                         .HasColumnName("fornavn");
 
-                    b.Property<string>("FornavnAlder")
+                    b.Property<string>("FornavnTorr")
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
-                        .HasColumnName("fornavn_alder");
+                        .HasColumnName("fornavn_torr");
 
                     b.Property<int?>("GramPerDag")
                         .HasColumnType("integer")
@@ -466,9 +465,9 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("prosent_tidels");
 
-                    b.Property<int?>("VektdelAndelProsent")
+                    b.Property<int?>("RaforAndelProsent")
                         .HasColumnType("integer")
-                        .HasColumnName("vektdel_andel_prosent");
+                        .HasColumnName("rafor_andel_prosent");
 
                     b.Property<uint>("Xmin")
                         .IsConcurrencyToken()
@@ -488,9 +487,9 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_forplan_maltider", "antall_maltider BETWEEN 1 AND 6");
 
-                            t.HasCheckConstraint("ck_forplan_metode", "metode IN ('P','G','T')");
+                            t.HasCheckConstraint("ck_forplan_metode", "metode IN ('P','G','B')");
 
-                            t.HasCheckConstraint("ck_forplan_verdi", "   (metode = 'P' AND prosent_tidels IS NOT NULL\n                 AND prosent_tidels BETWEEN 1 AND 300\n                 AND gram_per_dag IS NULL\n                 AND vektdel_andel_prosent IS NULL)\nOR (metode = 'G' AND gram_per_dag IS NOT NULL\n                 AND gram_per_dag > 0\n                 AND prosent_tidels IS NULL\n                 AND vektdel_andel_prosent IS NULL)\nOR (metode = 'T' AND gram_per_dag IS NULL\n                 AND vektdel_andel_prosent IS NOT NULL\n                 AND vektdel_andel_prosent BETWEEN 0 AND 100\n                 AND ((vektdel_andel_prosent = 0\n                       AND prosent_tidels IS NULL)\n                   OR (vektdel_andel_prosent > 0\n                       AND prosent_tidels IS NOT NULL\n                       AND prosent_tidels BETWEEN 1 AND 300)))");
+                            t.HasCheckConstraint("ck_forplan_verdi", "   (metode = 'P' AND prosent_tidels IS NOT NULL\n                 AND prosent_tidels BETWEEN 1 AND 300\n                 AND gram_per_dag IS NULL\n                 AND rafor_andel_prosent IS NULL)\nOR (metode = 'G' AND gram_per_dag IS NOT NULL\n                 AND gram_per_dag > 0\n                 AND prosent_tidels IS NULL\n                 AND rafor_andel_prosent IS NULL)\nOR (metode = 'B' AND prosent_tidels IS NOT NULL\n                 AND prosent_tidels BETWEEN 1 AND 300\n                 AND gram_per_dag IS NULL\n                 AND rafor_andel_prosent IS NOT NULL\n                 AND rafor_andel_prosent BETWEEN 0 AND 100)");
                         });
                 });
 

@@ -18,7 +18,37 @@ public interface IForplanService
     /// transaksjon. ux_forplan_aktiv tillater kun en aktiv plan per dyr.
     /// False betyr at dyret ikke finnes i denne husstanden.
     /// </summary>
-    Task<bool> Opprett(NyForplan input, CancellationToken ct);
+    Task<bool> Opprett(Forplaninnhold input, CancellationToken ct);
+
+    /// <summary>
+    /// Endrer den aktive planen i stedet for a erstatte den.
+    ///
+    /// En liten justering - to maltider i stedet for tre, eller andelen
+    /// rafor flyttet fra 70 til 60 - er ikke en ny plan, og skal ikke fylle
+    /// historikken med en rad per uke. Se ADR 0013.
+    ///
+    /// Torrfortabellen erstattes i sin helhet. False betyr at dyret ikke
+    /// finnes i denne husstanden, eller at det ikke har en aktiv plan a
+    /// endre.
+    /// </summary>
+    Task<bool> Oppdater(Forplaninnhold input, CancellationToken ct);
 
     Task<bool> Deaktiver(int dyrId, CancellationToken ct);
+
+    /// <summary>
+    /// Fornavnene husstanden har brukt for, nyeste forst.
+    ///
+    /// "VOM Puppy" skal skrives inn en gang, ikke en gang per dyr og en gang
+    /// per plan. Historikken er allerede der - den er den eneste kilden som
+    /// vet hva denne husstanden faktisk forer med.
+    ///
+    /// Bade tidligere planer og foringsloggen. Loggen er der navnet oftest
+    /// skrives forste gang, og et forslag som kjenner halve historikken er
+    /// halvveis nyttig.
+    ///
+    /// Rafornavn og torrfornavn kommer i samme liste. To lister ville betydd
+    /// at et for skrevet inn pa feil felt aldri dukket opp igjen, og et
+    /// forslag er uansett bare et forslag.
+    /// </summary>
+    Task<IReadOnlyList<string>> HentFornavn(CancellationToken ct);
 }

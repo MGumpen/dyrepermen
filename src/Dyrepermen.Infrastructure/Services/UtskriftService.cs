@@ -1,6 +1,7 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Domain.Enums;
 using Dyrepermen.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -107,9 +108,41 @@ public sealed class UtskriftService : IUtskriftService
                 f.DyrId,
                 Rad = new ForplanRad(
                     f.Id, f.Metode, f.ProsentTidels, f.GramPerDag,
-                    f.AntallMaltider, f.Fornavn, f.Notat, f.OpprettetDato)
+                    f.AntallMaltider, f.Fornavn, f.Notat, f.OpprettetDato,
+                    f.EndretDato,
+                    // Uttrykkstre - ingen valgfrie parametere.
+                    f.VektdelAndelProsent, f.FornavnAlder, null)
             })
             .ToListAsync(ct);
+
+        // Sporring 5b. Torrfortabellene, kun nar en blandingsplan finnes.
+        // Utskriften skal kunne tas med til hundepasseren, og da ma tabellen
+        // sta der - ikke bare dagens tall.
+        if (forplaner.Any(f => f.Rad.Metode == Formetode.Tabell))
+        {
+            var trinn = (await _db.Forplantrinn
+                .Where(t => t.Forplan.Aktiv)
+                .OrderBy(t => t.AlderMnd)
+                .Select(t => new { t.ForplanId, t.AlderMnd, t.GramPerDag })
+                .ToListAsync(ct))
+                .GroupBy(t => t.ForplanId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (IReadOnlyList<Alderstrinn>)g
+                        .Select(t => new Alderstrinn(t.AlderMnd, t.GramPerDag))
+                        .ToList());
+
+            forplaner = forplaner
+                .Select(f => new
+                {
+                    f.DyrId,
+                    Rad = f.Rad with
+                    {
+                        Tabelltrinn = trinn.GetValueOrDefault(f.Rad.Id, [])
+                    }
+                })
+                .ToList();
+        }
 
         // Sporring 6. Forsikringer.
         var forsikringer = (await _db.Forsikring

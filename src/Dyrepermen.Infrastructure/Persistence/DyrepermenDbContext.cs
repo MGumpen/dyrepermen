@@ -35,6 +35,7 @@ public sealed class DyrepermenDbContext
     public DbSet<Medisin> Medisin => Set<Medisin>();
     public DbSet<Dose> Dose => Set<Dose>();
     public DbSet<Forplan> Forplan => Set<Forplan>();
+    public DbSet<Forplantrinn> Forplantrinn => Set<Forplantrinn>();
     public DbSet<Foring> Foring => Set<Foring>();
     public DbSet<Vetbesok> Vetbesok => Set<Vetbesok>();
     public DbSet<Veterinar> Veterinar => Set<Veterinar>();
@@ -93,6 +94,11 @@ public sealed class DyrepermenDbContext
 
         b.Entity<Forplan>()
          .HasQueryFilter(f => f.Dyr.HusstandId == _husstand.HusstandId);
+
+        // To ledd ut til husstanden, som Dose. Torrfortabellen horer til
+        // planen, planen til dyret.
+        b.Entity<Forplantrinn>()
+         .HasQueryFilter(t => t.Forplan.Dyr.HusstandId == _husstand.HusstandId);
 
         b.Entity<Foring>()
          .HasQueryFilter(f => f.Dyr.HusstandId == _husstand.HusstandId);

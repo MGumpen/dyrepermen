@@ -84,6 +84,52 @@ public sealed class IsolasjonsTester
     }
 
     [Fact]
+    public async Task Husstand_ser_ikke_annen_husstands_forplantrinn()
+    {
+        // Torrfortabellen filtreres gjennom to ledd - t.Forplan.Dyr.HusstandId
+        // - og den varianten ma testes for seg. Foringsmengden til et fremmed
+        // dyr er ikke noe naboen skal kunne lese.
+        var a = await _fixture.OpprettHusstand("Hjemme");
+        var b = await _fixture.OpprettHusstand("Naboen");
+
+        await using (var ctxA = _fixture.LagContext(a))
+        {
+            var dyr = new Dyr
+            {
+                HusstandId = a,
+                Navn = "Luna",
+                Art = Art.Hund,
+                Kjonn = Kjonn.Tispe,
+                Fodselsdato = new DateOnly(2026, 5, 1)
+            };
+
+            var plan = new Forplan
+            {
+                Metode = Formetode.Tabell,
+                ProsentTidels = 50,
+                VektdelAndelProsent = 70,
+                AntallMaltider = 2
+            };
+
+            plan.Tabelltrinn.Add(new Forplantrinn { AlderMnd = 3, GramPerDag = 160 });
+            plan.Tabelltrinn.Add(new Forplantrinn { AlderMnd = 4, GramPerDag = 180 });
+            dyr.Forplaner.Add(plan);
+
+            ctxA.Dyr.Add(dyr);
+            await ctxA.SaveChangesAsync();
+        }
+
+        await using (var ctxB = _fixture.LagContext(b))
+        {
+            Assert.Empty(await ctxB.Forplantrinn.ToListAsync());
+            Assert.Empty(await ctxB.Forplan.ToListAsync());
+        }
+
+        await using var ctxAIgjen = _fixture.LagContext(a);
+        Assert.Equal(2, await ctxAIgjen.Forplantrinn.CountAsync());
+    }
+
+    [Fact]
     public async Task Uautentisert_kontekst_ser_ingenting()
     {
         // HusstandId 0 betyr "ikke satt". Fail closed - se ADR 0001.

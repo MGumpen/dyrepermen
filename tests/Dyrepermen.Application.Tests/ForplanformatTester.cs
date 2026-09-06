@@ -1,3 +1,4 @@
+using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Extensions;
 using Dyrepermen.Domain.Enums;
 
@@ -53,9 +54,26 @@ public class ForplanformatTester
             "8,20 kg × 5 % = 410 g",
             Normaliser(Forplanformat.Utregning(8200, 50, 410)));
 
+    /// <summary>
+    /// Sammendraget regner ikke lenger selv - det formaterer resultatet fra
+    /// <see cref="Forberegning"/>. Testene gar derfor gjennom begge, sa de
+    /// fanger opp om de to skulle komme i utakt.
+    /// </summary>
+    private static string? Sammendrag(
+        Forplanregel? regel,
+        int? vektGram,
+        DateOnly? fodselsdato = null)
+        => Forplanformat.Sammendrag(
+            regel,
+            Forberegning.Beregn(regel, new Beregningsgrunnlag(
+                vektGram,
+                vektGram is null ? null : new DateOnly(2026, 8, 1),
+                fodselsdato,
+                new DateOnly(2026, 9, 6))));
+
     [Fact]
     public void Uten_plan_er_sammendraget_null()
-        => Assert.Null(Forplanformat.Sammendrag(null, null, null, null, 8200));
+        => Assert.Null(Sammendrag(null, 8200));
 
     /// <summary>
     /// IKKE "0 g/dag". Et tall uten vektgrunnlag har ingen dekning, og da er
@@ -64,20 +82,22 @@ public class ForplanformatTester
     [Fact]
     public void Prosentplan_uten_vekt_sier_fra_i_stedet_for_a_vise_null()
         => Assert.Equal(
-            "Prosentplan – mangler vektregistrering",
-            Forplanformat.Sammendrag(Formetode.Prosent, 50, null, 2, null));
+            "Mangler vektregistrering",
+            Sammendrag(new Forplanregel(Formetode.Prosent, 50, null, 2), null));
 
     [Fact]
     public void Sammendraget_tar_med_regelen_i_parentes()
         => Assert.Equal(
             "410 g/dag fordelt på 2 måltider (5 % av kroppsvekten)",
-            Normaliser(Forplanformat.Sammendrag(Formetode.Prosent, 50, null, 2, 8200)!));
+            Normaliser(Sammendrag(
+                new Forplanregel(Formetode.Prosent, 50, null, 2), 8200)!));
 
     [Fact]
     public void Sammendraget_for_fast_mengde_nevner_ikke_vekt()
         => Assert.Equal(
             "400 g/dag fordelt på 3 måltider",
-            Normaliser(Forplanformat.Sammendrag(Formetode.Gram, null, 400, 3, 8200)!));
+            Normaliser(Sammendrag(
+                new Forplanregel(Formetode.Gram, null, 400, 3), 8200)!));
 
     /// <summary>
     /// Avrunding bort fra null, samme som ForplanService. 8205 g x 5,0 %
@@ -87,5 +107,64 @@ public class ForplanformatTester
     public void Halve_gram_rundes_opp_slik_ForplanService_gjor()
         => Assert.Equal(
             "411 g/dag fordelt på 2 måltider (5 % av kroppsvekten)",
-            Normaliser(Forplanformat.Sammendrag(Formetode.Prosent, 50, null, 2, 8210)!));
+            Normaliser(Sammendrag(
+                new Forplanregel(Formetode.Prosent, 50, null, 2), 8210)!));
+
+    /// <summary>
+    /// Summen alene sier ingenting om hva som skal veies opp. Begge delene
+    /// ma sta i sammendraget ogsa der det bare er plass til en linje -
+    /// ellers ma brukeren apne planen for a se delingen.
+    /// </summary>
+    [Fact]
+    public void Blandet_plan_viser_begge_delene()
+    {
+        var regel = new Forplanregel(
+            Formetode.Tabell, 50, null, 2,
+            VektdelAndelProsent: 70,
+            Tabelltrinn: [new Alderstrinn(4, 180)]);
+
+        // 8,20 kg x 5 % = 410 g rafor, 70 % av det er 287 g.
+        // Tabellen gir 180 g torrfor, 30 % av det er 54 g. Sum 341 g.
+        Assert.Equal(
+            "341 g/dag fordelt på 2 måltider (287 g etter vekt + 54 g etter alder)",
+            Normaliser(Sammendrag(regel, 8200, new DateOnly(2026, 5, 1))!));
+    }
+
+    [Fact]
+    public void Tabellplan_uten_fodselsdato_sier_fra()
+    {
+        var regel = new Forplanregel(
+            Formetode.Tabell, 50, null, 2, 70, [new Alderstrinn(4, 180)]);
+
+        Assert.Equal("Mangler fødselsdato", Sammendrag(regel, 8200));
+    }
+
+    /// <summary>
+    /// En ren tabellplan har ingen prosentsats og ingen andel a nevne. Da
+    /// skal sammendraget si det den gjor - folge alderen - og ikke lire av
+    /// seg en blanding som ikke finnes.
+    /// </summary>
+    [Fact]
+    public void Ren_tabellplan_sier_bare_at_den_folger_alderen()
+    {
+        var regel = new Forplanregel(
+            Formetode.Tabell, null, null, 2, 0, [new Alderstrinn(4, 180)]);
+
+        Assert.Equal(
+            "180 g/dag fordelt på 2 måltider (etter alder)",
+            Normaliser(Sammendrag(regel, null, new DateOnly(2026, 5, 1))!));
+    }
+
+    /// <summary>
+    /// Regelen skal kunne leses av noen som ikke har lest noe annet i appen,
+    /// og den sier hvordan mengden MALES - ikke hva foret er. En overgang
+    /// kan ga begge veier, og mellom hva som helst.
+    /// </summary>
+    [Theory]
+    [InlineData(0, "Tabellen på fôrposen, etter alder")]
+    [InlineData(70, "70 % etter vekt og 30 % etter alder")]
+    [InlineData(100, "5 % av kroppsvekten")]
+    public void Tabellregelen_sier_hva_planen_gjor(int andel, string forventet)
+        => Assert.Equal(
+            forventet, Forplanformat.Regel(Formetode.Tabell, 50, null, andel));
 }

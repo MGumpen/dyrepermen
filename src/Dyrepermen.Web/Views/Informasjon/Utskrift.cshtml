@@ -61,12 +61,29 @@
                         @* Samme regeltekst som pa forplansiden. Sto den to
                            steder, ville utskriften og skjermen sagt hver sitt. *@
                         @Forplanformat.Regel(
-                            plan.Metode, plan.ProsentTidels, plan.GramPerDag)
+                            plan.Metode, plan.ProsentTidels, plan.GramPerDag,
+                            plan.VektdelAndelProsent)
                         @($" · fordelt på {plan.AntallMaltider} måltider")
                     </dd>
+                    @if (plan.Trinn.Count > 0)
+                    {
+                        @* Hele torrfortabellen, ikke bare dagens tall.
+                           Utskriften skal kunne ligge hos hundepasseren i en
+                           uke uten a bli feil. *@
+                        <dt>Mengde etter alder</dt>
+                        <dd>
+                            @string.Join(" · ", plan.Trinn.Select(t =>
+                                $"{t.AlderMnd} mnd: {t.GramPerDag} g"))
+                        </dd>
+                    }
                     @if (plan.Fornavn is { } fornavn)
                     {
-                        <dt>Fôr</dt><dd>@fornavn</dd>
+                        <dt>@(plan.Metode == Formetode.Tabell ? "Etter vekt" : "Fôr")</dt>
+                        <dd>@fornavn</dd>
+                    }
+                    @if (plan.FornavnAlder is { } aldersnavn)
+                    {
+                        <dt>Etter alder</dt><dd>@aldersnavn</dd>
                     }
                     @if (plan.Notat is { } notat)
                     {

@@ -122,11 +122,17 @@ public sealed class KontoService : IKontoService
                             Metode = f.Metode.ToString(),
                             f.ProsentTidels,
                             f.GramPerDag,
+                            f.VektdelAndelProsent,
                             f.AntallMaltider,
                             f.Fornavn,
+                            f.FornavnAlder,
                             f.Notat,
                             f.Aktiv,
-                            f.OpprettetDato
+                            f.OpprettetDato,
+                            f.EndretDato,
+                            torrtrinn = f.Tabelltrinn
+                                .OrderBy(t => t.AlderMnd)
+                                .Select(t => new { t.AlderMnd, t.GramPerDag })
                         })
                 })
                 .ToListAsync(ct)

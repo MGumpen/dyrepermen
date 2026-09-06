@@ -50,7 +50,7 @@ public sealed class ForplanOgMedisinTester
         await db.SaveChangesAsync();
 
         var tjeneste = new ForplanService(db);
-        await tjeneste.Opprett(new NyForplan(
+        await tjeneste.Opprett(new Forplaninnhold(
             dyrId, Formetode.Prosent, 50, null, 2, "Råfôr", null), default);
 
         var r = await tjeneste.BeregnAktiv(dyrId, default);
@@ -72,7 +72,7 @@ public sealed class ForplanOgMedisinTester
         var dyrId = await NyttDyr(db, h);
 
         var tjeneste = new ForplanService(db);
-        await tjeneste.Opprett(new NyForplan(
+        await tjeneste.Opprett(new Forplaninnhold(
             dyrId, Formetode.Prosent, 50, null, 2, null, null), default);
 
         var r = await tjeneste.BeregnAktiv(dyrId, default);
@@ -92,7 +92,7 @@ public sealed class ForplanOgMedisinTester
         var dyrId = await NyttDyr(db, h);
 
         var tjeneste = new ForplanService(db);
-        await tjeneste.Opprett(new NyForplan(
+        await tjeneste.Opprett(new Forplaninnhold(
             dyrId, Formetode.Prosent, 50, null, 2, null, null), default);
 
         db.Vekt.Add(new Vekt { DyrId = dyrId, VektGram = 10000, Dato = new DateOnly(2026, 7, 1) });
@@ -112,9 +112,9 @@ public sealed class ForplanOgMedisinTester
         var dyrId = await NyttDyr(db, h);
 
         var tjeneste = new ForplanService(db);
-        await tjeneste.Opprett(new NyForplan(
+        await tjeneste.Opprett(new Forplaninnhold(
             dyrId, Formetode.Gram, null, 400, 2, null, null), default);
-        await tjeneste.Opprett(new NyForplan(
+        await tjeneste.Opprett(new Forplaninnhold(
             dyrId, Formetode.Gram, null, 500, 3, null, null), default);
 
         var aktiv = await tjeneste.HentAktiv(dyrId, default);
@@ -215,6 +215,6 @@ public sealed class ForplanOgMedisinTester
                 DateOnly.FromDateTime(DateTime.UtcNow), null), default));
 
         Assert.False(await new ForplanService(fremmed).Opprett(
-            new NyForplan(dyrId, Formetode.Gram, null, 400, 2, null, null), default));
+            new Forplaninnhold(dyrId, Formetode.Gram, null, 400, 2, null, null), default));
     }
 }
