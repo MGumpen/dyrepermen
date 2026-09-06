@@ -23,7 +23,7 @@ public sealed class BehandlingService : IBehandlingService
                 b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat))
             .ToListAsync(ct);
 
-    public async Task<bool> Registrer(NyBehandling input, CancellationToken ct)
+    public async Task<bool> Registrer(Behandlingsinnhold input, CancellationToken ct)
     {
         if (!await _db.Dyr.AnyAsync(d => d.Id == input.DyrId, ct))
         {
@@ -39,6 +39,31 @@ public sealed class BehandlingService : IBehandlingService
             NesteDato = input.NesteDato,
             Notat = input.Notat.TomTilNull()
         });
+
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> Oppdater(
+        int behandlingId, Behandlingsinnhold input, CancellationToken ct)
+    {
+        // Query-filteret er autorisasjonen: en behandling pa et dyr i en
+        // annen husstand finnes ikke herfra. DyrId star i tillegg, sa en
+        // id fra et annet dyr i EGEN husstand heller ikke treffer.
+        var rad = await _db.Behandling
+            .SingleOrDefaultAsync(
+                b => b.Id == behandlingId && b.DyrId == input.DyrId, ct);
+
+        if (rad is null)
+        {
+            return false;
+        }
+
+        rad.Type = input.Type;
+        rad.Preparat = input.Preparat.TomTilNull();
+        rad.Dato = input.Dato;
+        rad.NesteDato = input.NesteDato;
+        rad.Notat = input.Notat.TomTilNull();
 
         await _db.SaveChangesAsync(ct);
         return true;

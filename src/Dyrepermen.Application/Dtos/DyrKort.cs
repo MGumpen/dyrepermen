@@ -48,6 +48,13 @@ public sealed record DyrKort(
     string? Fornavn,
 
     /// <summary>
+    /// Oppdelingen av porsjonen ved en overgangsplan, ellers null.
+    /// Blandingsforholdet er hele poenget med metoden, og et kort som bare
+    /// viser summen tvinger brukeren til a regne det ut pa nytt hver gang.
+    /// </summary>
+    Porsjonsdeling? Deling,
+
+    /// <summary>
     /// Godbiter siden midnatt. Talt for seg - en godbit er ikke et maltid,
     /// og skal aldri fa telleren til a si at middagen er gitt.
     /// </summary>

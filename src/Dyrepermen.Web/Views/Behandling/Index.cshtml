@@ -39,7 +39,10 @@
                 <ul class="rad-liste">
                     @foreach (var rad in Model.Historikk)
                     {
-                        <li>
+                        var redigeres = Model.RedigerId == rad.Id;
+
+                        <li class="@(redigeres ? "redigeres" : null)"
+                            aria-current="@(redigeres ? "true" : null)">
                             <span class="flex-grow-1 min-w-0">
                                 <span class="tittel">
                                     @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat)
@@ -61,13 +64,29 @@
                                     }
                                     <span class="d-block">neste @($"{neste:d. MMM yyyy}")</span>
                                 }
-                                <form method="post" asp-action="Slett"
-                                      asp-route-dyrId="@Model.DyrId"
-                                      asp-route-behandlingId="@rad.Id"
-                                      onsubmit="return confirm('Slette denne behandlingen?');">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn-lenke-fare">Slett</button>
-                                </form>
+                                <span class="radhandlinger">
+                                    @* Lenke, ikke knapp: endringen skjer i
+                                       skjemaet ved siden av, og historikken
+                                       skal sta synlig mens man retter.
+                                       Fragmentet tar deg til skjemaet pa en
+                                       skjerm der kolonnene ligger under
+                                       hverandre. *@
+                                    @if (!redigeres)
+                                    {
+                                        <a class="btn-lenke"
+                                           asp-action="Index"
+                                           asp-route-dyrId="@Model.DyrId"
+                                           asp-route-rediger="@rad.Id"
+                                           asp-fragment="skjema">Rediger</a>
+                                    }
+                                    <form method="post" asp-action="Slett"
+                                          asp-route-dyrId="@Model.DyrId"
+                                          asp-route-behandlingId="@rad.Id"
+                                          onsubmit="return confirm('Slette denne behandlingen?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-lenke-fare">Slett</button>
+                                    </form>
+                                </span>
                             </span>
                         </li>
                     }
@@ -77,13 +96,29 @@
     </div>
 
     <div class="kolonne">
-        <section class="kort">
+        <section class="kort" id="skjema">
             <div class="kort-hode">
-                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
-                <h2>Registrer behandling</h2>
+                <svg class="ikon ikon-lg" aria-hidden="true">
+                    <use href="@(Model.RedigerId is null ? "#i-pluss" : "#i-behandling")" />
+                </svg>
+                <h2>
+                    @(Model.RedigerId is null
+                        ? "Registrer behandling" : "Endre behandling")
+                </h2>
             </div>
             <div class="kort-kropp">
-                <form method="post" asp-action="Ny" asp-route-dyrId="@Model.DyrId">
+                @if (Model.RedigerId is not null)
+                {
+                    <p class="form-text mt-0">
+                        Du retter en behandling som allerede står i
+                        historikken. «Neste gang» kan flyttes uten at
+                        behandlingen må registreres på nytt.
+                    </p>
+                }
+
+                <form method="post" asp-route-dyrId="@Model.DyrId"
+                      asp-action="@(Model.RedigerId is null ? "Ny" : "Rediger")"
+                      asp-route-behandlingId="@Model.RedigerId">
                     @Html.AntiForgeryToken()
 
                     <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
@@ -124,7 +159,18 @@
                         <span asp-validation-for="Ny.Notat" class="text-danger small"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            @(Model.RedigerId is null ? "Lagre" : "Lagre endringer")
+                        </button>
+                        @if (Model.RedigerId is not null)
+                        {
+                            <a class="btn btn-outline-secondary btn-sm"
+                               asp-action="Index" asp-route-dyrId="@Model.DyrId">
+                                Avbryt
+                            </a>
+                        }
+                    </div>
                 </form>
             </div>
         </section>

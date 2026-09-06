@@ -1,4 +1,5 @@
 using System.Globalization;
+using Dyrepermen.Application.Dtos;
 using Dyrepermen.Domain.Enums;
 
 namespace Dyrepermen.Application.Extensions;
@@ -35,13 +36,51 @@ public static class Forplanformat
         => string.Create(Norsk, $"{gram:#,##0} g");
 
     /// <summary>
-    /// Regelen alene, uten resultatet: "5 % av kroppsvekten" eller
-    /// "400 g per dag". Dette er svaret pa "hvor kommer tallet fra".
+    /// Regelen i en kort setning, uten resultatet. Dette er svaret pa "hvor
+    /// kommer tallet fra", og det skal kunne leses av noen som ikke har lest
+    /// noe annet i appen.
     /// </summary>
-    public static string Regel(Formetode metode, int? prosentTidels, int? gramPerDag)
-        => metode == Formetode.Prosent
-            ? $"{Prosenttekst(prosentTidels ?? 0)} av kroppsvekten"
-            : $"{Gramtekst(gramPerDag ?? 0)} per dag";
+    public static string Regel(
+        Formetode metode,
+        int? prosentTidels,
+        int? gramPerDag,
+        int? vektdelAndelProsent = null)
+        => metode switch
+        {
+            Formetode.Prosent
+                => $"{Prosenttekst(prosentTidels ?? 0)} av kroppsvekten",
+
+            Formetode.Gram
+                => $"{Gramtekst(gramPerDag ?? 0)} per dag",
+
+            _ => Tabellregel(prosentTidels ?? 0, vektdelAndelProsent ?? 0)
+        };
+
+    /// <summary>
+    /// Tabellmetoden i tre varianter: ren tabell, rent vektmalt for, og
+    /// blandingen mellom dem. Andelen 0 og 100 er ikke spesialtilfeller a
+    /// beklage - de er de to endepunktene i en forovergang.
+    ///
+    /// Teksten sier hvordan mengden MALES, ikke hva foret er. En overgang
+    /// kan ga begge veier, og mellom hva som helst.
+    /// </summary>
+    public static string Tabellregel(int prosentTidels, int vektdelAndelProsent)
+        => vektdelAndelProsent switch
+        {
+            0 => "Tabellen på fôrposen, etter alder",
+
+            100 => $"{Prosenttekst(prosentTidels)} av kroppsvekten",
+
+            _ => $"{vektdelAndelProsent} % etter vekt og "
+               + $"{100 - vektdelAndelProsent} % etter alder"
+        };
+
+    /// <summary>
+    /// Ett ledd i blandingen med hele regnestykket synlig:
+    /// "410 g x 70 % = 287 g". Brukeren skal kunne regne etter selv.
+    /// </summary>
+    public static string Delutregning(int fullGram, int andelProsent, int gram)
+        => $"{Gramtekst(fullGram)} × {andelProsent} % = {Gramtekst(gram)}";
 
     /// <summary>
     /// Regnestykket bak en prosentplan, med begge leddene synlige:
@@ -54,40 +93,53 @@ public static class Forplanformat
 
     /// <summary>
     /// Kompakt sammendrag til kort og lister, der det er plass til en linje:
-    /// "410 g/dag fordelt på 2 måltider (5 % av kroppsvekten)".
+    /// "410 g/dag fordelt pa 2 maltider (5 % av kroppsvekten)".
     ///
-    /// Null nar dyret ikke har plan. Uten vektgrunnlag sier den fra i stedet
-    /// for a vise et tall uten dekning - samme regel som ForplanService.
+    /// Regner ingenting selv. Tidligere gjorde den det, med sin egen kopi av
+    /// prosentregelen - og da kunne dyrekortet vise et annet tall enn
+    /// forplansiden uten at noe sa fra. Na kommer tallet fra
+    /// <see cref="Forberegning"/>, og denne klassen setter bare ord pa det.
+    ///
+    /// Null nar dyret ikke har plan. Uten grunnlag sier den fra i stedet for
+    /// a vise et tall uten dekning.
     /// </summary>
-    public static string? Sammendrag(
-        Formetode? metode,
-        int? prosentTidels,
-        int? gramPerDag,
-        int? antallMaltider,
-        int? sisteVektGram)
+    public static string? Sammendrag(Forplanregel? regel, ForplanResultat resultat)
     {
-        if (metode is null)
+        if (regel is null || !resultat.HarPlan)
         {
             return null;
         }
 
-        var maltider = antallMaltider ?? 2;
-
-        if (metode == Formetode.Gram)
+        if (resultat.ManglerVekt)
         {
-            return $"{Gramtekst(gramPerDag ?? 0)}/dag fordelt på {maltider} måltider";
+            return "Mangler vektregistrering";
         }
 
-        if (sisteVektGram is null)
+        if (resultat.ManglerFodselsdato)
         {
-            return "Prosentplan – mangler vektregistrering";
+            return "Mangler fødselsdato";
         }
 
-        var gram = (int)Math.Round(
-            sisteVektGram.Value * (prosentTidels ?? 0) / 1000.0,
-            MidpointRounding.AwayFromZero);
+        var start = $"{Gramtekst(resultat.GramPerDag)}/dag fordelt på "
+                  + $"{resultat.AntallMaltider} måltider";
 
-        return $"{Gramtekst(gram)}/dag fordelt på {maltider} måltider "
-             + $"({Prosenttekst(prosentTidels ?? 0)} av kroppsvekten)";
+        return (regel.Metode, resultat.Fordeling) switch
+        {
+            (Formetode.Gram, _) => start,
+
+            (Formetode.Prosent, _)
+                => $"{start} ({Prosenttekst(regel.ProsentTidels ?? 0)} av kroppsvekten)",
+
+            // Blander planen, ma begge tallene sta - summen alene sier ikke
+            // hvor mye av hver som skal veies opp.
+            (_, { Blander: true } f)
+                => $"{start} ({Gramtekst(f.VektdelGram)} etter vekt + "
+                 + $"{Gramtekst(f.AldersdelGram)} etter alder)",
+
+            (_, { VektdelAndelProsent: 100 })
+                => $"{start} ({Prosenttekst(regel.ProsentTidels ?? 0)} av kroppsvekten)",
+
+            _ => $"{start} (etter alder)"
+        };
     }
 }

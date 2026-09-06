@@ -103,7 +103,8 @@ public sealed class HjemController : Controller
             // ingen planlagt mengde, sa det feltet star tomt.
             type == Foringstype.Godbit ? null : kort.PorsjonGram,
             type == Foringstype.Godbit ? null : kort.Fornavn,
-            await _foring.HentFornavn(type, ct));
+            await _foring.HentFornavn(type, ct),
+            type == Foringstype.Godbit ? null : kort.Deling);
 
         return ErHtmx ? PartialView("_Foringsdialog", vm) : View("Foringsdialog", vm);
     }
@@ -134,7 +135,8 @@ public sealed class HjemController : Controller
 
             return PartialView("_Foringsdialog", new ForingsdialogVm(
                 dyrId, kort.Navn, vm.Type, vm.MengdeGram, vm.Fornavn,
-                await _foring.HentFornavn(vm.Type, ct)));
+                await _foring.HentFornavn(vm.Type, ct),
+                vm.Type == Foringstype.Godbit ? null : kort.Deling));
         }
 
         await _foring.Registrer(

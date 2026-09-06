@@ -111,7 +111,7 @@ public sealed class InformasjonService : IInformasjonService
     public async Task<IReadOnlyList<DyreOversikt>> HentDyreoversikt(
         CancellationToken ct)
     {
-        var idag = DateOnly.FromDateTime(DateTime.UtcNow);
+        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
 
         // Korrelerte undersporringer, ikke Include etterfulgt av filtrering i
         // C#. Hele oversikten kommer i en rundtur uansett antall dyr.
@@ -142,10 +142,12 @@ public sealed class InformasjonService : IInformasjonService
                     .Where(f => f.Aktiv)
                     .Select(f => new
                     {
+                        f.Id,
                         f.Metode,
                         f.ProsentTidels,
                         f.GramPerDag,
-                        f.AntallMaltider
+                        f.AntallMaltider,
+                        f.VektdelAndelProsent
                     })
                     .FirstOrDefault()
             })
@@ -153,19 +155,48 @@ public sealed class InformasjonService : IInformasjonService
 
         var notater = await Hent(ct);
 
-        return dyr.Select(d => new DyreOversikt(
-            d.Id, d.Navn, d.Art, d.Kjonn, d.Rase, d.Fodselsdato,
-            d.ChipNr, d.RegNrNkk, d.Kastrert,
-            d.SisteVekt?.VektGram,
-            d.SisteVekt?.Dato,
-            d.Medisiner,
-            Forplanformat.Sammendrag(
-                d.Forplan?.Metode,
-                d.Forplan?.ProsentTidels,
-                d.Forplan?.GramPerDag,
-                d.Forplan?.AntallMaltider,
-                d.SisteVekt?.VektGram),
-            notater.Where(n => n.DyrId == d.Id).ToList()))
-            .ToList();
+        // Torrfortabellene, og kun nar noen faktisk har en blandingsplan.
+        var trinn = dyr.Any(d => d.Forplan?.Metode == Formetode.Tabell)
+            ? (await _db.Forplantrinn
+                .Where(t => t.Forplan.Aktiv)
+                .OrderBy(t => t.AlderMnd)
+                .Select(t => new { t.ForplanId, t.AlderMnd, t.GramPerDag })
+                .ToListAsync(ct))
+                .GroupBy(t => t.ForplanId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (IReadOnlyList<Alderstrinn>)g
+                        .Select(t => new Alderstrinn(t.AlderMnd, t.GramPerDag))
+                        .ToList())
+            : new Dictionary<int, IReadOnlyList<Alderstrinn>>();
+
+        return dyr.Select(d =>
+        {
+            var regel = d.Forplan is null ? null : new Forplanregel(
+                d.Forplan.Metode,
+                d.Forplan.ProsentTidels,
+                d.Forplan.GramPerDag,
+                d.Forplan.AntallMaltider,
+                d.Forplan.VektdelAndelProsent,
+                trinn.GetValueOrDefault(d.Forplan.Id, []));
+
+            // Regelen regnes ETT sted og settes i ord ETT sted. Denne
+            // tjenesten regnet den for selv, gjennom en Sammendrag-metode
+            // som hadde sin egen kopi av prosentregelen.
+            var mengde = Forberegning.Beregn(regel, new Beregningsgrunnlag(
+                d.SisteVekt?.VektGram,
+                d.SisteVekt?.Dato,
+                d.Fodselsdato,
+                idag));
+
+            return new DyreOversikt(
+                d.Id, d.Navn, d.Art, d.Kjonn, d.Rase, d.Fodselsdato,
+                d.ChipNr, d.RegNrNkk, d.Kastrert,
+                d.SisteVekt?.VektGram,
+                d.SisteVekt?.Dato,
+                d.Medisiner,
+                Forplanformat.Sammendrag(regel, mengde),
+                notater.Where(n => n.DyrId == d.Id).ToList());
+        }).ToList();
     }
 }

@@ -25,7 +25,9 @@ public sealed class DashbordService : IDashbordService
 
     public async Task<Dashbord> Hent(CancellationToken ct)
     {
-        var idag = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Dagens dato i Norge, ikke i UTC. Torrformengden i en blandingsplan
+        // folger alderen i hele uker, og en dags avvik flytter hele ukeskiftet.
+        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
         var grense = idag.AddDays(Varselvindu);
 
         // Midnatt i Norge, ikke i UTC. Ellers nullstilles maltidstelleren
@@ -62,11 +64,14 @@ public sealed class DashbordService : IDashbordService
                     .Where(f => f.Aktiv)
                     .Select(f => new
                     {
+                        f.Id,
                         f.Metode,
                         f.ProsentTidels,
                         f.GramPerDag,
                         f.AntallMaltider,
-                        f.Fornavn
+                        f.VektdelAndelProsent,
+                        f.Fornavn,
+                        f.FornavnAlder
                     })
                     .FirstOrDefault(),
 
@@ -102,15 +107,41 @@ public sealed class DashbordService : IDashbordService
             })
             .ToListAsync(ct);
 
+        // Torrfortabellene til de aktive blandingsplanene. Egen rundtur, og
+        // kun nar noen faktisk har en - en husstand uten forovergang skal
+        // ikke betale for en tabell som ikke finnes.
+        var trinn = raa.Any(d => d.Forplan?.Metode == Formetode.Tabell)
+            ? (await _db.Forplantrinn
+                .Where(t => t.Forplan.Aktiv)
+                .OrderBy(t => t.AlderMnd)
+                .Select(t => new { t.ForplanId, t.AlderMnd, t.GramPerDag })
+                .ToListAsync(ct))
+                .GroupBy(t => t.ForplanId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (IReadOnlyList<Alderstrinn>)g
+                        .Select(t => new Alderstrinn(t.AlderMnd, t.GramPerDag))
+                        .ToList())
+            : new Dictionary<int, IReadOnlyList<Alderstrinn>>();
+
         var dyr = raa.Select(d =>
         {
             // Bryteren styrer visning: er forplan slatt av for dyret, skal
             // den ikke dukke opp pa kortet heller.
-            var mengde = d.ForplanAktiv
-                ? Formengde(
-                    d.Forplan?.Metode, d.Forplan?.ProsentTidels,
-                    d.Forplan?.GramPerDag, d.Forplan?.AntallMaltider,
-                    d.SisteVekt?.VektGram)
+            var regel = d.Forplan is null ? null : new Forplanregel(
+                d.Forplan.Metode,
+                d.Forplan.ProsentTidels,
+                d.Forplan.GramPerDag,
+                d.Forplan.AntallMaltider,
+                d.Forplan.VektdelAndelProsent,
+                trinn.GetValueOrDefault(d.Forplan.Id, []));
+
+            var mengde = d.ForplanAktiv && regel is not null
+                ? Forberegning.Beregn(regel, new Beregningsgrunnlag(
+                    d.SisteVekt?.VektGram,
+                    d.SisteVekt?.Dato,
+                    d.Fodselsdato,
+                    idag))
                 : null;
 
             return new DyrKort(
@@ -133,7 +164,7 @@ public sealed class DashbordService : IDashbordService
                     : null,
                 // Uten vektgrunnlag finnes det ikke noe tall a vise, og da
                 // skal knappen heller ikke tilby en porsjon.
-                mengde is { HarPlan: true, ManglerVekt: false }
+                mengde is { HarPlan: true, ManglerGrunnlag: false }
                     ? mengde.PorsjonGram
                     : null,
                 mengde?.AntallMaltider ?? 0,
@@ -142,6 +173,14 @@ public sealed class DashbordService : IDashbordService
                 // etterslep for et dyr som ikke skal foringsloggfores.
                 d.ForingsloggAktiv ? d.MaltiderIDag : 0,
                 d.Forplan?.Fornavn,
+                // Blandingsforholdet er hele poenget med overgangsplanen.
+                // Uten det viser kortet en sum brukeren ma dele opp selv.
+                mengde is { HarPlan: true, ManglerGrunnlag: false,
+                            Fordeling.Blander: true }
+                    ? new Porsjonsdeling(
+                        mengde.VektdelPorsjonGram, d.Forplan!.Fornavn,
+                        mengde.AldersdelPorsjonGram, d.Forplan.FornavnAlder)
+                    : null,
                 d.ForingsloggAktiv ? d.GodbiterIDag : 0);
         }).ToList();
 
@@ -307,46 +346,11 @@ public sealed class DashbordService : IDashbordService
     private static string TypeTekst(BehandlingType type, string? preparat)
         => Behandlingsformat.MedPreparat(type, preparat);
 
-    /// <summary>
-    /// Samme regel som ForplanService, og med vilje samme returtype: da deler
-    /// de to ogsa <see cref="ForplanResultat.PorsjonGram"/>, sa dashbordet og
-    /// forplansiden aldri kan runde ulikt.
-    ///
-    /// Uten vektgrunnlag sier den fra framfor a vise 0 gram - et tall uten
-    /// dekning er verre enn ingen tall.
-    /// </summary>
-    private static ForplanResultat? Formengde(
-        Formetode? metode, int? prosentTidels, int? gramPerDag,
-        int? antallMaltider, int? sisteVektGram)
-    {
-        if (metode is null)
-        {
-            return null;
-        }
-
-        var maltider = antallMaltider ?? 2;
-
-        if (metode == Formetode.Gram)
-        {
-            return ForplanResultat.Ok(gramPerDag ?? 0, maltider);
-        }
-
-        if (sisteVektGram is null)
-        {
-            return ForplanResultat.ManglerVektgrunnlag();
-        }
-
-        var gram = (int)Math.Round(
-            sisteVektGram.Value * prosentTidels!.Value / 1000.0,
-            MidpointRounding.AwayFromZero);
-
-        return ForplanResultat.Ok(gram, maltider);
-    }
-
     private static string? Forplantekst(ForplanResultat? mengde) => mengde switch
     {
         null => null,
         { ManglerVekt: true } => "Mangler vekt",
+        { ManglerFodselsdato: true } => "Mangler fødselsdato",
         _ => $"{mengde.GramPerDag} g på {mengde.AntallMaltider} måltider"
     };
 }

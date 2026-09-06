@@ -100,17 +100,17 @@ public sealed class VektOgBehandlingTester
         var behandling = new BehandlingService(db);
 
         // Innenfor vinduet på 14 dager.
-        await behandling.Registrer(new NyBehandling(
+        await behandling.Registrer(new Behandlingsinnhold(
             dyrId, BehandlingType.Ormekur, "Milbemax",
             idag.AddDays(-90), idag.AddDays(5), null), default);
 
         // Forfalt.
-        await behandling.Registrer(new NyBehandling(
+        await behandling.Registrer(new Behandlingsinnhold(
             dyrId, BehandlingType.Vaksine, null,
             idag.AddDays(-400), idag.AddDays(-3), null), default);
 
         // Langt fram i tid - skal IKKE vises.
-        await behandling.Registrer(new NyBehandling(
+        await behandling.Registrer(new Behandlingsinnhold(
             dyrId, BehandlingType.Tannrens, null,
             idag, idag.AddDays(200), null), default);
 

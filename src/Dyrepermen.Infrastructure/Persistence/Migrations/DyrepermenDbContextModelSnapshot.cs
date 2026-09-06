@@ -429,10 +429,19 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("dyr_id");
 
+                    b.Property<DateOnly?>("EndretDato")
+                        .HasColumnType("date")
+                        .HasColumnName("endret_dato");
+
                     b.Property<string>("Fornavn")
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
                         .HasColumnName("fornavn");
+
+                    b.Property<string>("FornavnAlder")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("fornavn_alder");
 
                     b.Property<int?>("GramPerDag")
                         .HasColumnType("integer")
@@ -457,6 +466,10 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("prosent_tidels");
 
+                    b.Property<int?>("VektdelAndelProsent")
+                        .HasColumnType("integer")
+                        .HasColumnName("vektdel_andel_prosent");
+
                     b.Property<uint>("Xmin")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -475,9 +488,45 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_forplan_maltider", "antall_maltider BETWEEN 1 AND 6");
 
-                            t.HasCheckConstraint("ck_forplan_metode", "metode IN ('P','G')");
+                            t.HasCheckConstraint("ck_forplan_metode", "metode IN ('P','G','T')");
 
-                            t.HasCheckConstraint("ck_forplan_verdi", "   (metode = 'P' AND prosent_tidels IS NOT NULL\n                 AND prosent_tidels BETWEEN 1 AND 300\n                 AND gram_per_dag IS NULL)\nOR (metode = 'G' AND gram_per_dag IS NOT NULL\n                 AND gram_per_dag > 0\n                 AND prosent_tidels IS NULL)");
+                            t.HasCheckConstraint("ck_forplan_verdi", "   (metode = 'P' AND prosent_tidels IS NOT NULL\n                 AND prosent_tidels BETWEEN 1 AND 300\n                 AND gram_per_dag IS NULL\n                 AND vektdel_andel_prosent IS NULL)\nOR (metode = 'G' AND gram_per_dag IS NOT NULL\n                 AND gram_per_dag > 0\n                 AND prosent_tidels IS NULL\n                 AND vektdel_andel_prosent IS NULL)\nOR (metode = 'T' AND gram_per_dag IS NULL\n                 AND vektdel_andel_prosent IS NOT NULL\n                 AND vektdel_andel_prosent BETWEEN 0 AND 100\n                 AND ((vektdel_andel_prosent = 0\n                       AND prosent_tidels IS NULL)\n                   OR (vektdel_andel_prosent > 0\n                       AND prosent_tidels IS NOT NULL\n                       AND prosent_tidels BETWEEN 1 AND 300)))");
+                        });
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Forplantrinn", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AlderMnd")
+                        .HasColumnType("integer")
+                        .HasColumnName("alder_mnd");
+
+                    b.Property<int>("ForplanId")
+                        .HasColumnType("integer")
+                        .HasColumnName("forplan_id");
+
+                    b.Property<int>("GramPerDag")
+                        .HasColumnType("integer")
+                        .HasColumnName("gram_per_dag");
+
+                    b.HasKey("Id")
+                        .HasName("pk_forplantrinn");
+
+                    b.HasIndex("ForplanId", "AlderMnd")
+                        .IsUnique()
+                        .HasDatabaseName("ux_forplantrinn_alder");
+
+                    b.ToTable("forplantrinn", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_forplantrinn_alder", "alder_mnd BETWEEN 0 AND 240");
+
+                            t.HasCheckConstraint("ck_forplantrinn_gram", "gram_per_dag BETWEEN 1 AND 20000");
                         });
                 });
 
@@ -1376,6 +1425,18 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.Navigation("Dyr");
                 });
 
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Forplantrinn", b =>
+                {
+                    b.HasOne("Dyrepermen.Domain.Entities.Forplan", "Forplan")
+                        .WithMany("Tabelltrinn")
+                        .HasForeignKey("ForplanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_forplantrinn_forplan_forplan_id");
+
+                    b.Navigation("Forplan");
+                });
+
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Forsikring", b =>
                 {
                     b.HasOne("Dyrepermen.Domain.Entities.Dyr", "Dyr")
@@ -1648,6 +1709,11 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.Navigation("Vekter");
 
                     b.Navigation("Vetbesok");
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Forplan", b =>
+                {
+                    b.Navigation("Tabelltrinn");
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Husstand", b =>

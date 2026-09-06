@@ -55,6 +55,17 @@
                        step="1" value="@Model.MengdeGram" />
                 <span class="input-group-text">g</span>
             </div>
+            @if (Model.Deling is { } deling)
+            {
+                @* Her star man med skalen. Totalen alene tvinger fram et
+                   regnestykke midt i matingen. *@
+                <div class="form-text">
+                    Fordeles på @deling.VektdelGram g
+                    @(deling.VektdelNavn ?? "etter vekt") og
+                    @deling.AldersdelGram g
+                    @(deling.AldersdelNavn ?? "etter alder").
+                </div>
+            }
         </div>
 
         <div class="mb-1">

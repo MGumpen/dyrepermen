@@ -93,7 +93,29 @@
                                 </dd>
                             }
                         }
-                        else if (dyr.ForplanTekst is { } plan)
+                        @* Blandingsforholdet, rett under porsjonen. Den som
+                           star ved skalen skal veie opp to ting, og summen
+                           alene sier ikke hvor mye av hver. Uten denne linjen
+                           ma hun regne det ut selv ved hvert maltid. *@
+                        @if (dyr.Deling is { } deling)
+                        {
+                            <dt>Av det</dt>
+                            <dd>
+                                @* Begge tallene er verdier, ikke kontekst.
+                                   Legges det ene i .naar, ser det ut som en
+                                   fotnote - og det er halve maltidet. *@
+                                <span class="deling">
+                                    @deling.VektdelGram g
+                                    <span class="deling-navn">@(deling.VektdelNavn ?? "etter vekt")</span>
+                                </span>
+                                <span class="deling">
+                                    @deling.AldersdelGram g
+                                    <span class="deling-navn">@(deling.AldersdelNavn ?? "etter alder")</span>
+                                </span>
+                            </dd>
+                        }
+
+                        @if (dyr.PorsjonGram is null && dyr.ForplanTekst is { } plan)
                         {
                             @* Prosentplan uten vekt: teksten sier "Mangler
                                vekt". Da finnes det ingen porsjon a vise. *@

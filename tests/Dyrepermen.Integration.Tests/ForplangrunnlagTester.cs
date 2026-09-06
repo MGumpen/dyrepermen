@@ -151,6 +151,8 @@ public sealed class ForplangrunnlagTester : IAsyncLifetime
 
         Assert.Contains("134 g", html);
         Assert.Contains("133 g", html);
-        Assert.Contains("legges grammene som blir til overs", html);
+        // Ordene brytes over to linjer i markupen, sa assertionen ma
+        // holde seg innenfor en av dem.
+        Assert.Contains("grammene som blir til overs", html);
     }
 }

@@ -3,6 +3,7 @@
 @{
     ViewData["Tittel"] = $"Fôrplan – {Model.DyrNavn}";
     var r = Model.Resultat;
+    var erAvansert = Model.Ny.Metode == Formetode.Tabell;
 }
 
 <partial name="_Dyrhode" model='new DyrhodeVm("Fôrplan", Model.DyrId, Model.DyrNavn)' />
@@ -18,26 +19,30 @@
                     @* Metoden er det forste sporsmalet et tall som dette
                        reiser. Den star derfor i hodet, ikke som en fotnote. *@
                     <span class="merkelapp">
-                        @(metode.Metode == Formetode.Prosent
-                            ? "Følger vekten" : "Fast mengde")
+                        @(metode.Metode switch
+                        {
+                            Formetode.Prosent => "Følger vekten",
+                            Formetode.Gram => "Fast mengde",
+                            _ when metode.VektdelAndelProsent is > 0 and < 100
+                                => "Vekt og alder",
+                            _ when metode.VektdelAndelProsent == 100 => "Følger vekten",
+                            _ => "Følger alderen"
+                        })
                     </span>
                 }
             </div>
 
-            @* Fire tilstander, spesifisert i plan kapittel 8.1.
+            @* Fem tilstander, spesifisert i plan kapittel 8.1 og ADR 0012.
                Ingen av dem skal vises som "0 gram". *@
             @if (!r.HarPlan)
             {
-                <div class="tomt">
-                    Ingen fôrplan lagt inn. Legg inn regelen du bruker, så
-                    regner appen ut mengden.
-                </div>
+                <div class="tomt">Ingen fôrplan lagt inn ennå.</div>
             }
             else if (r.ManglerVekt)
             {
                 <div class="kort-kropp">
                     <div class="alert alert-warning py-2 mb-0" role="status">
-                        <strong>Registrer en vekt for å regne ut mengden.</strong>
+                        <strong>Registrer en vekt, så regner vi ut mengden.</strong>
                         <div class="small mt-1">
                             @* Regelen vises selv om tallet ikke lar seg regne
                                ut. Brukeren skal kunne se HVA planen er, ikke
@@ -45,14 +50,34 @@
                             Planen er
                             @(Model.Aktiv is { } uten
                                 ? Forplanformat.Regel(
-                                    uten.Metode, uten.ProsentTidels, uten.GramPerDag)
-                                : "prosentbasert"),
-                            og da trengs det en vektregistrering å regne fra.
+                                    uten.Metode, uten.ProsentTidels, uten.GramPerDag,
+                                    uten.VektdelAndelProsent)
+                                : "prosent av kroppsvekten").
                         </div>
                         <a asp-controller="Vekt" asp-action="Index"
                            asp-route-dyrId="@Model.DyrId"
                            class="btn btn-sm btn-outline-secondary mt-2">
                             Registrer vekt
+                        </a>
+                    </div>
+                </div>
+            }
+            else if (r.ManglerFodselsdato)
+            {
+                @* Mengden slas opp pa alder. Uten fodselsdato finnes det
+                   ingenting a sla opp i, og samme regel gjelder som for
+                   vekten: si fra, ikke vis et tall uten dekning. *@
+                <div class="kort-kropp">
+                    <div class="alert alert-warning py-2 mb-0" role="status">
+                        <strong>Fyll inn fødselsdatoen til @Model.DyrNavn.</strong>
+                        <div class="small mt-1">
+                            Mengden følger alderen, så planen trenger en
+                            fødselsdato å regne fra.
+                        </div>
+                        <a asp-controller="Dyr" asp-action="Rediger"
+                           asp-route-dyrId="@Model.DyrId"
+                           class="btn btn-sm btn-outline-secondary mt-2">
+                            Fyll inn fødselsdato
                         </a>
                     </div>
                 </div>
@@ -66,93 +91,227 @@
                             <span class="etikett">per dag</span>
                         </span>
                     </div>
+                    @if (r.Fordeling is { Blander: true } blandet)
+                    {
+                        @* Summen alene skjuler hele poenget: det er to
+                           fortyper som skal veies opp hver for seg. *@
+                        <p class="mb-0 mt-1 text-body-secondary">
+                            @Forplanformat.Gramtekst(blandet.VektdelGram)
+                            @(Model.Aktiv?.Fornavn ?? "etter vekt") og
+                            @Forplanformat.Gramtekst(blandet.AldersdelGram)
+                            @(Model.Aktiv?.FornavnAlder ?? "etter alder").
+                        </p>
+                    }
                 </div>
+
+                @if (r.Fordeling is { Blander: true } && Model.VektdelMaltider.Length > 0)
+                {
+                    <div class="kort-kropp border-top pt-2">
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Måltid</th>
+                                        @* Navnet pa foret nar det finnes.
+                                           "Etter vekt" er riktig, men det er
+                                           ikke det som star pa posen. *@
+                                        <th scope="col" class="text-end">
+                                            @(Model.Aktiv?.Fornavn ?? "Etter vekt")
+                                        </th>
+                                        <th scope="col" class="text-end">
+                                            @(Model.Aktiv?.FornavnAlder ?? "Etter alder")
+                                        </th>
+                                        <th scope="col" class="text-end">Sum</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < Model.VektdelMaltider.Length; i++)
+                                    {
+                                        <tr>
+                                            <th scope="row" class="fw-normal">@(i + 1)</th>
+                                            <td class="text-end">@Model.VektdelMaltider[i] g</td>
+                                            <td class="text-end">@Model.AldersdelMaltider[i] g</td>
+                                            <td class="text-end">
+                                                <strong>
+                                                    @(Model.VektdelMaltider[i] + Model.AldersdelMaltider[i]) g
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <ul class="rad-liste border-top">
+                        @for (var i = 0; i < Model.Maltider.Length; i++)
+                        {
+                            <li>
+                                <span class="flex-grow-1">Måltid @(i + 1)</span>
+                                <span class="hoyre">
+                                    <strong>@Forplanformat.Gramtekst(Model.Maltider[i])</strong>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
 
                 @if (Model.Aktiv is { } plan)
                 {
-                    @* Grunnlaget for utregningen. Et tall uten synlig grunnlag
-                       er et tall ingen tor stole pa - og den som ikke la inn
-                       planen selv, kan ellers ikke se om mengden folger vekten
-                       eller star stille. *@
                     <div class="kort-kropp border-top">
-                        @if (plan.Metode == Formetode.Prosent)
-                        {
-                            <p class="mb-1">
-                                <strong>
-                                    @Forplanformat.Regel(
-                                        plan.Metode, plan.ProsentTidels, plan.GramPerDag)
-                                </strong>
-                            </p>
+                        @* Én linje om hvor tallet kommer fra, ikke fem.
+                           Regnestykket ligger i detaljene under, for den som
+                           vil etterregne. Grunnlaget er synlig - det trenger
+                           bare ikke fylle kortet. *@
+                        <p class="mb-1">
+                            @Forplanformat.Regel(
+                                plan.Metode, plan.ProsentTidels, plan.GramPerDag,
+                                plan.VektdelAndelProsent).
+                        </p>
 
-                            @if (r.GrunnlagVektGram is { } grunnlag)
+                        <p class="form-text mt-0 mb-0">
+                            @if (r.Fordeling is { } f && f.AldersdelAndelProsent > 0)
                             {
-                                @* Begge leddene star i regnestykket, sa
-                                   brukeren kan regne etter selv. *@
-                                <p class="mb-1 text-body-secondary">
-                                    @Forplanformat.Utregning(
-                                        grunnlag, plan.ProsentTidels ?? 0, r.GramPerDag)
-                                </p>
-                                <p class="form-text mb-0">
-                                    Basert på vekt fra @($"{r.GrunnlagDato:d. MMM yyyy}"),
-                                    oppdateres automatisk ved ny vekt.
-                                </p>
+                                <text>@Model.DyrNavn er @Alderformat.Ukertekst(f.AlderUker).</text>
                             }
-                        }
-                        else
+                            @if (r.GrunnlagVektGram is { } vektgrunnlag)
+                            {
+                                <text>Siste vekt @Vektformat.TilKiloTekst(vektgrunnlag),
+                                @($"{r.GrunnlagDato:d. MMM yyyy}").</text>
+                            }
+                            @if (plan.Metode == Formetode.Gram)
+                            {
+                                <text>Mengden står stille til du endrer den.</text>
+                            }
+                            else
+                            {
+                                <text>Oppdateres av seg selv.</text>
+                            }
+                        </p>
+
+                        @if (r.Fordeling is { AlderUtenforTabellen: true } utenfor)
                         {
-                            <p class="mb-1">
-                                <strong>
-                                    Fast mengde:
-                                    @Forplanformat.Regel(
-                                        plan.Metode, plan.ProsentTidels, plan.GramPerDag)
-                                </strong>
+                            @* Sier fra nar tabellen er brukt opp. Et flatt tall
+                               som ser ut som en beregning er verre enn et tall
+                               med en merknad. *@
+                            <p class="form-text mt-1 mb-0">
+                                <strong>@Model.DyrNavn er utenfor tabellen din.</strong>
+                                Mengden holdes på
+                                @Forplanformat.Gramtekst(utenfor.AldersdelFullGram).
+                                Har fôrposen flere rader, legg dem inn.
                             </p>
-                            <p class="form-text mb-0">
-                                Mengden står stille uansett hva vekten gjør. Skal
-                                den endres, må planen erstattes.
+                        }
+
+                        @if (Model.Maltider.Length > 1 || Model.VektdelMaltider.Length > 1)
+                        {
+                            <p class="form-text mt-1 mb-0">
+                                @* Forklarer hvorfor maltidene kan ha ulikt antall
+                                   gram. Uten dette ser 134 + 134 + 133 ut som en
+                                   regnefeil. *@
+                                Går dagsmengden ikke opp i like måltider, legges
+                                grammene som blir til overs på de første.
                             </p>
                         }
                     </div>
+
+                    <details class="kort-kropp border-top">
+                        <summary class="dp-detaljer">Vis regnestykket</summary>
+
+                        <div class="mt-2">
+                            @if (r.Fordeling is { } d)
+                            {
+                                <dl class="row mb-0 small">
+                                    @if (d.VektdelAndelProsent > 0)
+                                    {
+                                        <dt class="col-sm-3">
+                                            @(plan.Fornavn ?? "Etter vekt")
+                                        </dt>
+                                        <dd class="col-sm-9 text-body-secondary">
+                                            @if (r.GrunnlagVektGram is { } vekt)
+                                            {
+                                                @Forplanformat.Utregning(
+                                                    vekt, plan.ProsentTidels ?? 0, d.VektdelFullGram)
+                                            }
+                                            @if (d.Blander)
+                                            {
+                                                <text>, deretter </text>
+                                                @Forplanformat.Delutregning(
+                                                    d.VektdelFullGram, d.VektdelAndelProsent, d.VektdelGram)
+                                            }
+                                        </dd>
+                                    }
+
+                                    @if (d.AldersdelAndelProsent > 0)
+                                    {
+                                        <dt class="col-sm-3">
+                                            @(plan.FornavnAlder ?? "Etter alder")
+                                        </dt>
+                                        <dd class="col-sm-9 text-body-secondary">
+                                            Tabellen gir @Forplanformat.Gramtekst(d.AldersdelFullGram)
+                                            ved @Alderformat.Ukertekst(d.AlderUker)
+                                            @if (d.Blander)
+                                            {
+                                                <text>, deretter </text>
+                                                @Forplanformat.Delutregning(
+                                                    d.AldersdelFullGram, d.AldersdelAndelProsent, d.AldersdelGram)
+                                            }
+                                        </dd>
+                                    }
+                                </dl>
+                            }
+                            else if (plan.Metode == Formetode.Prosent
+                                     && r.GrunnlagVektGram is { } grunnlag)
+                            {
+                                <p class="small text-body-secondary mb-0">
+                                    @Forplanformat.Utregning(
+                                        grunnlag, plan.ProsentTidels ?? 0, r.GramPerDag)
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="small text-body-secondary mb-0">
+                                    Fast mengde, @Forplanformat.Gramtekst(r.GramPerDag) per dag.
+                                </p>
+                            }
+
+                            @if (plan.Trinn.Count > 0)
+                            {
+                                <p class="small mb-0 mt-2">
+                                    <span class="text-body-secondary">Tabellen din:</span>
+                                    @string.Join(" · ", plan.Trinn.Select(t =>
+                                        $"{t.AlderMnd} mnd {t.GramPerDag} g"))
+                                </p>
+                                <p class="form-text mt-1 mb-0">
+                                    Mellom to rader trappes mengden jevnt opp, og den
+                                    endrer seg én gang i uka.
+                                </p>
+                            }
+                        </div>
+                    </details>
                 }
 
-                <ul class="rad-liste border-top">
-                    @for (var i = 0; i < Model.Maltider.Length; i++)
-                    {
-                        <li>
-                            <span class="flex-grow-1">Måltid @(i + 1)</span>
-                            <span class="hoyre">
-                                <strong>@Forplanformat.Gramtekst(Model.Maltider[i])</strong>
-                            </span>
-                        </li>
-                    }
-                    <li>
-                        <span class="flex-grow-1 text-body-secondary">Sum</span>
-                        <span class="hoyre">@Forplanformat.Gramtekst(Model.Maltider.Sum())</span>
-                    </li>
-                </ul>
-
-                <div class="kort-kropp">
-                    <p class="form-text mt-0 mb-0">
-                        @* Forklarer hvorfor maltidene kan ha ulikt antall gram.
-                           Uten dette ser [134, 134, 133] ut som en feil. *@
-                        Dagsmengden er delt på @Model.Maltider.Length
-                        @(Model.Maltider.Length == 1 ? "måltid" : "måltider").
-                        Går den ikke opp, legges grammene som blir til overs på
-                        de første måltidene, slik at summen blir nøyaktig
-                        dagsmengden.
-                    </p>
-                </div>
-
                 @if (Model.Aktiv is { } om
-                     && (om.Fornavn is not null || om.Notat is not null))
+                     && (om.Fornavn is not null || om.FornavnAlder is not null
+                         || om.Notat is not null))
                 {
-                    @* Fornavn og notat ble lagret, men sto ingen steder pa
-                       siden der planen leses. *@
                     <ul class="rad-liste border-top">
+                        @if (om.FornavnAlder is { } aldersnavn)
+                        {
+                            <li>
+                                <span class="flex-grow-1 text-body-secondary">
+                                    @(om.VektdelAndelProsent > 0 ? "Etter alder" : "Fôr")
+                                </span>
+                                <span class="hoyre">@aldersnavn</span>
+                            </li>
+                        }
                         @if (om.Fornavn is { } fornavn)
                         {
                             <li>
-                                <span class="flex-grow-1 text-body-secondary">Fôr</span>
+                                <span class="flex-grow-1 text-body-secondary">
+                                    @(om.Metode == Formetode.Tabell ? "Etter vekt" : "Fôr")
+                                </span>
                                 <span class="hoyre">@fornavn</span>
                             </li>
                         }
@@ -170,7 +329,11 @@
                 {
                     <div class="kort-kropp border-top">
                         <p class="form-text mt-0 mb-0">
-                            Planen ble lagt inn @($"{lagt.OpprettetDato:d. MMM yyyy}").
+                            Lagt inn @($"{lagt.OpprettetDato:d. MMM yyyy}").
+                            @if (lagt.EndretDato is { } endret)
+                            {
+                                <text>Sist endret @($"{endret:d. MMM yyyy}").</text>
+                            }
                         </p>
                     </div>
                 }
@@ -203,29 +366,44 @@
         <section class="kort">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
-                <h2>@(Model.Aktiv is null ? "Ny fôrplan" : "Erstatt planen")</h2>
+                <h2>@(Model.Aktiv is null ? "Ny fôrplan" : "Endre planen")</h2>
             </div>
             <div class="kort-kropp">
-                <p class="form-text mt-0">
-                    Appen anbefaler ikke mengde. Den regner ut regelen du
-                    legger inn.
-                </p>
-
-                <form method="post" asp-action="Ny" asp-route-dyrId="@Model.DyrId">
+                @* Finnes det en plan, endrer skjemaet den. En liten justering
+                   er ikke en ny plan, og skal ikke fylle historikken med en
+                   rad per uke. Se ADR 0013. *@
+                <form method="post" asp-route-dyrId="@Model.DyrId"
+                      asp-action="@(Model.Aktiv is null ? "Ny" : "Rediger")">
                     @Html.AntiForgeryToken()
 
                     <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
 
-                    <div class="mb-2">
+                    @* Knappene setter bare metodevelgeren under. Uten
+                       javascript star velgeren synlig og gjor samme jobb -
+                       skjemaet skal virke uansett. *@
+                    <div class="btn-group btn-group-sm" role="group"
+                         aria-label="Type fôrplan" id="modusvelger">
+                        <button type="button" class="btn btn-outline-secondary"
+                                data-modus="enkel" aria-pressed="@(!erAvansert)">
+                            Enkel
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary"
+                                data-modus="avansert" aria-pressed="@erAvansert">
+                            Avansert
+                        </button>
+                    </div>
+                    <p class="form-text mt-1 mb-3">
+                        Avansert bruker tabellen på fôrposen og justerer mengden
+                        etter alderen, én gang i uka. Du kan også blande to fôr.
+                    </p>
+
+                    <div class="mb-2" id="metoderad">
                         <label asp-for="Ny.Metode" class="form-label"></label>
                         <select asp-for="Ny.Metode" class="form-select" id="metode">
                             <option value="Gram">Fast mengde i gram</option>
                             <option value="Prosent">Prosent av kroppsvekt</option>
+                            <option value="Tabell">Tabell fra fôrposen</option>
                         </select>
-                        <div class="form-text">
-                            Prosentmetoden er levende: mengden følger vekten
-                            automatisk. Fast mengde står stille.
-                        </div>
                     </div>
 
                     <div class="mb-2" data-metode="Gram">
@@ -235,12 +413,109 @@
                         <span asp-validation-for="Ny.GramPerDag" class="text-danger small"></span>
                     </div>
 
+                    @* --- Tabellen ------------------------------------------ *@
+                    <div class="mb-3" data-metode="Tabell">
+                        <span class="form-label d-block mb-1">Mengde etter alder</span>
+                        <div class="form-text mt-0 mb-2">
+                            Skriv av tabellen fra fôrposen. Fyll ut radene du har –
+                            resten kan stå tomme.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="small">Alder (mnd)</th>
+                                        <th scope="col" class="small">Gram per dag</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (var i = 0; i < Model.Ny.Trinn.Count; i++)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <input asp-for="Ny.Trinn[i].AlderMnd"
+                                                       class="form-control form-control-sm"
+                                                       inputmode="numeric"
+                                                       aria-label="Alder i måneder, rad @(i + 1)" />
+                                            </td>
+                                            <td>
+                                                <input asp-for="Ny.Trinn[i].GramPerDag"
+                                                       class="form-control form-control-sm"
+                                                       inputmode="numeric"
+                                                       aria-label="Gram per dag, rad @(i + 1)" />
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mb-2" data-metode="Tabell">
+                        <label asp-for="Ny.FornavnAlder" class="form-label"></label>
+                        <input asp-for="Ny.FornavnAlder" class="form-control"
+                               list="fornavnforslag" autocomplete="off" />
+                        <span asp-validation-for="Ny.FornavnAlder" class="text-danger small"></span>
+                    </div>
+
+                    @* --- Valgfri innblanding ------------------------------- *@
+                    <div class="mb-2 form-check form-switch" data-metode="Tabell">
+                        <input asp-for="Ny.BlandToFor" class="form-check-input"
+                               role="switch" id="blandbryter" />
+                        <label asp-for="Ny.BlandToFor" class="form-check-label"></label>
+                        <div class="form-text">
+                            For deg som trapper over fra ett fôr til et annet,
+                            eller gir litt av begge. Det ene måles i prosent av
+                            vekten, det andre etter tabellen over.
+                        </div>
+                    </div>
+
+                    <div data-rafor>
+                        <div class="mb-2">
+                            <label asp-for="Ny.VektdelAndel" class="form-label"></label>
+                            <input asp-for="Ny.VektdelAndel" class="form-control"
+                                   inputmode="numeric" placeholder="70" />
+                            <span asp-validation-for="Ny.VektdelAndel" class="text-danger small"></span>
+                            <div class="form-text">
+                                Skriv 70 for 70 % etter vekt og 30 % etter
+                                tabellen. Flytt tallet etter hvert som du trapper
+                                over – begge veier.
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label asp-for="Ny.Prosent" class="form-label">
+                                Prosent av kroppsvekt
+                            </label>
+                            <input asp-for="Ny.Prosent" class="form-control"
+                                   inputmode="decimal" placeholder="5,0" />
+                            <span asp-validation-for="Ny.Prosent" class="text-danger small"></span>
+                            <div class="form-text">Bruk komma: 5,0</div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label asp-for="Ny.Fornavn" class="form-label">
+                                Navn på fôret som måles etter vekt
+                            </label>
+                            <input asp-for="Ny.Fornavn" class="form-control"
+                                   list="fornavnforslag" autocomplete="off" />
+                        </div>
+                    </div>
+
+                    @* --- Prosentmetoden ------------------------------------ *@
                     <div class="mb-2" data-metode="Prosent">
                         <label asp-for="Ny.Prosent" class="form-label"></label>
                         <input asp-for="Ny.Prosent" class="form-control"
-                               inputmode="decimal" placeholder="%" />
+                               inputmode="decimal" placeholder="5,0" />
                         <span asp-validation-for="Ny.Prosent" class="text-danger small"></span>
                         <div class="form-text">Bruk komma: 5,0</div>
+                    </div>
+
+                    <div class="mb-2" data-metode="Gram Prosent">
+                        <label asp-for="Ny.Fornavn" class="form-label"></label>
+                        <input asp-for="Ny.Fornavn" class="form-control"
+                               list="fornavnforslag" autocomplete="off" />
+                        <span asp-validation-for="Ny.Fornavn" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-2">
@@ -250,20 +525,48 @@
                         <span asp-validation-for="Ny.AntallMaltider" class="text-danger small"></span>
                     </div>
 
-                    <div class="mb-2">
-                        <label asp-for="Ny.Fornavn" class="form-label"></label>
-                        <input asp-for="Ny.Fornavn" class="form-control" />
-                        <span asp-validation-for="Ny.Fornavn" class="text-danger small"></span>
-                    </div>
-
                     <div class="mb-3">
                         <label asp-for="Ny.Notat" class="form-label"></label>
                         <textarea asp-for="Ny.Notat" class="form-control" rows="2"></textarea>
                         <span asp-validation-for="Ny.Notat" class="text-danger small"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-sm">Lagre plan</button>
+                    @if (Model.Aktiv is null)
+                    {
+                        <button type="submit" class="btn btn-primary btn-sm">Lagre plan</button>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                Lagre endringer
+                            </button>
+                            @* formaction sender samme skjema til den andre
+                               handlingen. Uten javascript, og uten et skjema til
+                               med de samme feltene. *@
+                            <button type="submit" class="btn btn-outline-secondary btn-sm"
+                                    formaction="@Url.Action("Ny", new { dyrId = Model.DyrId })">
+                                Lagre som ny plan
+                            </button>
+                        </div>
+                        <p class="form-text mb-0">
+                            «Lagre som ny plan» legger den gamle bort som historikk
+                            – bruk den når du bytter fôr.
+                        </p>
+                    }
                 </form>
+
+                @if (Model.Fornavnforslag.Count > 0)
+                {
+                    @* Ren HTML. En datalist foreslar uten a begrense - feltet er
+                       fortsatt fritekst, og et nytt for skrives rett inn. *@
+                    <datalist id="fornavnforslag">
+                        @foreach (var forslag in Model.Fornavnforslag)
+                        {
+                            <option value="@forslag"></option>
+                        }
+                    </datalist>
+                }
             </div>
         </section>
     </div>
@@ -272,19 +575,62 @@
 @section Skript {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Viser kun feltet som hoerer til valgt metode. Serveren nuller ut
-        // det andre uansett, sa dette er ren opprydding i skjemaet.
+        // Viser kun feltene som hoerer til valgt metode, og lar de to knappene
+        // sette metoden. Serveren nuller ut resten uansett, sa dette er ren
+        // opprydding i skjemaet.
+        //
+        // Uten javascript star metodevelgeren synlig og gjor hele jobben alene.
+        // Knappene er en snarvei, ikke selve mekanismen.
         (function () {
             var velger = document.getElementById('metode');
             if (!velger) return;
 
+            var metoderad = document.getElementById('metoderad');
+            var knapper = document.querySelectorAll('#modusvelger [data-modus]');
+            var blandbryter = document.getElementById('blandbryter');
+            var raforfelter = document.querySelectorAll('[data-rafor]');
+
+            // Den enkle metoden brukeren sist sto pa. Bytter hun til avansert
+            // og tilbake, skal hun ikke lande pa noe annet enn det hun forlot.
+            var forrigeEnkle = velger.value === 'Tabell' ? 'Gram' : velger.value;
+
             function oppdater() {
+                var valgt = velger.value;
+                var avansert = valgt === 'Tabell';
+
+                if (!avansert) forrigeEnkle = valgt;
+
                 document.querySelectorAll('[data-metode]').forEach(function (rad) {
-                    rad.hidden = rad.dataset.metode !== velger.value;
+                    rad.hidden = rad.dataset.metode.split(' ').indexOf(valgt) === -1;
+                });
+
+                // Innblandingen hoerer til tabellmetoden, og bare nar bryteren
+                // star pa.
+                var blander = avansert && blandbryter && blandbryter.checked;
+                raforfelter.forEach(function (felt) { felt.hidden = !blander; });
+
+                // Velgeren sier det samme som den aktive knappen, og to
+                // kontroller for samme valg er en for mye.
+                metoderad.hidden = avansert;
+
+                knapper.forEach(function (knapp) {
+                    var aktiv = (knapp.dataset.modus === 'avansert') === avansert;
+                    knapp.setAttribute('aria-pressed', aktiv);
+                    knapp.classList.toggle('active', aktiv);
                 });
             }
 
+            knapper.forEach(function (knapp) {
+                knapp.addEventListener('click', function () {
+                    velger.value = knapp.dataset.modus === 'avansert'
+                        ? 'Tabell'
+                        : forrigeEnkle;
+                    oppdater();
+                });
+            });
+
             velger.addEventListener('change', oppdater);
+            if (blandbryter) blandbryter.addEventListener('change', oppdater);
             oppdater();
         })();
     </script>

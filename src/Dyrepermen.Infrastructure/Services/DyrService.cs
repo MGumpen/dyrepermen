@@ -48,7 +48,7 @@ public sealed class DyrService : IDyrService
     public async Task<DyrSammendrag?> HentSammendrag(
         int dyrId, CancellationToken ct)
     {
-        var idag = DateOnly.FromDateTime(DateTime.UtcNow);
+        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
 
         // Korrelerte undersporringer i ett Select. Npgsql oversetter dem til
         // LEFT JOIN LATERAL, sa hele sammendraget kommer i en rundtur.
@@ -56,6 +56,7 @@ public sealed class DyrService : IDyrService
             .Where(d => d.Id == dyrId)
             .Select(d => new
             {
+                d.Fodselsdato,
                 AntallVekter = d.Vekter.Count(),
                 SisteVekt = d.Vekter
                     .OrderByDescending(v => v.Dato)
@@ -81,10 +82,12 @@ public sealed class DyrService : IDyrService
                     .Where(f => f.Aktiv)
                     .Select(f => new
                     {
+                        f.Id,
                         f.Metode,
                         f.ProsentTidels,
                         f.GramPerDag,
-                        f.AntallMaltider
+                        f.AntallMaltider,
+                        f.VektdelAndelProsent
                     })
                     .FirstOrDefault()
             })
@@ -97,6 +100,22 @@ public sealed class DyrService : IDyrService
 
         var notater = await _db.Informasjon.CountAsync(i => i.DyrId == dyrId, ct);
 
+        var regel = rad.Forplan is null ? null : new Forplanregel(
+            rad.Forplan.Metode,
+            rad.Forplan.ProsentTidels,
+            rad.Forplan.GramPerDag,
+            rad.Forplan.AntallMaltider,
+            rad.Forplan.VektdelAndelProsent,
+            await Tabelltrinn(rad.Forplan.Metode, rad.Forplan.Id, ct));
+
+        // Regnestykket gjores ETT sted. Denne tjenesten hadde sin egen kopi,
+        // og to kopier av samme regel spriker for eller siden.
+        var mengde = Forberegning.Beregn(regel, new Beregningsgrunnlag(
+            rad.SisteVekt?.VektGram,
+            rad.SisteVekt?.Dato,
+            rad.Fodselsdato,
+            idag));
+
         return new DyrSammendrag(
             rad.AntallVekter,
             rad.SisteVekt?.VektGram,
@@ -106,10 +125,7 @@ public sealed class DyrService : IDyrService
             rad.Neste?.Dato,
             rad.AntallMedisiner,
             rad.Aktive,
-            Forplantekst(
-                rad.Forplan?.Metode, rad.Forplan?.ProsentTidels,
-                rad.Forplan?.GramPerDag, rad.Forplan?.AntallMaltider,
-                rad.SisteVekt?.VektGram),
+            Forplanformat.Sammendrag(regel, mengde),
             notater);
     }
 
@@ -117,36 +133,18 @@ public sealed class DyrService : IDyrService
         => Behandlingsformat.MedPreparat(type, preparat);
 
     /// <summary>
-    /// Samme regel som ForplanService. Uten vektgrunnlag sier den fra
-    /// framfor a vise et tall uten dekning.
+    /// Torrfortabellen, kun for blandingsplaner. Andre metoder skal ikke
+    /// koste en rundtur til en tabell de ikke bruker.
     /// </summary>
-    private static string? Forplantekst(
-        Formetode? metode, int? prosentTidels, int? gramPerDag,
-        int? antallMaltider, int? sisteVektGram)
-    {
-        if (metode is null)
-        {
-            return null;
-        }
-
-        var maltider = antallMaltider ?? 2;
-
-        if (metode == Formetode.Gram)
-        {
-            return $"{gramPerDag} g/dag på {maltider} måltider";
-        }
-
-        if (sisteVektGram is null)
-        {
-            return "Mangler vektregistrering";
-        }
-
-        var gram = (int)Math.Round(
-            sisteVektGram.Value * prosentTidels!.Value / 1000.0,
-            MidpointRounding.AwayFromZero);
-
-        return $"{gram} g/dag på {maltider} måltider";
-    }
+    private async Task<IReadOnlyList<Alderstrinn>> Tabelltrinn(
+        Formetode metode, int forplanId, CancellationToken ct)
+        => metode != Formetode.Tabell
+            ? []
+            : await _db.Forplantrinn
+                .Where(t => t.ForplanId == forplanId)
+                .OrderBy(t => t.AlderMnd)
+                .Select(t => new Alderstrinn(t.AlderMnd, t.GramPerDag))
+                .ToListAsync(ct);
 
     public async Task<DyrResultat> Opprett(NyttDyr input, CancellationToken ct)
     {

@@ -56,6 +56,18 @@ public static class Tidssone
             .ToUniversalTime();
     }
 
+    /// <summary>
+    /// Dagens dato I NORGE.
+    ///
+    /// <c>DateOnly.FromDateTime(DateTime.UtcNow)</c> gir feil dato den forste
+    /// timen eller to av hvert norsk dogn. For en varselgrense er det til a
+    /// leve med, men torrformengden i en blandingsplan folger alderen i hele
+    /// uker - og da flytter en dags avvik hele ukeskiftet. Dashbordet og
+    /// forplansiden ville vist ulik mengde mellom midnatt og klokka to.
+    /// </summary>
+    public static DateOnly Idag(DateTimeOffset naa)
+        => DateOnly.FromDateTime(TilLokal(naa).DateTime);
+
     /// <summary>"07:12" i norsk lokaltid.</summary>
     public static string Klokke(DateTimeOffset tid)
         => TilLokal(tid).ToString("HH:mm", Norsk);

@@ -1237,6 +1237,24 @@ public static int[] FordelPaMaltider(int gramPerDag, int antall)
 
 Vektgrunnlaget skal alltid vises sammen med resultatet ved prosentmetoden. Et tall uten synlig grunnlag er et tall ingen tør stole på.
 
+**Tillegg: en tredje metode, `T` — tabell etter alder.** Se [ADR 0012](beslutninger/0012-fortabell-etter-alder.md). Brukeren skriver av alderstabellen fra fôrposen — alder i måneder mot gram per dag — og mengden følger dyret oppover av seg selv.
+
+Metoden kan i tillegg blande inn et fôr som måles i prosent av kroppsvekten. Det dekker en fôrovergang, og `vektdel_andel_prosent` sier hvor mye som måles hvordan. Retningen er ikke bestemt: en overgang går like gjerne fra tørrfôr til råfôr som motsatt, og delene heter derfor det de er — en **vektdel** og en **aldersdel** — ikke hva fôret tilfeldigvis er.
+
+Designprinsippet står fast — også her kommer hvert eneste tall fra brukeren: hele tabellen, prosentsatsen og andelen. Appen slår opp og ganger. Den har ingen innebygd kurve og ingen mening om hva som er riktig.
+
+Tre ting det er lett å ta feil av, og som ADR-en begrunner i sin helhet:
+
+- **Andelen skalerer hver del for seg**, ikke en felles dagsmengde. 70 % etter vekt er 70 % av det vektregelen gir, pluss 30 % av det tabellen gir. To fôrtyper er sjelden sammenlignbare gram for gram.
+- **Tabellen trappes jevnt mellom radene, men alderen rundes ned til hele uker.** Regnet per dag ville mengden endret seg hver morgen, og en tabell som aldri står stille er umulig å måle etter.
+- **Utenfor tabellen holdes mengden på nærmeste rad, og resultatet sier fra.** Et flatt tall som ser ut som en beregning er verre enn et tall med en merknad.
+
+Metoden gir én tilstand til i grensesnittet: en tabellplan uten fødselsdato skal be om fødselsdatoen, ikke vise 0 gram. Samme regel som for vekten. Grunnlaget skal være synlig, men ikke fylle kortet — én linje foran, regnestykket bak «Vis regnestykket».
+
+Regnestykket for alle tre metodene ligger i `Application/Extensions/Forberegning`, ikke i tjenestene. Det lå tidligere i fire kopier.
+
+**Planen kan både redigeres og erstattes.** Se [ADR 0013](beslutninger/0013-redigere-forplan.md). «Lagre endringer» retter den aktive raden og stempler `endret_dato`; «Lagre som ny plan» legger den gamle bort med `aktiv = false` og oppretter en ny, som før. Skillet er brukerens: en skrivefeil er ikke en ny regel, og en overgang der andelen flyttes ukentlig skal ikke gi ti rader i historikken.
+
 ### 8.2 Fôringslogg
 
 Funksjonen styres **per dyr** via `dyr.foringslogg_aktiv`, ikke per husstand. Hund og katt har sjelden samme fôringsrutine — hunden mates to faste måltider som begge voksne kan ta, katten har tørrfôr stående fremme. Én felles bryter ville tvunget begge inn i samme modell.
