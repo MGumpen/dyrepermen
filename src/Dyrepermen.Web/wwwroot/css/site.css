@@ -646,6 +646,17 @@ h1, h2, h3, h4 {
     color: var(--dp-tekst-svak);
 }
 
+/* Blandingsforholdet: to fortyper under samme etikett. Begge er verdier -
+   navnet bak er konteksten, ikke tallet. */
+.fakta .deling {
+    display: block;
+}
+
+.fakta .deling-navn {
+    font-weight: 400;
+    color: var(--dp-tekst-svak);
+}
+
 .fakta dd.tom {
     font-weight: 400;
     color: var(--dp-tekst-svak);
@@ -962,6 +973,43 @@ h1, h2, h3, h4 {
 .btn-outline-secondary {
     border-color: var(--dp-kant-sterk);
     color: var(--dp-tekst);
+}
+
+/* Regnestykket bak en formengde. Grunnlaget skal vaere synlig, men det
+   trenger ikke fylle kortet - en forbruker vil se tallet, ikke utledningen. */
+.dp-detaljer {
+    cursor: pointer;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--dp-aksent);
+    list-style-position: inside;
+}
+
+.dp-detaljer::marker {
+    color: var(--dp-tekst-svak);
+}
+
+/* Tekstlenke i en radhandling. Samme vekt som .btn-lenke-fare, men i vanlig
+   lenkefarge - a rette noe er ikke en farlig handling. */
+.btn-lenke {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--dp-aksent);
+    font-size: .85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.btn-lenke:hover {
+    text-decoration: underline;
+}
+
+/* Raden skjemaet ved siden av holder pa a endre. Uten et merke er det ikke
+   til a se hvilken av ti behandlinger som ligger i feltene. */
+.rad-liste li.redigeres {
+    background: var(--dp-aksent-svak);
+    box-shadow: inset 3px 0 0 var(--dp-aksent);
 }
 
 .btn-lenke-fare {

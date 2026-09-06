@@ -50,13 +50,24 @@ public sealed partial class Skjemaklient
     /// </summary>
     public async Task<HttpResponseMessage> Post(
         string sti, Dictionary<string, string> felter, string tokenFra)
+        => await PostMedToken(sti, felter, await HentToken(tokenFra));
+
+    /// <summary>
+    /// Poster med et token som allerede er hentet.
+    ///
+    /// Trengs nar siden med skjemaet ikke lenger finnes pa posttidspunktet -
+    /// for eksempel nar en funksjonsbryter slas av mellom hentingen og
+    /// postingen, som er nettopp det en gammel faneside gjor.
+    /// </summary>
+    public Task<HttpResponseMessage> PostMedToken(
+        string sti, Dictionary<string, string> felter, string token)
     {
         var felterMedToken = new Dictionary<string, string>(felter)
         {
-            ["__RequestVerificationToken"] = await HentToken(tokenFra)
+            ["__RequestVerificationToken"] = token
         };
 
-        return await _klient.PostAsync(sti, new FormUrlEncodedContent(felterMedToken));
+        return _klient.PostAsync(sti, new FormUrlEncodedContent(felterMedToken));
     }
 
     /// <summary>
