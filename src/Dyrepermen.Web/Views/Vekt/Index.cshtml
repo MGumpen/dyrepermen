@@ -6,11 +6,13 @@
 
 <partial name="_Dyrhode" model='new DyrhodeVm("Vekt", Model.DyrId, Model.DyrNavn)' />
 
-<div class="dp-kolonner">
+@* Klassene under styrer rekkefolgen pa mobil, der kolonnene loses opp.
+   Se .vektsider i site.css. *@
+<div class="dp-kolonner vektsider">
     <div class="kolonne">
         @if (Model.Graf is { } graf)
         {
-            <section class="kort">
+            <section class="kort vekt-graf">
                 <div class="kort-hode">
                     <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vekt" /></svg>
                     <h2>Vektutvikling for @Model.DyrNavn</h2>
@@ -21,7 +23,7 @@
             </section>
         }
 
-        <section class="kort">
+        <section class="kort vekt-historikk">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vekt" /></svg>
                 <h2>Historikk</h2>
@@ -67,7 +69,7 @@
     </div>
 
     <div class="kolonne">
-        <section class="kort">
+        <section class="kort vekt-skjema">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
                 <h2>Registrer vekt</h2>
