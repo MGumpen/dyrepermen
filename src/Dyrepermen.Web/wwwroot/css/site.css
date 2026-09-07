@@ -1124,6 +1124,33 @@ h1, h2, h3, h4 {
     }
 }
 
+/* --- Vektsiden pa mobil ---------------------------------------------------
+   Kolonnene loses opp med display:contents, sa de tre kortene blir direkte
+   barn av rutenettet og kan sorteres hver for seg. Samme grep som .dp-bunn.
+
+   Uten dette havner registreringsskjemaet NEDERST - etter hele historikken -
+   fordi det ligger i den andre kolonnen. Pa en telefon med tjue malinger
+   betyr det en lang rulling for a legge inn dagens vekt, hver eneste gang.
+
+   Rekkefolgen her er den som gjelder pa mobil: grafen viser utviklingen,
+   skjemaet star der man skal handle, og historikken ligger under for den som
+   vil se etter. Pa PC er layoutet urort. */
+@media (max-width: 991.98px) {
+    .vektsider > .kolonne {
+        display: contents;
+    }
+
+    .vekt-graf { order: 1; }
+    .vekt-skjema { order: 2; }
+    .vekt-historikk { order: 3; }
+
+    /* Gap gjor jobben mellom kortene nar kolonnene er lost opp. Uten dette
+       legger .kort + .kort en margin oppa, og avstanden blir dobbel. */
+    .vektsider .kort + .kort {
+        margin-top: 0;
+    }
+}
+
 /* Like brede kolonner. Brukes der de to boksene er like viktige. */
 @media (min-width: 992px) {
     .dp-kolonner.likt {
