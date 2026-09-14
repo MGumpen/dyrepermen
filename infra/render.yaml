@@ -34,6 +34,16 @@ services:
         sync: false
       - key: Jobb__Nokkel
         generateValue: true
+      - key: Epost__SmtpHost
+        sync: false
+      - key: Epost__Bruker
+        sync: false
+      - key: Epost__Passord
+        sync: false
+      - key: Epost__Avsender
+        sync: false
+      - key: Epost__Kontaktmottaker
+        sync: false
 
   # Produksjon paa dyrepermen.no. Bygges fra main og peker paa Neon-branchen
   # "production".
@@ -74,3 +84,18 @@ services:
       # inn som JOBB_NOKKEL i GitHub-hemmelighetene.
       - key: Jobb__Nokkel
         generateValue: true
+
+      # SMTP for kontaktskjemaet. Port er 587 med STARTTLS som standard, og
+      # settes bare om tjenesten bruker en annen. Mangler en av de fem,
+      # starter appen likevel, men skjemaet sier fra i stedet for a sende.
+      # Se ADR 0014.
+      - key: Epost__SmtpHost
+        sync: false
+      - key: Epost__Bruker
+        sync: false
+      - key: Epost__Passord
+        sync: false
+      - key: Epost__Avsender
+        sync: false
+      - key: Epost__Kontaktmottaker
+        sync: false

@@ -44,6 +44,16 @@ services:
       Jobb__Nokkel: ${JOBB_NOKKEL:-lokal-nokkel}
       TZ: Europe/Oslo
 
+      # SMTP for kontaktskjemaet, fra infra/.env. Containeren ser IKKE
+      # user-secrets - de ligger i hjemmemappen pa maskinen, ikke i imaget.
+      # Tomme verdier er lov: appen starter, og skjemaet sier "ikke satt opp".
+      # Se ADR 0014.
+      Epost__SmtpHost: ${EPOST_SMTPHOST:-}
+      Epost__Bruker: ${EPOST_BRUKER:-}
+      Epost__Passord: ${EPOST_PASSORD:-}
+      Epost__Avsender: ${EPOST_AVSENDER:-}
+      Epost__Kontaktmottaker: ${EPOST_KONTAKTMOTTAKER:-}
+
       # KUN her. Containeren serverer http pa 8080, og det star ingen
       # TLS-terminator foran slik Render har. Med sikker kapsel pakrevd
       # settes innloggingskapselen aldri, og innlogging virker ikke.

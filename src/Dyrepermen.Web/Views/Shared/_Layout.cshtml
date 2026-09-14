@@ -238,6 +238,18 @@
                     </ul>
 
                     <div class="sidemeny-bunn">
+                        @* Kontakt star her nede, over brukerkortet, og ikke i
+                           menyen over. Den gjelder deg og appen, ikke
+                           husstanden. Se ADR 0014. *@
+                        <ul class="sidemeny-nav">
+                            <li>
+                                <a href="/kontakt" aria-current="@Aktiv("Kontakt")">
+                                    <svg class="ikon" aria-hidden="true"><use href="#i-kontakt" /></svg>
+                                    Kontakt
+                                </a>
+                            </li>
+                        </ul>
+
                         @* Brukerkortet. Her ligger DINE innstillinger.
                            Skillet mot menyen over er eierskap:
                            personopplysninger mot husstandens delte data.
