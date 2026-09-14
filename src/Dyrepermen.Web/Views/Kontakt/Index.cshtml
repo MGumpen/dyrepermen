@@ -1,0 +1,57 @@
+@using Dyrepermen.Application.Extensions
+@using Dyrepermen.Application.Interfaces
+@model KontaktVm
+@inject IGjeldendeBruker Meg
+@{
+    ViewData["Tittel"] = "Kontakt";
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Kontakt</h1>
+        <div class="undertittel">
+            Har du et spørsmål, et forslag til forbedring, eller
+            noe som ikke virker? Send en melding til Dyrepermens utvikler.
+        </div>
+    </div>
+</div>
+
+<section class="kort" style="max-width: 40rem;">
+    <div class="kort-kropp">
+    <form method="post" asp-action="Send">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+
+        <div class="mb-3">
+            <label asp-for="Type" class="form-label"></label>
+            @* Valgene skrives for hand, ikke med GetEnumSelectList. Den skriver
+               ut tallverdien, og teksten skal komme fra samme sted som emnet
+               i e-posten. *@
+            <select asp-for="Type" class="form-select">
+                <option value="">Velg</option>
+                @foreach (var type in Enum.GetValues<Kontakttype>())
+                {
+                    <option value="@type">@Kontaktepost.TypeTekst(type)</option>
+                }
+            </select>
+            <span asp-validation-for="Type" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Melding" class="form-label"></label>
+            <textarea asp-for="Melding" class="form-control" rows="7"
+                      maxlength="@Kontaktepost.MaksLengde"></textarea>
+            <span asp-validation-for="Melding" class="text-danger small"></span>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary btn-sm">Send melding</button>
+        </div>
+    </form>
+    </div>
+</section>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -253,6 +253,14 @@ h1, h2, h3, h4 {
     border-top: 1px solid var(--dp-kant);
 }
 
+/* Kontaktlenken over brukerkortet. Bunnen har allerede sidepadding - med
+   listens egen i tillegg ville ikonet statt lenger inn enn ikonene i menyen
+   over. */
+.sidemeny-bunn .sidemeny-nav {
+    padding: 0;
+    margin-bottom: .35rem;
+}
+
 /* Brukerkortet nederst. Her ligger DINE innstillinger - husstandens ligger
    i menyen over. Skillet er eierskap: personopplysninger mot delte data. */
 .brukerkort {

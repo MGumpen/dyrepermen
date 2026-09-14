@@ -33,6 +33,10 @@ public sealed class RolleTester
         $"{nameof(HusstandController)}.Opprett",
         $"{nameof(HusstandController)}.Bytt",
 
+        // Henvendelsen gjelder brukeren og appen, ikke husstanden. En gjest
+        // skal kunne si fra like godt som den som bor der.
+        $"{nameof(KontaktController)}.Send",
+
         // Daglig logging. Foringen er selve grunnen til at gjesterollen
         // finnes: passer du hunden, ma du kunne notere at du ga mat.
         $"{nameof(VektController)}.Registrer",

@@ -38,7 +38,13 @@ public sealed class Appfabrikk : WebApplicationFactory<Program>
                 // og av samme grunn: ingen TLS-terminator foran. Den er
                 // eksplisitt konfigurasjon nettopp for a kunne settes her,
                 // og applikasjonen nekter a starte med den av i Production.
-                ["Sikkerhet:KrevSikkerKapsel"] = "false"
+                ["Sikkerhet:KrevSikkerKapsel"] = "false",
+
+                // Ingen test skal sende ekte e-post - heller ikke nar
+                // utvikleren har lagt SMTP i user-secrets. Med tom vert er
+                // e-post "ikke satt opp", og kontaktskjemaet sier fra i
+                // stedet for a sende. Se ADR 0014.
+                ["Epost:SmtpHost"] = ""
             }));
 
         return base.CreateHost(builder);
