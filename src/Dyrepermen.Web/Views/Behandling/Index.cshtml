@@ -1,0 +1,182 @@
+@using Dyrepermen.Application.Extensions
+@model BehandlingSideVm
+@{
+    ViewData["Tittel"] = $"Behandlinger – {Model.DyrNavn}";
+    var idag = DateOnly.FromDateTime(DateTime.Now);
+
+    // Etikettene kommer fra Behandlingsformat, ikke fra Display-attributter
+    // pa enumen - domenelaget skal ikke baere presentasjonsmetadata. Listen
+    // bygges av enumverdiene selv, sa en ny type dukker opp her uten at noen
+    // ma huske a legge den til.
+    //
+    // Verdien er NAVNET, ikke tallet. GetEnumSelectList ville skrevet
+    // <option value="0">, og da binder ikke feltet mot enumnavnet.
+    var typer = Enum.GetValues<BehandlingType>()
+        .Select(t => new SelectListItem(Behandlingsformat.Navn(t), t.ToString()))
+        .ToList();
+}
+
+<partial name="_Dyrhode" model='new DyrhodeVm("Behandlinger", Model.DyrId, Model.DyrNavn)' />
+
+<div class="dp-kolonner">
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
+                <h2>Historikk</h2>
+                @if (Model.Historikk.Count > 0)
+                {
+                    <span class="antall">@Model.Historikk.Count</span>
+                }
+            </div>
+
+            @if (Model.Historikk.Count == 0)
+            {
+                <div class="tomt">Ingen behandlinger registrert ennå.</div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var rad in Model.Historikk)
+                    {
+                        var redigeres = Model.RedigerId == rad.Id;
+
+                        <li class="@(redigeres ? "redigeres" : null)"
+                            aria-current="@(redigeres ? "true" : null)">
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">
+                                    @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat)
+                                </span>
+                                <span class="under d-block">
+                                    @($"{rad.Dato:d. MMMM yyyy}")
+                                    @if (rad.Notat is not null)
+                                    {
+                                        <span class="d-block">@rad.Notat</span>
+                                    }
+                                </span>
+                            </span>
+                            <span class="hoyre">
+                                @if (rad.NesteDato is { } neste)
+                                {
+                                    @if (neste < idag)
+                                    {
+                                        <span class="merkelapp forfalt">forfalt</span>
+                                    }
+                                    <span class="d-block">neste @($"{neste:d. MMM yyyy}")</span>
+                                }
+                                <span class="radhandlinger">
+                                    @* Lenke, ikke knapp: endringen skjer i
+                                       skjemaet ved siden av, og historikken
+                                       skal sta synlig mens man retter.
+                                       Fragmentet tar deg til skjemaet pa en
+                                       skjerm der kolonnene ligger under
+                                       hverandre. *@
+                                    @if (!redigeres)
+                                    {
+                                        <a class="btn-lenke"
+                                           asp-action="Index"
+                                           asp-route-dyrId="@Model.DyrId"
+                                           asp-route-rediger="@rad.Id"
+                                           asp-fragment="skjema">Rediger</a>
+                                    }
+                                    <form method="post" asp-action="Slett"
+                                          asp-route-dyrId="@Model.DyrId"
+                                          asp-route-behandlingId="@rad.Id"
+                                          onsubmit="return confirm('Slette denne behandlingen?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-lenke-fare">Slett</button>
+                                    </form>
+                                </span>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="kolonne">
+        <section class="kort" id="skjema">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true">
+                    <use href="@(Model.RedigerId is null ? "#i-pluss" : "#i-behandling")" />
+                </svg>
+                <h2>
+                    @(Model.RedigerId is null
+                        ? "Registrer behandling" : "Endre behandling")
+                </h2>
+            </div>
+            <div class="kort-kropp">
+                @if (Model.RedigerId is not null)
+                {
+                    <p class="form-text mt-0">
+                        Du retter en behandling som allerede står i
+                        historikken. «Neste gang» kan flyttes uten at
+                        behandlingen må registreres på nytt.
+                    </p>
+                }
+
+                <form method="post" asp-route-dyrId="@Model.DyrId"
+                      asp-action="@(Model.RedigerId is null ? "Ny" : "Rediger")"
+                      asp-route-behandlingId="@Model.RedigerId">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Type" class="form-label"></label>
+                        <select asp-for="Ny.Type" class="form-select" asp-items="typer"></select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Preparat" class="form-label"></label>
+                        <input asp-for="Ny.Preparat" class="form-control"
+                               placeholder="For eksempel «Milbemax»" />
+                        <span asp-validation-for="Ny.Preparat" class="text-danger small"></span>
+                        <div class="form-text">
+                            Velger du «Annet», skriver du her hva behandlingen var.
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.Dato" class="form-label"></label>
+                            <input asp-for="Ny.Dato" class="form-control" />
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.NesteDato" class="form-label"></label>
+                            <input asp-for="Ny.NesteDato" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="form-text mb-2">
+                        Settes «neste gang», dukker behandlingen opp på
+                        oversikten 14 dager før forfall.
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Notat" class="form-label"></label>
+                        <textarea asp-for="Ny.Notat" class="form-control" rows="2"></textarea>
+                        <span asp-validation-for="Ny.Notat" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            @(Model.RedigerId is null ? "Lagre" : "Lagre endringer")
+                        </button>
+                        @if (Model.RedigerId is not null)
+                        {
+                            <a class="btn btn-outline-secondary btn-sm"
+                               asp-action="Index" asp-route-dyrId="@Model.DyrId">
+                                Avbryt
+                            </a>
+                        }
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,1678 @@
+/* ======================================================================
+   Dyrepermen — designsystem
+
+   Lyst tema. Mork modus kommer senere, og alle farger er derfor definert
+   som variabler her. Da blir mork modus en ny blokk med de samme navnene,
+   ikke en gjennomgang av hver enkelt regel.
+
+   Avstandene er bevisst stramme. Standard Bootstrap-kort har mye luft, og
+   pa en side som skal leses raskt - "hva gjenstar i dag" - blir det mer
+   rulling enn oversikt.
+   ====================================================================== */
+
+:root {
+    --dp-bg: #f4f6f3;
+    --dp-flate: #ffffff;
+    --dp-flate-2: #fafbf9;
+    --dp-kant: #e2e6df;
+    --dp-kant-sterk: #cfd6ca;
+
+    --dp-tekst: #1a1d19;
+    --dp-tekst-svak: #697066;
+    --dp-tekst-hvit: #ffffff;
+
+    --dp-aksent: #2f6b46;
+    --dp-aksent-mork: #245437;
+    --dp-aksent-svak: #e7f0ea;
+
+    /* Datafarge for grafer. Egen variabel, ikke aksenten: aksenten har for
+       lav kroma til a lese som data. Validert mot lyshetsband, kromagulv og
+       kontrast mot flaten. */
+    --dp-serie-1: #0f7d47;
+
+    --dp-fare: #a4271f;
+    --dp-fare-svak: #fbeceb;
+    --dp-varsel: #8a5a00;
+    --dp-varsel-svak: #fdf3e0;
+
+    --dp-radius: 8px;
+    --dp-radius-sm: 9px;
+    --dp-radius-pille: 999px;
+
+    --dp-sidemeny: 250px;
+
+    /* Avstanden mellom kort, seksjoner og kolonner - ETT tall.
+       Den sto tidligere som .85rem fire steder og var ikke til a justere
+       uten a finne alle fire. Verre: mellom to dp-kolonner-rader fantes den
+       ikke i det hele tatt, fordi gap bare virker inne i et rutenett. */
+    --dp-kortavstand: .5rem;
+
+    /* Diskret dybde. Kort skal skille seg fra bakgrunnen, ikke sveve. */
+    --dp-skygge: 0 1px 2px rgba(26, 29, 25, .04);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 15px;
+}
+
+@media (min-width: 992px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+body {
+    margin: 0;
+    min-height: 100svh;
+    background: var(--dp-bg);
+    color: var(--dp-tekst);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--dp-aksent);
+}
+
+h1, h2, h3, h4 {
+    letter-spacing: -.01em;
+}
+
+/* --- Ikoner ----------------------------------------------------------
+   Inline SVG-sprite. Ingen ikonfont, ingen ekstra nedlasting, og de arver
+   farge fra teksten rundt. */
+
+.ikon {
+    width: 1.15em;
+    height: 1.15em;
+    flex: 0 0 auto;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ikon-lg {
+    width: 1.35em;
+    height: 1.35em;
+}
+
+/* --- Ramme ------------------------------------------------------------ */
+
+.dp-ramme {
+    display: flex;
+    min-height: 100svh;
+}
+
+.dp-innhold {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 1rem;
+}
+
+@media (min-width: 992px) {
+    .dp-innhold {
+        padding: 1.25rem 1.5rem;
+    }
+}
+
+/* --- Sidemeny --------------------------------------------------------- */
+
+.sidemeny {
+    width: var(--dp-sidemeny);
+    background: var(--dp-flate);
+}
+
+@media (min-width: 992px) {
+    .sidemeny {
+        position: sticky;
+        top: 0;
+        height: 100svh;
+        flex-shrink: 0;
+        border-right: 1px solid var(--dp-kant);
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* flex-grow ma settes eksplisitt. Bootstrap setter 0 pa .offcanvas-lg
+   .offcanvas-body fra lg og opp, og da blir ikke kroppen hoyere enn
+   innholdet - margin-top: auto pa .sidemeny-bunn har ingenting a skyve mot. */
+.sidemeny .offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    padding: 0;
+}
+
+.sidemeny-merke {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: 1rem 1rem .75rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--dp-tekst);
+    text-decoration: none;
+}
+
+/* Husstandskortet: hvilken husstand du ser pa. Med flere husstander senere
+   blir dette en velger - derfor et kort og ikke bare en overskrift. */
+.husstandskort {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin: 0 .75rem .75rem;
+    padding: .6rem .75rem;
+    background: var(--dp-flate-2);
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius-sm);
+    text-decoration: none;
+    color: inherit;
+}
+
+.husstandskort:hover {
+    border-color: var(--dp-kant-sterk);
+}
+
+.husstandskort .merke {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    border-radius: var(--dp-radius-sm);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent);
+}
+
+.husstandskort .navn {
+    font-weight: 600;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.husstandskort .under {
+    font-size: .78rem;
+    color: var(--dp-tekst-svak);
+}
+
+.sidemeny-nav {
+    list-style: none;
+    margin: 0;
+    padding: 0 .75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidemeny-nav a {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .5rem .7rem;
+    border-radius: var(--dp-radius-sm);
+    color: var(--dp-tekst-svak);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.sidemeny-nav a:hover {
+    background: var(--dp-flate-2);
+    color: var(--dp-tekst);
+}
+
+.sidemeny-nav a[aria-current="page"] {
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent-mork);
+    font-weight: 600;
+}
+
+/* Beroringsmal minst 44 px pa mobil. Standard padding er for lav, og
+   skuffen brukes med tommelen. */
+@media (max-width: 991.98px) {
+    .sidemeny-nav a {
+        min-height: 44px;
+    }
+}
+
+.sidemeny-bunn {
+    margin-top: auto;
+    padding: .75rem;
+    border-top: 1px solid var(--dp-kant);
+}
+
+/* Brukerkortet nederst. Her ligger DINE innstillinger - husstandens ligger
+   i menyen over. Skillet er eierskap: personopplysninger mot delte data. */
+.brukerkort {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem;
+    border-radius: var(--dp-radius-sm);
+    background: none;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Fargen blir staende mens menyen er apen, sa man ser hva den horer til. */
+.brukerkort:hover,
+.brukerkort[aria-expanded="true"] {
+    background: var(--dp-flate-2);
+}
+
+.brukerkort .initialer {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--dp-aksent);
+    color: var(--dp-tekst-hvit);
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.brukerkort .navn,
+.brukerkort .epost {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.brukerkort .navn {
+    font-weight: 600;
+    font-size: .9rem;
+    line-height: 1.2;
+}
+
+.brukerkort .epost {
+    font-size: .76rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Topplinje pa mobil ------------------------------------------------ */
+
+.topplinje {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    /* Hoyre side er smalere enn venstre: knappen har egen luft, og lik
+       padding ville dyttet den for langt inn fra kanten. */
+    padding: .45rem .5rem .45rem .9rem;
+    background: var(--dp-flate);
+    border-bottom: 1px solid var(--dp-kant);
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+
+    /* Under statuslinja pa iPhone. Uten dette havner logoen delvis bak
+       "hakket" i landskapsmodus. */
+    padding-left: max(.9rem, env(safe-area-inset-left));
+    padding-right: max(.5rem, env(safe-area-inset-right));
+}
+
+.topplinje .sidemeny-merke span {
+    font-size: 1.05rem;
+}
+
+/* Minst 44 x 44 px. Under det bommer tommelen, og menyen er det eneste
+   inngangspunktet til navigasjonen pa mobil. Se plan kapittel 10.2. */
+.menyknapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius-sm);
+    color: var(--dp-tekst);
+    background: var(--dp-flate);
+}
+
+.menyknapp:hover,
+.menyknapp:active {
+    background: var(--dp-flate-2);
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
+}
+
+/* --- Kort -------------------------------------------------------------- */
+
+.kort {
+    background: var(--dp-flate);
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius);
+    box-shadow: var(--dp-skygge);
+}
+
+/* Luft MELLOM kort, ikke inni dem. Kortene skal leses som adskilte bokser,
+   og da er avstanden mellom dem det som gjor jobben - ikke polstring langs
+   innsiden, som bare gjor hver boks hoyere uten a skille dem tydeligere. */
+.kort + .kort {
+    margin-top: var(--dp-kortavstand);
+}
+
+.kort-hode {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--dp-kant);
+}
+
+.kort-hode h2,
+.kort-hode h1 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.kort-hode .ikon {
+    color: var(--dp-aksent);
+}
+
+.kort-hode .se-alle {
+    margin-left: auto;
+    font-size: .85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.kort-kropp {
+    padding: 1rem;
+}
+
+.kort-kropp.tett {
+    padding: .5rem 1rem;
+}
+
+/* Antallsmerke ved siden av seksjonstittelen, som viser hvor mye som
+   ligger bak "Se alle". */
+.antall {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 .4rem;
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent-mork);
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.antall.varsel {
+    background: var(--dp-varsel-svak);
+    color: var(--dp-varsel);
+}
+
+/* --- Lister i kort ------------------------------------------------------ */
+
+.rad-liste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.rad-liste > li {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .5rem .9rem;
+    border-bottom: 1px solid var(--dp-kant);
+}
+
+.rad-liste > li:last-child {
+    border-bottom: 0;
+}
+
+.rad-liste a.rad-lenke {
+    color: inherit;
+    text-decoration: none;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.rad-liste a.rad-lenke:hover .tittel {
+    text-decoration: underline;
+}
+
+.rad-liste .tittel {
+    font-weight: 600;
+}
+
+.rad-liste .under {
+    font-size: .82rem;
+    color: var(--dp-tekst-svak);
+}
+
+.hoyre {
+    margin-left: auto;
+    text-align: right;
+    white-space: nowrap;
+    font-size: .85rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Tomtilstander ------------------------------------------------------
+   Spesifiseres, ikke improviseres. Se plan kapittel 10.3. */
+
+.tomt {
+    padding: 1.1rem .9rem;
+    text-align: center;
+    color: var(--dp-tekst-svak);
+    font-size: .9rem;
+}
+
+.tomt-stor {
+    padding: 2.5rem 1rem;
+}
+
+/* --- Merkelapper --------------------------------------------------------- */
+
+.merkelapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .12rem .5rem;
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-flate-2);
+    border: 1px solid var(--dp-kant);
+    font-size: .76rem;
+    color: var(--dp-tekst-svak);
+}
+
+.merkelapp.forfalt {
+    background: var(--dp-fare-svak);
+    border-color: transparent;
+    color: var(--dp-fare);
+    font-weight: 600;
+}
+
+/* --- Nokkeltall pa dyrekort ---------------------------------------------- */
+
+/* Verdi med etikett under, pa rad. Dashbordet bruker den ikke lenger - der
+   star opplysningene i <dl> - men forplansiden, informasjonssiden og
+   dyredetaljene gjor det. Fjernes den, mister de tre all avstand mellom
+   tallene. */
+.dyrekort-tall {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: .5rem;
+}
+
+.dyrekort-tall .verdi {
+    font-weight: 700;
+}
+
+.dyrekort-tall .etikett {
+    display: block;
+    font-size: .76rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Dyrekort pa dashbordet ----------------------------------------------
+   Radliste ble forsokt forst. Med fem-seks opplysninger per dyr gled radene
+   inn i hverandre, og opplysninger som hoerer sammen - porsjon, sist matet,
+   godbiter - ble skilt av vekt og vaksine fordi alt sto i en flat strek.
+   Kort med grupper loeser begge deler. */
+
+.dyrerutenett {
+    display: grid;
+    gap: var(--dp-kortavstand);
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+    /* auto-fill, ikke auto-fit: med ett dyr skal kortet beholde bredden sin
+       i stedet for a strekke seg over hele skjermen. */
+    .dyrerutenett {
+        grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    }
+}
+
+.dyrekort {
+    display: flex;
+    flex-direction: column;
+    background: var(--dp-flate);
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius);
+    overflow: hidden;
+}
+
+.dyrekort-hode {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .7rem .9rem;
+    background: var(--dp-flate-2);
+    border-bottom: 1px solid var(--dp-kant);
+    color: var(--dp-tekst);
+    text-decoration: none;
+}
+
+.dyrekort-hode:hover {
+    background: var(--dp-aksent-svak);
+    color: var(--dp-tekst);
+}
+
+.dyrekort-hode .navn {
+    display: block;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.dyrekort-hode .art {
+    display: block;
+    font-size: .8rem;
+    color: var(--dp-tekst-svak);
+}
+
+.dyrekort-hode .ikon {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--dp-tekst-svak);
+}
+
+.dyrekort-gruppe {
+    padding: .65rem .9rem .75rem;
+}
+
+/* Skillelinje mellom gruppene, ikke rundt hver. En ramme til inne i kortet
+   ville lagt en tredje kant oppa de to som allerede er der. */
+.dyrekort-gruppe + .dyrekort-gruppe {
+    border-top: 1px solid var(--dp-kant);
+}
+
+.gruppe-tittel {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    margin: 0 0 .4rem;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--dp-tekst-svak);
+}
+
+.gruppe-tittel .ikon {
+    width: 14px;
+    height: 14px;
+}
+
+/* Etikett til venstre, verdi til hoyre, begge pa linje nedover. Det er
+   dette som gjor det mulig a se hva som hoerer til hva. */
+.fakta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .25rem .75rem;
+    margin: 0;
+    align-items: baseline;
+}
+
+.fakta dt {
+    font-size: .82rem;
+    font-weight: 400;
+    color: var(--dp-tekst-svak);
+    /* Lange behandlingsnavn skal ikke presse verdikolonnen ut av kortet. */
+    max-width: 9rem;
+    overflow-wrap: anywhere;
+}
+
+.fakta dd {
+    margin: 0;
+    font-size: .92rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* Naar-teksten er kontekst, ikke verdi: "malt 9. aug." skal ikke veie like
+   mye som selve vekten. */
+.fakta .naar {
+    display: block;
+    font-size: .78rem;
+    font-weight: 400;
+    color: var(--dp-tekst-svak);
+}
+
+/* Blandingsforholdet: to fortyper under samme etikett. Begge er verdier -
+   navnet bak er konteksten, ikke tallet. */
+.fakta .deling {
+    display: block;
+}
+
+.fakta .deling-navn {
+    font-weight: 400;
+    color: var(--dp-tekst-svak);
+}
+
+.fakta dd.tom {
+    font-weight: 400;
+    color: var(--dp-tekst-svak);
+}
+
+.gruppe-handlinger {
+    display: flex;
+    gap: .4rem;
+    margin-top: .7rem;
+}
+
+/* Knappene deler bredden likt. Da treffer man dem uten a sikte, og de to
+   handlingene ser like viktige ut - for de er det. */
+.gruppe-handlinger > form {
+    flex: 1 1 0;
+}
+
+.gruppe-handlinger .btn {
+    width: 100%;
+    justify-content: center;
+}
+
+/* --- Faresone ------------------------------------------------------------ */
+
+.kort.fare {
+    border-color: #e9c9c6;
+}
+
+.kort.fare .kort-hode {
+    color: var(--dp-fare);
+    border-bottom-color: #f0d9d7;
+}
+
+/* --- Handleliste --------------------------------------------------------- */
+
+.handleliste-boks {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--dp-kant-sterk);
+    border-radius: 6px;
+    color: var(--dp-aksent);
+    font-weight: 700;
+    font-size: .85rem;
+    line-height: 1;
+}
+
+.handleliste-boks.kjopt {
+    border-color: var(--dp-aksent);
+    background: var(--dp-aksent-svak);
+}
+
+.kjopt-tekst {
+    text-decoration: line-through;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Handlinger pa dashbordet --------------------------------------------- */
+
+/* Avkryssingen pa dashbordet. Selve boksen er 22 px av hensyn til
+   utseendet, men knappen rundt strekker seg til 44 - det er den man
+   treffer. */
+.kryssknapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    /* Negativ marg pa venstre side, slik at den storre treffflaten ikke
+       dytter teksten innover i raden. */
+    margin: -11px -11px -11px -12px;
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+.kryssknapp:hover .handleliste-boks {
+    border-color: var(--dp-aksent);
+    background: var(--dp-aksent-svak);
+}
+
+.matknapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 44px;
+    padding: .4rem .8rem;
+    border: 1px solid var(--dp-aksent);
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-aksent);
+    color: var(--dp-tekst-hvit);
+    font-size: .875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.matknapp:hover,
+.matknapp:focus-visible {
+    background: var(--dp-aksent-mork);
+    border-color: var(--dp-aksent-mork);
+    color: var(--dp-tekst-hvit);
+}
+
+/* Er alle maltider gitt, skal knappen fortsatt virke - en ekstra porsjon
+   eller en godbit skal kunne fores. Men den slutter a be om oppmerksomhet,
+   slik at raden med mat igjen a gi er den som skiller seg ut. */
+.matknapp.ferdig {
+    background: transparent;
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst-svak);
+}
+
+.matknapp.ferdig:hover,
+.matknapp.ferdig:focus-visible {
+    background: var(--dp-flate-2);
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
+}
+
+/* Mens kallet gar. Uten dette rekker man a trykke to ganger, og da
+   registreres to maltider. */
+.matknapp[disabled] {
+    opacity: .55;
+}
+
+.radhandlinger {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-shrink: 0;
+}
+
+/* Godbiten er sekundaer. Den star ved siden av matknappen i hver rad, og
+   ville trukket like mye oppmerksomhet som maten hvis den var fylt. */
+.godbitknapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 44px;
+    padding: .4rem .7rem;
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-flate);
+    color: var(--dp-tekst-svak);
+    font-size: .875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.godbitknapp:hover,
+.godbitknapp:focus-visible {
+    background: var(--dp-flate-2);
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
+}
+
+@media (max-width: 420px) {
+    /* Pa de smaleste skjermene ryker plassen til bade dyrenavn og etikett.
+       Ikonet alene er entydig nok, og aria-label baerer meningen. */
+    .matknapp span {
+        display: none;
+    }
+
+    .matknapp,
+    .godbitknapp {
+        padding: .4rem;
+        min-width: 44px;
+        justify-content: center;
+    }
+}
+
+/* --- Dialog --------------------------------------------------------------- */
+
+/* <dialog> med showModal() gir fokusfelle, Esc-lukking og bakteppe uten en
+   linje egen kode. Bootstrap sin modal ville krevd mer markup og et
+   JavaScript-objekt per apning. */
+.dp-dialog {
+    width: min(30rem, calc(100vw - 2rem));
+    padding: 0;
+    border: 1px solid var(--dp-kant);
+    border-radius: var(--dp-radius);
+    background: var(--dp-flate);
+    color: var(--dp-tekst);
+    box-shadow: 0 18px 48px rgb(0 0 0 / .18);
+}
+
+.dp-dialog::backdrop {
+    background: rgb(15 20 15 / .45);
+}
+
+.dialog-hode {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .85rem 1rem;
+    border-bottom: 1px solid var(--dp-kant);
+}
+
+.dialog-kropp {
+    padding: 1rem;
+}
+
+.dialog-fot {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    padding: .85rem 1rem;
+    border-top: 1px solid var(--dp-kant);
+    background: var(--dp-flate-2);
+    border-radius: 0 0 var(--dp-radius) var(--dp-radius);
+}
+
+.lukkeknapp {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--dp-tekst-svak);
+}
+
+.lukkeknapp:hover {
+    color: var(--dp-tekst);
+}
+
+@media (max-width: 480px) {
+    /* Pa mobil legger dialogen seg nederst, der tommelen er. En boks midt pa
+       skjermen krever at man strekker seg. */
+    .dp-dialog {
+        width: 100%;
+        max-width: 100%;
+        margin: auto auto 0;
+        border-radius: var(--dp-radius) var(--dp-radius) 0 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .dialog-fot {
+        border-radius: 0;
+    }
+
+    /* Knappene i foten deler bredden likt. Da treffer man dem uten a sikte. */
+    .dialog-fot .btn {
+        flex: 1 1 0;
+        min-height: 44px;
+    }
+}
+
+/* --- Sider uten innlogging ------------------------------------------------ */
+
+.apen-side {
+    display: grid;
+    place-items: center;
+    min-height: 100svh;
+    padding: 1.5rem;
+}
+
+.apen-kort {
+    width: min(25rem, 100%);
+}
+
+/* --- Skjema --------------------------------------------------------------- */
+
+.form-label {
+    font-size: .85rem;
+    font-weight: 600;
+    margin-bottom: .25rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: var(--dp-radius-sm);
+    border-color: var(--dp-kant-sterk);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--dp-aksent);
+    box-shadow: 0 0 0 3px var(--dp-aksent-svak);
+}
+
+.form-text {
+    font-size: .8rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* Uten denne star det en tom, rod boks pa hvert skjema for forste
+   innsending. ASP.NET Core setter klassen selv nar det ikke finnes feil. */
+.validation-summary-valid {
+    display: none;
+}
+
+/* --- Knapper -------------------------------------------------------------- */
+
+.btn {
+    border-radius: var(--dp-radius-sm);
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: var(--dp-aksent);
+    border-color: var(--dp-aksent);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: var(--dp-aksent-mork);
+    border-color: var(--dp-aksent-mork);
+}
+
+.btn-outline-secondary {
+    border-color: var(--dp-kant-sterk);
+    color: var(--dp-tekst);
+}
+
+/* Regnestykket bak en formengde. Grunnlaget skal vaere synlig, men det
+   trenger ikke fylle kortet - en forbruker vil se tallet, ikke utledningen. */
+.dp-detaljer {
+    cursor: pointer;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--dp-aksent);
+    list-style-position: inside;
+}
+
+.dp-detaljer::marker {
+    color: var(--dp-tekst-svak);
+}
+
+/* Tekstlenke i en radhandling. Samme vekt som .btn-lenke-fare, men i vanlig
+   lenkefarge - a rette noe er ikke en farlig handling. */
+.btn-lenke {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--dp-aksent);
+    font-size: .85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.btn-lenke:hover {
+    text-decoration: underline;
+}
+
+/* Raden skjemaet ved siden av holder pa a endre. Uten et merke er det ikke
+   til a se hvilken av ti behandlinger som ligger i feltene. */
+.rad-liste li.redigeres {
+    background: var(--dp-aksent-svak);
+    box-shadow: inset 3px 0 0 var(--dp-aksent);
+}
+
+.btn-lenke-fare {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--dp-fare);
+    font-size: .85rem;
+    font-weight: 600;
+}
+
+/* --- Sidehode ------------------------------------------------------------- */
+
+.sidehode {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: .85rem;
+}
+
+.sidehode h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.sidehode .undertittel {
+    color: var(--dp-tekst-svak);
+    font-size: .9rem;
+}
+
+
+.sidehode .handlinger {
+    margin-left: auto;
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+/* --- Rutenett ------------------------------------------------------------- */
+
+.dp-kolonner {
+    display: grid;
+    gap: var(--dp-kortavstand);
+    grid-template-columns: 1fr;
+    /* Gap virker bare INNE i rutenettet. Uten bunnmarg la neste rad - eller
+       neste kort - klistret inntil den forrige, og pa mobil, der kolonnene
+       stables, ble overgangen mellom to rader den eneste stedet i hele
+       dashbordet uten luft. */
+    margin-bottom: var(--dp-kortavstand);
+}
+
+@media (min-width: 992px) {
+    .dp-kolonner {
+        grid-template-columns: 2fr 1fr;
+        align-items: start;
+    }
+}
+
+.dp-kolonner > .kolonne > .kort:first-child {
+    margin-top: 0;
+}
+
+/* --- Bunnen av dashbordet ------------------------------------------------
+   Handlelisten er den eneste boksen her som vokser fritt: tre punkter i dag,
+   tjue i morgen. Derfor har den sin egen kolonne pa PC, med egen hoyde. La
+   den ligge i samme stabel som forsikring og veterinaer, ville hvert nye
+   punkt dyttet de to nedover - og de skal sta stille. */
+.dp-bunn {
+    display: grid;
+    gap: var(--dp-kortavstand);
+    grid-template-columns: 1fr;
+    margin-bottom: var(--dp-kortavstand);
+}
+
+/* Gap gjor jobben mellom kortene her. Uten dette legger .kort + .kort en
+   margin oppa, og avstanden blir dobbel. */
+.dp-bunn .kort + .kort {
+    margin-top: 0;
+}
+
+/* Mobil: kolonnene loses opp med display:contents, slik at alle fire kortene
+   blir direkte barn av rutenettet og kan sorteres hver for seg.
+
+   Uten dette ville handlelisten havnet NEDERST - etter forsikring og
+   veterinaer - fordi den ligger i den andre kolonnen. Rekkefolgen her er den
+   som gjelder pa mobil: forfall, handleliste, forsikring, veterinaer sist. */
+@media (max-width: 991.98px) {
+    .dp-bunn-venstre,
+    .dp-bunn-hoyre {
+        display: contents;
+    }
+
+    .bunn-forfall { order: 1; }
+    .bunn-handleliste { order: 2; }
+    .bunn-forsikring { order: 3; }
+    .bunn-veterinar { order: 4; }
+}
+
+@media (min-width: 992px) {
+    .dp-bunn {
+        grid-template-columns: 1fr 1fr;
+        /* Kolonnene starter i topp hver for seg i stedet for a strekkes til
+           samme hoyde. Det er nettopp det som gjor hoydene uavhengige. */
+        align-items: start;
+    }
+
+    /* Inne i en kolonne er kortene vanlige blokker igjen, og trenger sin
+       egen avstand - gap virker bare mellom kolonnene. */
+    .dp-bunn-venstre > .kort + .kort {
+        margin-top: var(--dp-kortavstand);
+    }
+}
+
+/* --- Vektsiden pa mobil ---------------------------------------------------
+   Kolonnene loses opp med display:contents, sa de tre kortene blir direkte
+   barn av rutenettet og kan sorteres hver for seg. Samme grep som .dp-bunn.
+
+   Uten dette havner registreringsskjemaet NEDERST - etter hele historikken -
+   fordi det ligger i den andre kolonnen. Pa en telefon med tjue malinger
+   betyr det en lang rulling for a legge inn dagens vekt, hver eneste gang.
+
+   Rekkefolgen her er den som gjelder pa mobil: grafen viser utviklingen,
+   skjemaet star der man skal handle, og historikken ligger under for den som
+   vil se etter. Pa PC er layoutet urort. */
+@media (max-width: 991.98px) {
+    .vektsider > .kolonne {
+        display: contents;
+    }
+
+    .vekt-graf { order: 1; }
+    .vekt-skjema { order: 2; }
+    .vekt-historikk { order: 3; }
+
+    /* Gap gjor jobben mellom kortene nar kolonnene er lost opp. Uten dette
+       legger .kort + .kort en margin oppa, og avstanden blir dobbel. */
+    .vektsider .kort + .kort {
+        margin-top: 0;
+    }
+}
+
+/* Like brede kolonner. Brukes der de to boksene er like viktige. */
+@media (min-width: 992px) {
+    .dp-kolonner.likt {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* En seksjon er et kort uten ramme: overskrift og innhold, men uten en boks
+   rundt en boks. */
+.seksjon {
+    margin-bottom: var(--dp-kortavstand);
+}
+
+.seksjon-hode {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    margin-bottom: .5rem;
+    padding: 0 .15rem;
+}
+
+.seksjon-hode h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.seksjon-hode .ikon {
+    color: var(--dp-tekst-svak);
+}
+
+.seksjon-hode .se-alle {
+    margin-left: auto;
+}
+
+/* Bootstrap 5.3 har ikke min-w-0. Uten den sprenger lange navn og
+   e-postadresser sidemenyen i stedet for a bli forkortet. */
+.min-w-0 {
+    min-width: 0;
+}
+
+/* Husstandsvelgeren: kortet er en knapp nar man er med i flere husstander. */
+.husstandsvelger {
+    margin: 0 .75rem .75rem;
+}
+
+.husstandsvelger .husstandskort {
+    margin: 0;
+    background: var(--dp-flate-2);
+    cursor: pointer;
+}
+
+/* Radene i husstandsvelgeren speiler selve kortet: ikon, navn, rolle under.
+   Da ser listen ut som det man valgte fra, ikke som en fremmed meny. */
+.husstandsvalg {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem .6rem;
+    border-radius: var(--dp-radius-sm);
+}
+
+.husstandsvalg .merke {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    border-radius: var(--dp-radius-sm);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent);
+}
+
+.husstandsvalg .navn {
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.husstandsvalg .under {
+    font-size: .78rem;
+    color: var(--dp-tekst-svak);
+}
+
+.husstandsvalg.aktiv {
+    background: var(--dp-aksent-svak);
+}
+
+.husstandsvalg.aktiv .navn {
+    color: var(--dp-aksent-mork);
+}
+
+.husstandsvelger .dropdown-menu,
+.brukermeny .dropdown-menu {
+    padding: .35rem;
+    border-color: var(--dp-kant);
+    border-radius: var(--dp-radius);
+    box-shadow: 0 4px 16px rgba(26, 29, 25, .08);
+}
+
+/* --- Vektgraf ----------------------------------------------------------
+   Serienfargen er egen, ikke --dp-aksent: aksenten er for lite mettet til
+   a lese som data - den ville blitt oppfattet som ramme eller hjelpelinje.
+   Verifisert mot lyshet, kroma og kontrast for den ble valgt. */
+
+.vektgraf {
+    position: relative;
+    margin: 0;
+}
+
+/* Ensartet skalering: hoyden folger bredden, sa punkter forblir sirkler
+   og teksten beholder proporsjonene. */
+.vektgraf-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.graf-rutenett {
+    stroke: var(--dp-kant);
+    stroke-width: 1;
+}
+
+.graf-akse {
+    fill: var(--dp-tekst-svak);
+    font-size: 11px;
+}
+
+.graf-flate {
+    fill: var(--dp-serie-1);
+    fill-opacity: .1;
+    stroke: none;
+}
+
+.graf-linje {
+    fill: none;
+    stroke: var(--dp-serie-1);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.graf-punkt {
+    fill: var(--dp-serie-1);
+    stroke: var(--dp-flate);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+/* Treffflatene ligger over grafen og folger punktenes prosentposisjon. */
+.graf-treff {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.graf-treffpunkt {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.graf-treffpunkt:focus-visible {
+    outline: 2px solid var(--dp-serie-1);
+    outline-offset: 2px;
+}
+
+.graf-boble {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 14px));
+    padding: .35rem .6rem;
+    border-radius: var(--dp-radius-sm);
+    background: var(--dp-tekst);
+    color: var(--dp-tekst-hvit);
+    font-size: .78rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.graf-bunn {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-top: .35rem;
+    font-size: .78rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* Teksten baerer aldri seriefargen. Tallet star i vanlig blekk. */
+.graf-siste strong {
+    color: var(--dp-tekst);
+}
+
+/* Enheten sies en gang, ikke pa hvert aksemerke. */
+.graf-enhet {
+    opacity: .7;
+}
+
+/* --- Veterinaer ----------------------------------------------------------- */
+
+/* Nummeret er lagret nettopp for a kunne ringes. Da skal ett trykk holde -
+   ikke lesing og tasting inn i telefonappen. */
+.ringknapp {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    min-height: 44px;
+    padding: .4rem .8rem;
+    border: 1px solid var(--dp-aksent);
+    border-radius: var(--dp-radius-pille);
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent-mork);
+    font-size: .875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ringknapp:hover,
+.ringknapp:focus-visible {
+    background: var(--dp-aksent);
+    color: var(--dp-tekst-hvit);
+}
+
+/* Apningstider: dagsnavnet skal skille seg fra klokkeslettet, og dagene fra
+   hverandre. Uten dette flyter "Man 08-16 Tir 08-16 Ons 10-14, 16-20" sammen
+   til en eneste tallrekke - verst nettopp for de dagene som har komma i seg. */
+/* Dag og klokkeslett henger sammen. Uten nowrap brekker linjen midt i
+   tiden, og "Tor 08-" blir staende alene pa slutten av en rad. */
+.apningsdag {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.apningsdag .dag {
+    font-weight: 600;
+    color: var(--dp-tekst);
+}
+
+/* Skilletegn mellom dager, ikke etter den siste. */
+.apningsdag + .apningsdag::before {
+    content: "·";
+    margin-right: .3rem;
+    opacity: .45;
+}
+
+/* Typen skiller stedene fra hverandre. Vakta skal vaere til a se pa avstand
+   nar noe har skjedd - derfor egen farge, ikke bare en ekstra tekstlinje. */
+.merkelapp.type-vakt {
+    background: #fdf0e3;
+    color: #8a4b12;
+}
+
+.merkelapp.type-sykehus {
+    background: #fdeaea;
+    color: #8f2323;
+}
+
+.merkelapp.type-annet {
+    background: var(--dp-flate-2);
+    color: var(--dp-tekst-svak);
+}
+
+.merkelapp.forsikring {
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent-mork);
+}
+
+/* Aret sa langt, oeverst i besokslisten. */
+.sammendrag {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--dp-kant);
+    background: var(--dp-flate-2);
+}
+
+.sammendrag .verdi {
+    display: block;
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.sammendrag .etikett {
+    display: block;
+    font-size: .8rem;
+    color: var(--dp-tekst-svak);
+}
+
+/* --- Innlogging: to veier videre --------------------------------------- */
+
+/* Vannrett strek med et ord i midten. Skiller "logg inn" fra "opprett
+   konto" uten a rangere dem. */
+.skillelinje {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: 1.1rem 0;
+    color: var(--dp-tekst-svak);
+    font-size: .8rem;
+}
+
+.skillelinje::before,
+.skillelinje::after {
+    content: "";
+    flex: 1 1 0;
+    height: 1px;
+    background: var(--dp-kant);
+}
+
+/* Omrisset gir samme vekt som den fylte knappen uten a konkurrere med den.
+   Bootstrap sin btn-outline-primary ville blitt bla - temaet vart er
+   gronnt, og appen definerer kun .btn-primary pa nytt. */
+.btn-aksent-omriss {
+    border: 1px solid var(--dp-aksent);
+    color: var(--dp-aksent-mork);
+    background: transparent;
+    font-weight: 600;
+}
+
+.btn-aksent-omriss:hover,
+.btn-aksent-omriss:focus-visible {
+    background: var(--dp-aksent-svak);
+    border-color: var(--dp-aksent-mork);
+    color: var(--dp-aksent-mork);
+}
+
+/* Notatet i veterinaerkortet. Skilt fra faktalisten, fordi det er fritekst
+   og ikke et felt med etikett. */
+.dialog-notat {
+    margin-top: 1rem;
+    padding-top: .85rem;
+    border-top: 1px solid var(--dp-kant);
+}
+
+/* Linjeskift beholdes. Skriver noen tre punkter under hverandre, skal de
+   ikke bli til en eneste lang setning. */
+.dialog-notat p {
+    white-space: pre-line;
+}
+
+/* Faktalisten brukes ogsa i dialogen, der det er god plass til etiketten. */
+.dp-dialog .fakta dt {
+    max-width: none;
+}
+
+/* --- Utskrift -----------------------------------------------------------
+   Egen side, ikke bare et annet utseende pa informasjonssiden: arket har et
+   ANNET INNHOLD - vekthistorikk, behandlinger og forsikringer som ikke star
+   pa skjermen, og uten notatskjema og navigasjon. */
+
+.utskrift {
+    background: var(--dp-flate);
+}
+
+.utskrift-ark {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+}
+
+.utskrift-hode {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: .75rem;
+    border-bottom: 2px solid var(--dp-aksent);
+}
+
+.utskrift-hode h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.utskrift-undertittel {
+    margin: .15rem 0 0;
+    color: var(--dp-tekst-svak);
+    font-size: .85rem;
+}
+
+.utskrift-knapper {
+    display: flex;
+    gap: .5rem;
+    flex: 0 0 auto;
+}
+
+/* HVERT DYR STARTER OEVERST PA ET NYTT ARK.
+   break-before er den gjeldende egenskapen; page-break-before star igjen
+   fordi eldre Safari og Firefox fortsatt leser den. Uten begge flyter to dyr
+   sammen midt pa en side. */
+.utskrift-dyr {
+    break-before: page;
+    page-break-before: always;
+}
+
+/* ...men ikke det forste. Ellers begynner utskriften med et blankt ark. */
+.utskrift-dyr:first-of-type {
+    break-before: auto;
+    page-break-before: auto;
+}
+
+.utskrift-dyr h2 {
+    margin: 0 0 .75rem;
+    padding-bottom: .35rem;
+    border-bottom: 1px solid var(--dp-kant-sterk);
+    font-size: 1.25rem;
+}
+
+.utskrift-blokk {
+    margin-bottom: 1.1rem;
+    /* En overskrift alene nederst pa arket, med innholdet pa neste side, er
+       verre enn et litt kortere ark. */
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.utskrift-blokk h3 {
+    margin: 0 0 .4rem;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--dp-aksent-mork);
+}
+
+/* Etikett og verdi i to spalter. Etikettene er korte og like lange nok til
+   at en fast venstrespalte leser bedre enn en flytende. */
+.utskrift-fakta {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: .15rem .75rem;
+    margin: 0 0 .5rem;
+    font-size: .9rem;
+}
+
+.utskrift-fakta dt {
+    color: var(--dp-tekst-svak);
+    font-weight: 500;
+}
+
+.utskrift-fakta dd {
+    margin: 0;
+}
+
+.utskrift-tabell {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+
+.utskrift-tabell th,
+.utskrift-tabell td {
+    padding: .3rem .4rem;
+    border-bottom: 1px solid var(--dp-kant);
+    text-align: left;
+    vertical-align: top;
+}
+
+.utskrift-tabell th {
+    color: var(--dp-tekst-svak);
+    font-weight: 600;
+}
+
+.utskrift-tabell tr.avsluttet td {
+    color: var(--dp-tekst-svak);
+}
+
+.utskrift-notat {
+    margin-bottom: .6rem;
+    font-size: .9rem;
+}
+
+.utskrift-notat p {
+    margin: .1rem 0 0;
+    white-space: pre-wrap;
+}
+
+.utskrift-tomt {
+    margin: 0;
+    color: var(--dp-tekst-svak);
+    font-size: .9rem;
+}
+
+@media print {
+    /* Knappene er til for a STARTE utskriften. De skal ikke ligge som en
+       gra boks oeverst pa arket man nettopp lagde. */
+    .utskrift-knapper {
+        display: none;
+    }
+
+    .utskrift-ark {
+        max-width: none;
+        padding: 0;
+    }
+
+    /* Marg settes av utskriftsdialogen, ikke her. Nettleseren legger til
+       topptekst og bunntekst i den samme margen. */
+    .utskrift {
+        background: #fff;
+    }
+
+    /* Grafen er SVG og skalerer fritt, men uten en tydelig bredde blir den
+       sa bred som arket og dermed uforholdsmessig hoy. */
+    .vektgraf {
+        max-width: 30rem;
+    }
+}

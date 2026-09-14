@@ -1,0 +1,22 @@
+# Normaliser linjeskift. .editorconfig sier LF, men den styrer editoren -
+# ikke hva Git faktisk lagrer. Uten denne fila kan en Windows-maskin
+# committe CRLF, og et shellskript med CRLF feiler inne i Linux-containeren
+# med "bad interpreter" - en feilmelding som ikke peker mot arsaken.
+* text=auto eol=lf
+
+# Binaerfiler skal ikke roeres.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+
+# Skript ma ha LF uansett plattform.
+*.sh text eol=lf
+
+# Genererte migrasjoner: marker som generert i diff-visning pa GitHub.
+src/Dyrepermen.Infrastructure/Persistence/Migrations/*.Designer.cs linguist-generated=true
+src/Dyrepermen.Infrastructure/Persistence/Migrations/*ModelSnapshot.cs linguist-generated=true

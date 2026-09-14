@@ -1,0 +1,110 @@
+@using Dyrepermen.Application.Extensions
+@model VektSideVm
+@{
+    ViewData["Tittel"] = $"Vekt – {Model.DyrNavn}";
+}
+
+<partial name="_Dyrhode" model='new DyrhodeVm("Vekt", Model.DyrId, Model.DyrNavn)' />
+
+@* Klassene under styrer rekkefolgen pa mobil, der kolonnene loses opp.
+   Se .vektsider i site.css. *@
+<div class="dp-kolonner vektsider">
+    <div class="kolonne">
+        @if (Model.Graf is { } graf)
+        {
+            <section class="kort vekt-graf">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vekt" /></svg>
+                    <h2>Vektutvikling for @Model.DyrNavn</h2>
+                </div>
+                <div class="kort-kropp">
+                    <partial name="_Graf" model="graf" />
+                </div>
+            </section>
+        }
+
+        <section class="kort vekt-historikk">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vekt" /></svg>
+                <h2>Historikk</h2>
+                @if (Model.Historikk.Count > 0)
+                {
+                    <span class="antall">@Model.Historikk.Count</span>
+                }
+            </div>
+
+            @if (Model.Historikk.Count == 0)
+            {
+                <div class="tomt">Ingen vekt registrert ennå.</div>
+            }
+            else
+            {
+                @* Synkende datorekkefolge - nyeste maling forst. *@
+                <ul class="rad-liste">
+                    @foreach (var rad in Model.Historikk)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@Vektformat.TilKiloTekst(rad.VektGram)</span>
+                                <span class="under d-block">
+                                    @($"{rad.Dato:d. MMMM yyyy}") ·
+                                    @* Nullbar fordi brukeren kan vaere slettet. *@
+                                    @(rad.RegistrertAv ?? "slettet bruker")
+                                </span>
+                            </span>
+                            <span class="hoyre">
+                                <form method="post" asp-action="Slett"
+                                      asp-route-dyrId="@Model.DyrId"
+                                      asp-route-vektId="@rad.Id"
+                                      onsubmit="return confirm('Slette denne målingen?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-lenke-fare">Slett</button>
+                                </form>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="kolonne">
+        <section class="kort vekt-skjema">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-pluss" /></svg>
+                <h2>Registrer vekt</h2>
+            </div>
+            <div class="kort-kropp">
+                <form method="post" asp-action="Registrer" asp-route-dyrId="@Model.DyrId">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Kilo" class="form-label"></label>
+                        @* inputmode decimal, ikke type=number. Et talltastatur
+                           pa mobil viser komma pa norsk oppsett; type=number
+                           tvinger punktum i noen nettlesere. *@
+                        <input asp-for="Ny.Kilo" class="form-control"
+                               inputmode="decimal" autocomplete="off" autofocus
+                               placeholder="kg" />
+                        <span asp-validation-for="Ny.Kilo" class="text-danger small"></span>
+                        <div class="form-text">Bruk komma: 27,4</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Dato" class="form-label"></label>
+                        <input asp-for="Ny.Dato" class="form-control" />
+                        <span asp-validation-for="Ny.Dato" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

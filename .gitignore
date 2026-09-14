@@ -28,12 +28,14 @@ coverage*.xml
 *.coverage
 BenchmarkDotNet.Artifacts/
 
-# --- Node ---
-# "dist/" MA vaere scopet. Et bart monster matcher alle mapper som heter
-# dist, ogsa wwwroot/lib/bootstrap/dist/ i appen - og da forsvinner hele
-# Bootstrap ut av repoet. Bygget blir gront og siden star uten CSS.
-# Regelen tas med hit ogsa, sa fella ikke kan gjenoppsta pa denne branchen.
+# --- Node, for fremtidig klient i clients/ ---
+# MA vaere scopet til clients/. Et bart "dist/"-monster matcher alle mapper
+# som heter dist, ogsa wwwroot/lib/bootstrap/dist/ - og da forsvinner hele
+# Bootstrap og jQuery ut av repoet. Appen bygger, men star uten CSS og JS
+# i Docker og CI. Se docs/beslutninger/0003-gitignore-dist-monster.md
 node_modules/
+clients/**/dist/
+clients/**/.vite/
 clients/**/dist/
 clients/**/.vite/
 *.tsbuildinfo
@@ -41,7 +43,57 @@ npm-debug.log*
 pnpm-debug.log*
 
 # --- Operativsystem ---
+# --- Operativsystem ---
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# macOS og iCloud lager konfliktkopier med " 2"-suffiks: "DyrService 2.cs".
+# De er ekte .cs-filer for kompilatoren, sa de gir CS0101 "already contains a
+# definition" pa hver eneste type i prosjektet - en feil som peker pa den
+# riktige fila og ikke sier noe om kopien. Skjer repoet ligger i en synket
+# mappe. Sperren her hindrer at de blir committet og odelegger for andre.
+* [0-9].cs
+* [0-9].cshtml
+* [0-9].csproj
+* [0-9].json
+* [0-9].sh
+* [0-9].yaml
+*.icloud
+
+# ============================================
+# Prosjektspesifikt - les denne delen
+# ============================================
+
+# Hemmeligheter. Skal ALDRI i repoet.
+.env
+infra/.env
+*.env.local
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.p12
+*.key
+
+# Eksempelfil skal derimot vaere med.
+# Ma sta etter .env-regelen - siste treff vinner.
+!.env.example
+!infra/.env.example
+
+# Opplastede dokumenter (kapittel 13.1, fillager i v1)
+opplastinger/
+src/Dyrepermen.Web/wwwroot/opplastinger/
+
+# Generert migrasjonsskript (kapittel 14.3)
+migrations.sql
+
+# Databasedumper fra sikkerhetskopi-jobben (kapittel 15)
+*.sql.gz
+*.dump
+sikkerhetskopi/
+
+# Lokale Docker-volumer om noen binder dem til disk
+.docker-data/
 Thumbs.db
 desktop.ini
 

@@ -1,0 +1,326 @@
+@using Dyrepermen.Application.Interfaces
+@using Dyrepermen.Domain.Enums
+@inject IGjeldendeBruker Meg
+@{
+    var innlogget = User.Identity?.IsAuthenticated == true && Meg.ErInnlogget;
+    var gjeldende = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    string Aktiv(params string[] controllere) =>
+        controllere.Any(c =>
+            string.Equals(gjeldende, c, StringComparison.OrdinalIgnoreCase))
+            ? "page" : "false";
+
+    // To bokstaver fra visningsnavnet. "Marius Gundersen" gir MG.
+    var initialer = string.Concat(
+        (Meg.Visningsnavn ?? "")
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(d => char.ToUpperInvariant(d[0])));
+}
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="utf-8" />
+    @* viewport-fit=cover kreves for at trygg sone pa iOS skal virke.
+       Uten den havner utloggingsknappen under hjemindikatoren. *@
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>@ViewData["Tittel"] – Dyrepermen</title>
+    @* SVG i fanen, PNG pa hjem-skjermen. iOS stotter IKKE SVG som
+       apple-touch-icon, og uten en PNG viser den en bokstav i stedet for
+       ikonet. Fila ligger ogsa pa /apple-touch-icon.png, som er der iOS
+       leter nar lenken mangler. *@
+    <link rel="icon" href="~/img/logo.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" />
+
+    @* Navnet under ikonet pa hjem-skjermen. Uten den bruker iOS <title>,
+       som her ville blitt "Oversikt - Dyrepermen". *@
+    <meta name="apple-mobile-web-app-title" content="Dyrepermen" />
+
+    @* Farger nettleserens adresselinje pa Android og statuslinja nar appen
+       kjorer fra hjem-skjermen. *@
+    <meta name="theme-color" content="#3f6f4e" />
+
+    <link rel="manifest" href="~/site.webmanifest" />
+
+    @* Stilene for oppstartsskjermen MA ligge inline. Ligger de i en ekstern
+       fil, blinker det urenderte innholdet frem for overlegget far stil. *@
+    <style>
+        #oppstart {
+            position: fixed; inset: 0; z-index: 9999;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 1rem;
+            background: #f4f6f3;
+            transition: opacity .25s ease;
+        }
+        #oppstart.skjult { opacity: 0; pointer-events: none; }
+        #oppstart .spinner {
+            width: 30px; height: 30px;
+            border: 3px solid #dfe4dc; border-top-color: #2f6b46;
+            border-radius: 50%;
+            animation: snurr .8s linear infinite;
+        }
+        @@keyframes snurr { to { transform: rotate(360deg); } }
+        @@media (prefers-reduced-motion: reduce) {
+            #oppstart .spinner { animation: none; border-top-color: #dfe4dc; }
+        }
+    </style>
+    <noscript>
+        <style>#oppstart { display: none; }</style>
+    </noscript>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div id="oppstart" role="status" aria-live="polite">
+        <img src="~/img/logo.svg" alt="Dyrepermen" width="72" height="72" />
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="text-body-secondary small">Laster …</p>
+    </div>
+
+    <partial name="_Ikoner" />
+
+    @if (innlogget)
+    {
+        @* EN dialog for hele appen, ikke en per funksjon. Innholdet hentes
+           nar den apnes, sa markupen er tom til den trengs. showModal() gir
+           fokusfelle, Esc-lukking og bakteppe uten en linje egen kode.
+
+           Brukes av foringsdialogen og av veterinaerkortet. Trengs den et
+           tredje sted, skal den gjenbrukes der ogsa - to nesten like dialoger
+           blir to steder a rette samme feil. *@
+        <dialog id="dpdialog" class="dp-dialog">
+            <div id="dpdialog-innhold"
+                 hx-on::after-swap="const d = this.closest('dialog'); if (!d.open) d.showModal();"></div>
+        </dialog>
+
+        <nav class="topplinje d-lg-none">
+            <a class="sidemeny-merke p-0" href="/">
+                <img src="~/img/logo.svg" alt="" height="26" width="26" />
+                <span>Dyrepermen</span>
+            </a>
+            @* Treffflaten skal vaere minst 44 px, jf. plan kapittel 10.2.
+               btn-sm ga rundt 31 og var vanskelig a treffe med tommelen. *@
+            <button class="btn menyknapp" type="button"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#hovedmeny"
+                    aria-controls="hovedmeny"
+                    aria-expanded="false"
+                    aria-label="Åpne meny">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-meny" /></svg>
+            </button>
+        </nav>
+
+        <div class="dp-ramme">
+            <div class="offcanvas-lg offcanvas-end sidemeny"
+                 tabindex="-1" id="hovedmeny"
+                 aria-labelledby="hovedmenyTittel">
+
+                <div class="offcanvas-header d-lg-none">
+                    <h2 class="offcanvas-title h6" id="hovedmenyTittel">Meny</h2>
+                    @* data-bs-target ma sta ogsa her. Utelates den pa
+                       lukkeknappen, lukkes ikke skuffen. *@
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="offcanvas"
+                            data-bs-target="#hovedmeny"
+                            aria-label="Lukk"></button>
+                </div>
+
+                <div class="offcanvas-body">
+                    <a class="sidemeny-merke d-none d-lg-flex" href="/">
+                        <img src="~/img/logo.svg" alt="" height="26" width="26" />
+                        <span>Dyrepermen</span>
+                    </a>
+
+                    @* Husstandskortet: hvilken husstand du ser pa na.
+                       Er du med i flere, blir det en velger. Rollen din kan
+                       vaere ulik i hver - eier hjemme, gjest hos pappa. *@
+                    @* Alltid en velger, ogsa med bare en husstand. Da er den
+                       samme knappen uansett, og du oppdager at det GAR an a
+                       vaere med i flere - i stedet for at menyen endrer seg
+                       under foettene pa deg forste gang noen legger deg til. *@
+                    <div class="dropdown husstandsvelger">
+                        <button class="husstandskort w-100 text-start border-0"
+                                type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                aria-label="Bytt husstand">
+                            <span class="merke">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-hjem" /></svg>
+                            </span>
+                            <span class="min-w-0 flex-grow-1">
+                                <span class="navn d-block">@Meg.HusstandNavn</span>
+                                <span class="under">
+                                    @(Meg.KanEndre ? "Bor her" : "Gjest")@(Meg.Husstander.Count > 1
+                                        ? $" · {Meg.Husstander.Count} husstander" : "")
+                                </span>
+                            </span>
+                            <svg class="ikon" aria-hidden="true" style="transform:rotate(90deg)">
+                                <use href="#i-chevron" />
+                            </svg>
+                        </button>
+
+                        @* Kun husstandene. Opprett og innstillinger ligger i
+                           menyen, og hoerer ikke hjemme i en velger - den skal
+                           svare pa ett sporsmal: hvilken husstand ser jeg pa. *@
+                        <ul class="dropdown-menu w-100">
+                            @foreach (var h in Meg.Husstander)
+                            {
+                                <li>
+                                    <form method="post" action="/husstand/bytt">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="husstandId" value="@h.Id" />
+                                        <input type="hidden" name="retur"
+                                               value="@Context.Request.Path" />
+                                        <button type="submit"
+                                                class="dropdown-item husstandsvalg @(h.ErAktiv ? "aktiv" : "")">
+                                            <span class="merke">
+                                                <svg class="ikon" aria-hidden="true">
+                                                    <use href="#i-hjem" />
+                                                </svg>
+                                            </span>
+                                            <span class="min-w-0">
+                                                <span class="navn d-block text-truncate">@h.Navn</span>
+                                                <span class="under">
+                                                    @(h.Rolle == Husstandsrolle.Beboer ? "Bor her" : "Gjest")
+                                                </span>
+                                            </span>
+                                        </button>
+                                    </form>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+
+                    <ul class="sidemeny-nav">
+                        <li>
+                            <a href="/" aria-current="@Aktiv("Hjem")">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-oversikt" /></svg>
+                                Oversikt
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/dyr" aria-current="@Aktiv("Dyr", "Vekt", "Behandling", "Medisin", "Forplan")">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-dyr" /></svg>
+                                Dyrene
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/handleliste" aria-current="@Aktiv("Handleliste")">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-handleliste" /></svg>
+                                Handleliste
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/veterinar" aria-current="@Aktiv("Veterinar")">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-veterinar" /></svg>
+                                Veterinær
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/forsikring" aria-current="@Aktiv("Forsikring")">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-behandling" /></svg>
+                                Forsikring
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/informasjon" aria-current="@Aktiv("Informasjon")">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-informasjon" /></svg>
+                                Informasjon
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/innstillinger" aria-current="@Aktiv("Innstilling")">
+                                <svg class="ikon" aria-hidden="true"><use href="#i-innstillinger" /></svg>
+                                Innstillinger
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="sidemeny-bunn">
+                        @* Brukerkortet. Her ligger DINE innstillinger.
+                           Skillet mot menyen over er eierskap:
+                           personopplysninger mot husstandens delte data.
+                           dropup fordi kortet star nederst - en vanlig
+                           dropdown ville apnet seg under skjermkanten. *@
+                        <div class="dropup brukermeny">
+                            <button class="brukerkort w-100 text-start border-0"
+                                    type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <span class="initialer" aria-hidden="true">@initialer</span>
+                                <span class="min-w-0">
+                                    <span class="navn d-block">@Meg.Visningsnavn</span>
+                                    <span class="epost d-block">@Meg.Epost</span>
+                                </span>
+                            </button>
+
+                            @* Utlogging er POST med antiforgery-token, ikke en
+                               lenke. En GET-utlogging kan utloses av et bilde
+                               pa en fremmed side. *@
+                            <ul class="dropdown-menu w-100">
+                                <li><a class="dropdown-item" href="/konto">Se profil</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form method="post" action="/logg-ut">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item">Logg ut</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <main class="dp-innhold">
+                @if (TempData["Melding"] is string melding)
+                {
+                    <div class="alert alert-success py-2" role="status">@melding</div>
+                }
+                @if (TempData["Feil"] is string feilmelding)
+                {
+                    <div class="alert alert-danger py-2" role="alert">@feilmelding</div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    }
+    else
+    {
+        <main class="apen-side">
+            @RenderBody()
+        </main>
+    }
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/htmx/dist/htmx.min.js"></script>
+    <script>
+        // Skuffen lukkes av seg selv ved vanlig sidelast, men htmx bytter kun
+        // en del av siden - da blir den staende apen over navigasjonen.
+        // Se plan kapittel 10.2.
+        document.body.addEventListener('htmx:afterOnLoad', function () {
+            var meny = document.getElementById('hovedmeny');
+            if (!meny) return;
+
+            var skuff = bootstrap.Offcanvas.getInstance(meny);
+            if (skuff) skuff.hide();
+        });
+    </script>
+    <script>
+        (function () {
+            var o = document.getElementById('oppstart');
+            if (!o) return;
+
+            function skjul() {
+                o.classList.add('skjult');
+                setTimeout(function () { o.remove(); }, 300);
+            }
+
+            window.addEventListener('load', skjul);
+            // Overlegget ma aldri kunne bli hengende om noe feiler.
+            setTimeout(skjul, 8000);
+        })();
+    </script>
+    @await RenderSectionAsync("Skript", required: false)
+</body>
+</html>

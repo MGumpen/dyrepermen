@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!-- Lokale hemmeligheter ligger utenfor repoet, i
+         ~/.microsoft/usersecrets/<id>/secrets.json. Se README. -->
+    <UserSecretsId>43246f8c-7536-47d7-8978-28c7142c3f0f</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Dyrepermen.Application\Dyrepermen.Application.csproj" />
+    <!-- Refereres kun for DI-registrering i Program.cs. Se plan kapittel 3.4. -->
+    <ProjectReference Include="..\Dyrepermen.Infrastructure\Dyrepermen.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Startprosjekt for "dotnet ef". Verktoyet leser designtidsinformasjon herfra. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

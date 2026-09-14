@@ -1,0 +1,19 @@
+# Rotfil, slik at "docker compose up" virker uten flagg fra repo-roten.
+#
+# Den ekte definisjonen ligger i infra/compose.yaml, der plan kapittel 3.2
+# vil ha den. Denne fila dupliserer ingenting - den peker.
+#
+#   docker compose up -d          hele appen: database og web
+#   docker compose up -d db       kun databasen, for daglig utvikling
+#   docker compose up -d --build  bygg web-imaget pa nytt etter kodeendring
+#   docker compose down           stopp, behold data
+#   docker compose down -v        stopp og slett databasen
+#
+# Prosjektnavnet ma vaere det samme her som i infra/compose.yaml. Ellers far
+# du to adskilte prosjekter med hvert sitt volum - altsa to databaser - alt
+# etter hvilken fil du startet fra.
+
+name: dyrepermen
+
+include:
+  - infra/compose.yaml

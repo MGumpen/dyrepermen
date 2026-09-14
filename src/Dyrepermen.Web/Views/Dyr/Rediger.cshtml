@@ -1,0 +1,79 @@
+@model RedigerDyrVm
+@{
+    ViewData["Tittel"] = $"Rediger {Model.Navn}";
+}
+
+@* Hadde allerede en tilbakeknapp, men ute til hoyre og med bare "Tilbake" -
+   som ikke sier hvor. Samme hode som de andre undersidene na. *@
+<partial name="_Dyrhode" model='new DyrhodeVm("Rediger", Model.Id, Model.Navn)' />
+
+<div style="max-width: 34rem;">
+    <form method="post" asp-action="Rediger" asp-route-dyrId="@Model.Id">
+        @Html.AntiForgeryToken()
+
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+                <h2>Opplysninger</h2>
+            </div>
+            <div class="kort-kropp">
+                <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+                <partial name="_Felter" model="Model" />
+            </div>
+        </section>
+
+        @* Bryterne hoerer til dyret, og det er her brukeren er nar
+           sporsmalet melder seg. /innstillinger har kun husstandsvalg. *@
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-innstillinger" /></svg>
+                <h2>Funksjoner for @Model.Navn</h2>
+            </div>
+            <div class="kort-kropp">
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="ForingsloggAktiv" class="form-check-input" role="switch" />
+                    <label asp-for="ForingsloggAktiv" class="form-check-label"></label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="ForplanAktiv" class="form-check-input" role="switch" />
+                    <label asp-for="ForplanAktiv" class="form-check-label"></label>
+                </div>
+                <p class="form-text mb-0">
+                    Slås en bryter av, skjules funksjonen — registrerte rader
+                    slettes ikke.
+                </p>
+            </div>
+        </section>
+
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
+            <a asp-action="Detaljer" asp-route-dyrId="@Model.Id"
+               class="btn btn-outline-secondary btn-sm">Avbryt</a>
+        </div>
+    </form>
+
+    @* Destruktiv handling skilles visuelt og ligger nederst - aldri ved
+       siden av en lagre-knapp. Se plan kapittel 12.4. *@
+    <section class="kort fare mt-4">
+        <div class="kort-hode">
+            <h2>Deaktiver</h2>
+        </div>
+        <div class="kort-kropp">
+            <p class="small text-body-secondary">
+                @Model.Navn skjules fra oversikten, men all historikk beholdes.
+                Chipnummeret forblir registrert.
+            </p>
+            <form method="post" asp-action="Deaktiver" asp-route-dyrId="@Model.Id"
+                  onsubmit="return confirm('Deaktivere @Model.Navn?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    Deaktiver @Model.Navn
+                </button>
+            </form>
+        </div>
+    </section>
+</div>
+
+@section Skript {
+    <partial name="_ValidationScriptsPartial" />
+}

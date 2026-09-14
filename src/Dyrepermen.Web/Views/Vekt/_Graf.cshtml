@@ -1,0 +1,104 @@
+@using System.Globalization
+@using Dyrepermen.Application.Dtos
+@using Dyrepermen.Application.Extensions
+@model Vektgrafdata
+@{
+    var inv = CultureInfo.InvariantCulture;
+    var siste = Model.Punkter[^1];
+    var bunnlinje = Model.Hoyde - 28;
+
+    string Tall(double d) => d.ToString("0.##", inv);
+}
+
+@* Enkeltserie: ingen tegnforklaring. Overskriften sier hva som er plottet.
+   Historikktabellen under er tabellvisningen - alle tall er tilgjengelige
+   uten a lese av grafen. *@
+<figure class="vektgraf" role="group" aria-label="Vektutvikling over tid">
+    @* Ensartet skalering. Med preserveAspectRatio="none" ville teksten blitt
+       strukket og punktene blitt ellipser. *@
+    <svg viewBox="0 0 @Tall(Model.Bredde) @Tall(Model.Hoyde)"
+         class="vektgraf-svg" aria-hidden="true">
+
+        @* Hjelpelinjer: heltrukne harstreker, ett hakk fra flaten.
+           Aldri stiplet - stipling leser som terskel eller prognose. *@
+        @foreach (var m in Model.Merker)
+        {
+            <line x1="52" y1="@Tall(m.Y)" x2="@Tall(Model.Bredde - 16)" y2="@Tall(m.Y)"
+                  class="graf-rutenett" />
+            @* <text> er et Razor-noekkelord inne i en kodeblokk, sa elementet
+               ma skrives ut ra. *@
+            @Html.Raw(
+                $"""<text x="44" y="{Tall(m.Y + 4)}" class="graf-akse" text-anchor="end">"""
+                + m.Etikett
+                + "</text>")
+        }
+
+        @* Flaten under linja: seriefargen pa ca. 10 % - en vask, ikke en blokk. *@
+        <path d="@Model.Flate" class="graf-flate" />
+        <path d="@Model.Linje" class="graf-linje" />
+
+        @* Punkter med 2 px ring i flatefargen, sa de holder seg lesbare
+           der de krysser linja. *@
+        @foreach (var p in Model.Punkter)
+        {
+            <circle cx="@Tall(p.X)" cy="@Tall(p.Y)" r="4.5" class="graf-punkt" />
+        }
+    </svg>
+
+    @* Usynlige treffflater for peker og tastatur. Storre enn selve punktet,
+       slik at de er mulige a treffe. *@
+    <div class="graf-treff">
+        @foreach (var p in Model.Punkter)
+        {
+            <button type="button" class="graf-treffpunkt"
+                    style="left:@Tall(p.X / Model.Bredde * 100)%;top:@Tall(p.Y / Model.Hoyde * 100)%"
+                    data-verdi="@Vektformat.TilKiloTekst(p.VektGram)"
+                    data-dato="@p.Dato.ToString("d. MMMM yyyy", new CultureInfo("nb-NO"))">
+                <span class="visually-hidden">
+                    @Vektformat.TilKiloTekst(p.VektGram) @p.Dato.ToString("d. MMMM yyyy")
+                </span>
+            </button>
+        }
+        <div class="graf-boble" hidden></div>
+    </div>
+
+    <figcaption class="graf-bunn">
+        <span>
+            @Model.Punkter[0].Dato.ToString("d. MMM yyyy")
+            <span class="graf-enhet">· kilo</span>
+        </span>
+        @* Direkte etikett kun pa siste maling. En verdi ved hvert punkt er
+           kaos og blir ikke lest. *@
+        <span class="graf-siste">
+            Siste: <strong>@Vektformat.TilKiloTekst(siste.VektGram)</strong>
+            @siste.Dato.ToString("d. MMM yyyy")
+        </span>
+    </figcaption>
+</figure>
+
+<script>
+    // Boblen folger punktet man peker pa eller tabber til. Storrelsen pa
+    // treffflaten er satt i CSS - et punkt pa 9 px er for lite a treffe.
+    (function () {
+        var figur = document.currentScript.previousElementSibling;
+        if (!figur) return;
+
+        var boble = figur.querySelector('.graf-boble');
+        if (!boble) return;
+
+        function vis(knapp) {
+            boble.innerHTML = '<strong>' + knapp.dataset.verdi + '</strong><br>'
+                + knapp.dataset.dato;
+            boble.style.left = knapp.style.left;
+            boble.style.top = knapp.style.top;
+            boble.hidden = false;
+        }
+
+        figur.querySelectorAll('.graf-treffpunkt').forEach(function (knapp) {
+            knapp.addEventListener('mouseenter', function () { vis(knapp); });
+            knapp.addEventListener('focus', function () { vis(knapp); });
+            knapp.addEventListener('mouseleave', function () { boble.hidden = true; });
+            knapp.addEventListener('blur', function () { boble.hidden = true; });
+        });
+    })();
+</script>

@@ -1,0 +1,254 @@
+@using Dyrepermen.Application.Extensions
+@using Dyrepermen.Domain.Enums
+@using Dyrepermen.Web.ViewModels
+@model DyrelisteVm
+@{
+    var idag = DateOnly.FromDateTime(DateTime.Now);
+    var naa = DateTimeOffset.UtcNow;
+}
+
+@* Rutenett av kort, ikke en radliste. Med fem-seks opplysninger per dyr gled
+   radene inn i hverandre, og det var ikke til a se hvor det ene dyret sluttet
+   og det neste begynte. id-en star her, sa htmx kan bytte hele rutenettet med
+   outerHTML. *@
+<div class="dyrerutenett" id="dyreliste">
+    @foreach (var dyr in Model.Dyr)
+    {
+        var harMat = dyr.ForingsloggAktiv || dyr.PorsjonGram is not null
+            || dyr.ForplanTekst is not null;
+
+        <article class="dyrekort">
+            <a class="dyrekort-hode" asp-controller="Dyr" asp-action="Detaljer"
+               asp-route-dyrId="@dyr.Id">
+                <span class="min-w-0">
+                    <span class="navn">@dyr.Navn</span>
+                    <span class="art">
+                        @dyr.Art@(dyr.Fodselsdato is { } f
+                            ? $" · {Alderformat.Tekst(f, idag)}" : "")
+                    </span>
+                </span>
+                <svg class="ikon" aria-hidden="true"><use href="#i-chevron" /></svg>
+            </a>
+
+            @* --- Mat -------------------------------------------------------
+               Porsjon, siste maltid og godbiter hoerer sammen og star sammen.
+               For lot vekt og vaksine seg legge imellom. *@
+            @if (harMat)
+            {
+                <div class="dyrekort-gruppe">
+                    <h3 class="gruppe-tittel">
+                        <svg class="ikon" aria-hidden="true"><use href="#i-forplan" /></svg>
+                        Mat
+                    </h3>
+
+                    <dl class="fakta">
+                        @if (dyr.PorsjonGram is { } porsjon)
+                        {
+                            @* Uten foringslogg finnes det ingen framdrift a
+                               vise. Da sier kortet hva planen er, ikke hvor
+                               langt man er kommet i den. *@
+                            @if (!dyr.TellerMaltider)
+                            {
+                                <dt>Porsjon</dt>
+                                <dd>
+                                    @porsjon g
+                                    @* Ordene star som literal markup, ikke som
+                                       en streng fra et uttrykk. Razor
+                                       HTML-koder uttrykksverdier, og da blir
+                                       "maltider" til "m&#xE5;ltider" i kilden.
+                                       Det VISES riktig, men gjor teksten
+                                       uleselig for alt som leser HTML-en. *@
+                                    <span class="naar">
+                                        @if (dyr.AntallMaltider == 1)
+                                        {
+                                            <text>per måltid · 1 måltid om dagen</text>
+                                        }
+                                        else if (dyr.AntallMaltider > 1)
+                                        {
+                                            <text>per måltid · @dyr.AntallMaltider måltider om dagen</text>
+                                        }
+                                        else
+                                        {
+                                            <text>per måltid</text>
+                                        }
+                                    </span>
+                                </dd>
+                            }
+                            else if (dyr.AlleMaltiderGitt)
+                            {
+                                <dt>Måltider</dt>
+                                <dd>
+                                    Alle @dyr.AntallMaltider gitt
+                                    <span class="naar">@porsjon g per måltid</span>
+                                </dd>
+                            }
+                            else
+                            {
+                                <dt>Neste måltid</dt>
+                                <dd>
+                                    @porsjon g
+                                    <span class="naar">
+                                        nr. @dyr.NesteMaltid av @dyr.AntallMaltider
+                                    </span>
+                                </dd>
+                            }
+                        }
+                        @* Blandingsforholdet, rett under porsjonen. Den som
+                           star ved skalen skal veie opp to ting, og summen
+                           alene sier ikke hvor mye av hver. Uten denne linjen
+                           ma hun regne det ut selv ved hvert maltid. *@
+                        @if (dyr.Deling is { } deling)
+                        {
+                            <dt>Av det</dt>
+                            <dd>
+                                @* Begge tallene er verdier, ikke kontekst.
+                                   Legges det ene i .naar, ser det ut som en
+                                   fotnote - og det er halve maltidet. *@
+                                <span class="deling">
+                                    @deling.VektdelGram g
+                                    <span class="deling-navn">@(deling.VektdelNavn ?? "etter vekt")</span>
+                                </span>
+                                <span class="deling">
+                                    @deling.AldersdelGram g
+                                    <span class="deling-navn">@(deling.AldersdelNavn ?? "etter alder")</span>
+                                </span>
+                            </dd>
+                        }
+
+                        @if (dyr.PorsjonGram is null && dyr.ForplanTekst is { } plan)
+                        {
+                            @* Prosentplan uten vekt: teksten sier "Mangler
+                               vekt". Da finnes det ingen porsjon a vise. *@
+                            <dt>Fôrplan</dt>
+                            <dd>@plan</dd>
+                        }
+
+                        @if (dyr.SistMatet is { } matet)
+                        {
+                            <dt>Sist matet</dt>
+                            <dd>
+                                @Tidssone.NaerTid(matet.Tidspunkt, naa)
+                                @if (matet.GittAv is { } av)
+                                {
+                                    <span class="naar">av @av</span>
+                                }
+                            </dd>
+                        }
+                        else if (dyr.ForingsloggAktiv)
+                        {
+                            <dt>Sist matet</dt>
+                            <dd class="tom">Ikke matet ennå</dd>
+                        }
+
+                        @if (dyr.GodbiterIDag > 0)
+                        {
+                            <dt>Godbiter</dt>
+                            <dd>
+                                @dyr.GodbiterIDag
+                                <span class="naar">i dag</span>
+                            </dd>
+                        }
+                    </dl>
+
+                    @if (dyr.ForingsloggAktiv)
+                    {
+                        <div class="gruppe-handlinger">
+                            @if (Model.GodbitloggAktiv)
+                            {
+                                @* Lenke, ikke knapp: href-en apner skjemaet som
+                                   egen side hvis skriptet ikke lastes. *@
+                                <a class="btn godbitknapp"
+                                   asp-controller="Hjem" asp-action="Foringsdialog"
+                                   asp-route-dyrId="@dyr.Id"
+                                   asp-route-type="@Foringstype.Godbit"
+                                   hx-get="@Url.Action("Foringsdialog", "Hjem",
+                                       new { dyrId = dyr.Id, type = Foringstype.Godbit })"
+                                   hx-target="#dpdialog-innhold" hx-swap="innerHTML"
+                                   aria-label="Registrer godbit til @dyr.Navn">
+                                    <svg class="ikon" aria-hidden="true"><use href="#i-godbit" /></svg>
+                                    Godbit
+                                </a>
+                            }
+
+                            @if (dyr.AlleMaltiderGitt)
+                            {
+                                @* Alle maltider gitt: en ekstra porsjon er da et
+                                   bevisst valg, og mengden bor velges. *@
+                                <a class="btn matknapp ferdig"
+                                   asp-controller="Hjem" asp-action="Foringsdialog"
+                                   asp-route-dyrId="@dyr.Id"
+                                   asp-route-type="@Foringstype.Maltid"
+                                   hx-get="@Url.Action("Foringsdialog", "Hjem",
+                                       new { dyrId = dyr.Id, type = Foringstype.Maltid })"
+                                   hx-target="#dpdialog-innhold" hx-swap="innerHTML"
+                                   aria-label="Gi @dyr.Navn mer mat">
+                                    <svg class="ikon" aria-hidden="true"><use href="#i-forplan" /></svg>
+                                    Gi mer
+                                </a>
+                            }
+                            else
+                            {
+                                <form method="post" asp-action="GiMat" asp-route-dyrId="@dyr.Id"
+                                      hx-post="@Url.Action("GiMat", new { dyrId = dyr.Id })"
+                                      hx-target="#dyreliste" hx-swap="outerHTML"
+                                      hx-disabled-elt="find button">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn matknapp"
+                                            aria-label="@(dyr.PorsjonGram is { } p
+                                                ? $"Registrer at {dyr.Navn} fikk {p} gram"
+                                                : $"Registrer at {dyr.Navn} fikk mat")">
+                                        <svg class="ikon" aria-hidden="true"><use href="#i-forplan" /></svg>
+                                        Gi mat
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @* --- Helse ----------------------------------------------------- *@
+            <div class="dyrekort-gruppe">
+                <h3 class="gruppe-tittel">
+                    <svg class="ikon" aria-hidden="true"><use href="#i-vekt" /></svg>
+                    Helse
+                </h3>
+
+                <dl class="fakta">
+                    <dt>Vekt</dt>
+                    @if (dyr.SisteVektGram is { } gram)
+                    {
+                        <dd>
+                            @Vektformat.TilKiloTekst(gram)
+                            <span class="naar">målt @($"{dyr.SisteVektDato:d. MMM}")</span>
+                        </dd>
+                    }
+                    else
+                    {
+                        @* Ikke "0 kg". Et tall uten dekning er verre enn ingen
+                           tall. *@
+                        <dd class="tom">Ikke registrert</dd>
+                    }
+
+                    @if (dyr.NesteBehandlingDato is { } nb)
+                    {
+                        <dt>@dyr.NesteBehandlingTekst</dt>
+                        <dd>
+                            @($"{nb:d. MMM}")
+                            @if (nb < idag)
+                            {
+                                <span class="merkelapp forfalt">forfalt</span>
+                            }
+                        </dd>
+                    }
+
+                    @if (dyr.AktiveMedisiner.Count > 0)
+                    {
+                        <dt>@(dyr.AktiveMedisiner.Count == 1 ? "Medisin" : "Medisiner")</dt>
+                        <dd>@string.Join(", ", dyr.AktiveMedisiner)</dd>
+                    }
+                </dl>
+            </div>
+        </article>
+    }
+</div>

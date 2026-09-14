@@ -1,0 +1,60 @@
+name: Bygg og test
+
+# Kjorer pa alle brancher og alle pull requests. Planen kapittel 14.5
+# begrenset dette til main, men da testes ingenting for det allerede star
+# i produksjonsbranchen - og grenbeskyttelsen mister verdien sin.
+# Se docs/beslutninger/0002-ci-paa-alle-brancher.md
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'infra/**'
+      - 'Directory.*.props'
+      - 'global.json'
+      - 'Dyrepermen.sln'
+      - '.github/workflows/bygg.yml'
+  pull_request:
+
+# Ny push pa samme branch avbryter et pagaende bygg. Gjelder ikke main.
+concurrency:
+  group: bygg-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  bygg:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Gjenopprett
+        run: dotnet restore
+
+      - name: Bygg
+        # TreatWarningsAsErrors er pa - en advarsel stopper bygget her.
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Enhetstester
+        run: >-
+          dotnet test tests/Dyrepermen.Application.Tests
+          --no-build --configuration Release
+          --logger "trx;LogFileName=enhet.trx"
+
+      - name: Integrasjonstester
+        # Testcontainers starter Postgres selv. ubuntu-latest har Docker.
+        run: >-
+          dotnet test tests/Dyrepermen.Integration.Tests
+          --no-build --configuration Release
+          --logger "trx;LogFileName=integrasjon.trx"
+
+      - name: Publiser testresultat
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testresultat-${{ github.run_id }}-${{ github.run_attempt }}
+          path: '**/*.trx'
+          if-no-files-found: warn

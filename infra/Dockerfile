@@ -1,19 +1,21 @@
-# Landingssiden. Byggekonteksten er repo-roten, ikke infra/:
-#   docker build -f infra/Dockerfile -t dyrepermen-landing .
-#
-# Appens egen Dockerfile pa dev kopierer Directory.Build.props og
-# Directory.Packages.props for restore. Denne branchen har ingen av delene,
-# fordi landingssiden ikke bruker en eneste NuGet-pakke.
+# Byggekonteksten er repo-roten, ikke infra/. Se plan kapittel 3.5:
+#   docker build -f infra/Dockerfile -t dyrepermen .
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY global.json ./
-COPY ["src/Dyrepermen.Landingsside/Dyrepermen.Landingsside.csproj", "Dyrepermen.Landingsside/"]
-RUN dotnet restore "Dyrepermen.Landingsside/Dyrepermen.Landingsside.csproj"
+# Ma kopieres FOR restore. Utelates disse, feiler bygget med
+# "pakke mangler versjon" - en feilmelding som ikke peker mot arsaken.
+COPY Directory.Build.props Directory.Packages.props global.json ./
+
+COPY ["src/Dyrepermen.Web/Dyrepermen.Web.csproj", "Dyrepermen.Web/"]
+COPY ["src/Dyrepermen.Application/Dyrepermen.Application.csproj", "Dyrepermen.Application/"]
+COPY ["src/Dyrepermen.Domain/Dyrepermen.Domain.csproj", "Dyrepermen.Domain/"]
+COPY ["src/Dyrepermen.Infrastructure/Dyrepermen.Infrastructure.csproj", "Dyrepermen.Infrastructure/"]
+RUN dotnet restore "Dyrepermen.Web/Dyrepermen.Web.csproj"
 
 COPY src/ .
-RUN dotnet publish "Dyrepermen.Landingsside/Dyrepermen.Landingsside.csproj" \
+RUN dotnet publish "Dyrepermen.Web/Dyrepermen.Web.csproj" \
     -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
@@ -30,4 +32,4 @@ COPY --from=build /app/publish .
 # Ikke-privilegert bruker foelger med aspnet-bildet fra .NET 8.
 USER $APP_UID
 
-ENTRYPOINT ["dotnet", "Dyrepermen.Landingsside.dll"]
+ENTRYPOINT ["dotnet", "Dyrepermen.Web.dll"]

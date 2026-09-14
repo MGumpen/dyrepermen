@@ -1,0 +1,58 @@
+@using Dyrepermen.Application.Dtos
+@using Dyrepermen.Application.Extensions
+@model IReadOnlyList<DyrListeElement>
+@{
+    ViewData["Tittel"] = "Dyrene";
+    var idag = DateOnly.FromDateTime(DateTime.Now);
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Dyrene</h1>
+        <div class="undertittel">
+            @Model.Count @(Model.Count == 1 ? "dyr" : "dyr") i husstanden
+        </div>
+    </div>
+    <div class="handlinger">
+        <a asp-action="Ny" class="btn btn-primary btn-sm">
+            <svg class="ikon" aria-hidden="true"><use href="#i-pluss" /></svg>
+            Nytt dyr
+        </a>
+    </div>
+</div>
+
+<section class="kort">
+    @if (Model.Count == 0)
+    {
+        @* Tomtilstand skal spesifiseres, ikke improviseres. Plan 10.3. *@
+        <div class="tomt tomt-stor">
+            <p class="mb-3">Ingen dyr registrert ennå.</p>
+            <a asp-action="Ny" class="btn btn-primary btn-sm">
+                Legg til ditt første dyr
+            </a>
+        </div>
+    }
+    else
+    {
+        <ul class="rad-liste">
+            @foreach (var dyr in Model)
+            {
+                <li>
+                    <a class="rad-lenke" asp-action="Detaljer" asp-route-dyrId="@dyr.Id">
+                        <span class="tittel">@dyr.Navn</span>
+                        <span class="under d-block">
+                            @dyr.Art@(dyr.Rase is null ? "" : $" · {dyr.Rase}")
+                        </span>
+                    </a>
+                    <span class="hoyre">
+                        @if (dyr.Fodselsdato is { } f)
+                        {
+                            <span class="d-block">@Alderformat.Tekst(f, idag)</span>
+                            <span class="d-block">født @($"{f:d. MMM yyyy}")</span>
+                        }
+                    </span>
+                </li>
+            }
+        </ul>
+    }
+</section>

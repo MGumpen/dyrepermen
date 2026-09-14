@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Dyrepermen.Domain\Dyrepermen.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,45 @@
+@using Dyrepermen.Application.Dtos
+@model IReadOnlyList<HandlelisteRad>
+
+@* Bare aktive punkter star her. Kryss av, og punktet forsvinner - angring
+   horer hjemme pa handlelistesiden, der ogsa de kjopte star. *@
+<div id="dashbord-handleliste">
+    @if (Model.Count == 0)
+    {
+        <div class="tomt">Handlelisten er tom.</div>
+    }
+    else
+    {
+        <ul class="rad-liste">
+            @foreach (var p in Model)
+            {
+                <li>
+                    <form method="post" asp-controller="Hjem" asp-action="KryssAv"
+                          asp-route-punktId="@p.Id"
+                          hx-post="@Url.Action("KryssAv", "Hjem", new { punktId = p.Id })"
+                          hx-target="#dashbord-handleliste" hx-swap="outerHTML"
+                          class="d-flex align-items-center">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn kryssknapp"
+                                aria-label="Marker @p.Tekst som kjøpt">
+                            <span class="handleliste-boks" aria-hidden="true"></span>
+                        </button>
+                    </form>
+
+                    <span class="flex-grow-1 min-w-0">
+                        <span class="tittel">
+                            @p.Tekst
+                            @if (p.Antall > 1)
+                            {
+                                <span class="text-body-secondary">× @p.Antall</span>
+                            }
+                        </span>
+                    </span>
+
+                    @* Punkt uten dyr vises som "Felles". *@
+                    <span class="hoyre">@(p.DyreNavn ?? "Felles")</span>
+                </li>
+            }
+        </ul>
+    }
+</div>

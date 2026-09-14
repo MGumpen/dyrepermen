@@ -1,61 +1,197 @@
 # Dyrepermen
 
-App for dyrehold. Under utvikling.
+Webapplikasjon for oppfølging av husstandens kjæledyr.
 
-Denne branchen inneholder **kun landingssiden** — den som står på
-produksjonsadressen mens appen bygges. Selve appen ligger på `dev`.
+ASP.NET Core MVC (.NET 9) · Entity Framework Core · PostgreSQL · Monorepo
 
-## Hvorfor landingssiden er en app og ikke en fil
+## Dokumentasjon
 
-`main` hadde tidligere bare en `index.html` i rota. Den kan ikke rulles ut:
-Render bygger et Docker-image og kjører en webtjeneste, og en løs HTML-fil er
-ingen tjeneste. Utrullingen hadde ingenting å starte.
+| Fil | Innhold |
+|---|---|
+| `CLAUDE.md` | Arbeidsinstruks: kodekonvensjoner, kommandoer, fallgruver |
+| `docs/plan.md` | Full teknisk spesifikasjon |
+| `docs/plan.pdf` | Samme dokument for lesing |
+| `docs/beslutninger/` | ADR-er — én fil per beslutning tatt underveis |
 
-Landingssiden er derfor et minimalt ASP.NET Core-prosjekt. Det er med vilje
-et helt annet oppsett enn appens:
+---
 
-| | Appen (`dev`) | Landingssiden (`main`) |
-|---|---|---|
-| Database | Postgres, migrasjoner ved oppstart | ingen |
-| Miljøvariabler | tilkoblingsstreng må settes | **ingen** |
-| NuGet-pakker | EF Core, Npgsql, Identity | **ingen** |
-| Feiler hvis databasen er nede | ja, med vilje | nei |
+## Førstegangsoppsett
 
-Poenget er at siden skal komme opp uansett. En side som sier «under
-utvikling» skal ikke kunne feile fordi en database mangler.
-
-## Kjør lokalt
+Gjøres én gang per maskin.
 
 ```bash
-dotnet run --project src/Dyrepermen.Landingsside
+# 1. Lokale hemmeligheter for Docker Compose
+cp infra/.env.example infra/.env
+
+# 2. Tilkoblingsstrengen. Ligger utenfor repoet, aldri i appsettings.
+dotnet user-secrets set "ConnectionStrings:Postgres" \
+  "Host=localhost;Port=5434;Database=dyrepermen;Username=dyrepermen;Password=utvikling;Maximum Pool Size=10" \
+  --project src/Dyrepermen.Web
+
+# 3. Start databasen (eller "docker compose up -d" for hele appen)
+docker compose up -d db
 ```
 
-Eller som container, slik Render kjører den:
+Skjemaet trenger du ikke opprette. Appen kjører migrasjonene ved oppstart —
+se [ADR 0010](docs/beslutninger/0010-migrasjoner-ved-oppstart.md). `MigrateAsync`
+leser `__EFMigrationsHistory` og kjører bare det som mangler, så en omstart
+uten nye migrasjoner gjør ingenting.
+
+Mangler steg 2, stopper appen ved oppstart med en melding som viser
+kommandoen på nytt.
+
+---
+
+## Kjøre appen
+
+Vil du bare kjøre appen, hopp til «Hele appen i Docker» under — der er det
+én kommando. Avsnittet her er for **daglig utvikling**, der appen kjøres
+utenfor container så du beholder hot reload, debugger og raske omstarter.
+Å bygge et Docker-image på nytt for hver kodeendring tar titalls sekunder.
 
 ```bash
-docker build -f infra/Dockerfile -t dyrepermen-landing .
-docker run --rm -p 8080:8080 dyrepermen-landing
+# 1. Kun databasen. Tjenesten navngis, ellers starter web-containeren også.
+docker compose up -d db
+
+# 2. Appen
+dotnet run --project src/Dyrepermen.Web
 ```
 
-`GET /helse` svarer `200` uten å treffe noen database. Alle andre stier viser
-landingssiden.
+Appen ligger på **<https://localhost:7171>**.
+
+**Bruk https-adressen.** Innloggingskapselen er satt med
+`CookieSecurePolicy.Always`, så innlogging virker ikke over `http://`.
+Derfor er `https` standardprofil i `launchSettings.json`.
+
+## Hele appen i Docker
+
+Kjører app og database i hver sin container. Dette er eneste måte å
+verifisere at `Dockerfile` faktisk virker før Render prøver den.
+
+```bash
+docker compose up -d            # start alt
+docker compose up -d --build    # bygg web-imaget på nytt etter kodeendring
+docker compose logs -f web      # følg loggen
+docker compose down             # stopp, behold data
+docker compose down -v          # stopp og slett databasen
+```
+
+Rotfila `compose.yaml` peker på `infra/compose.yaml` med `include`, så du
+slipper flagg. Det finnes bare én definisjon — rotfila dupliserer ingenting.
+
+Vil du bare ha databasen, navngir du tjenesten: `docker compose up -d db`.
+
+Appen ligger på **<http://localhost:8080>** — http, ikke https.
+
+**Skjemaet kommer av seg selv.** Appen migrerer ved oppstart, her som lokalt.
+Har du kjørt `down -v` og slettet databasen, er `docker compose up -d` nok —
+`web` venter på at `db` er frisk, og legger inn skjemaet på nytt.
+
+### Hvorfor http virker her, men ikke lokalt
+
+Innloggingskapselen krever normalt https. Containeren serverer http på 8080
+uten noen TLS-terminator foran, slik Render har — så `web`-tjenesten i
+`infra/compose.yaml` setter `Sikkerhet__KrevSikkerKapsel=false`.
+
+Standarden er sikker, avviket står ett sted du ser det, appen logger en
+advarsel ved oppstart, **og den nekter å starte med dette avslått i
+Production.** Det er ikke mulig å rulle ut med kapselen i klartekst.
+
+### Nyttige kommandoer
+
+```bash
+docker compose ps        # hva kjører?
+docker compose logs db   # databaselogg
+docker compose down      # stopp, behold data
+docker compose down -v   # stopp, slett databasen
+```
+
+---
+
+## Bygg og test
+
+```bash
+dotnet build   # advarsler er byggefeil
+dotnet test
+```
+
+Integrasjonstestene starter sin egen PostgreSQL med Testcontainers og krever
+at Docker kjører. De rører ikke utviklingsdatabasen.
+
+---
+
+## Databaseporten er 5434
+
+Ikke 5432. En lokalt installert PostgreSQL binder `127.0.0.1:5432`, som er
+mer spesifikt enn Dockers `*:5432` — da går `localhost:5432` til den lokale
+serveren og ikke til containeren. Se ADR 0006.
+
+Har du ingen lokal PostgreSQL, kan du sette `POSTGRES_PORT=5432` i
+`infra/.env` og oppdatere tilkoblingsstrengen tilsvarende.
+
+---
 
 ## Brancher
 
 | Branch | Formål |
 |---|---|
-| `main` | Produksjon. Landingssiden, til appen er klar |
-| `dev` | Integrasjon. Alt arbeid samles her |
-| `feature/mvp` | Appen som bygges nå |
-| `feature/landingsside` | Denne siden |
+| `main` | Produksjon. Kun stabil, utgivelsesklar kode |
+| `dev` | Integrasjon. Alt arbeid samles her før produksjon |
+| `feature/*` | Én branch per arbeidsstykke |
 
-Arbeidsflyt: `feature/*` → `dev` → `main`.
+Arbeidsflyt: `feature/*` → `dev` → `main`. `Bygg og test` kjører på alle
+brancher og pull requests.
 
-## Når appen skal overta
+Miljøvariabelen `ConnectionStrings__Postgres` tar imot **begge** formene:
+nøkkel/verdi (`Host=…;Username=…`) og URI-en Neon gir deg
+(`postgresql://…`). Appen oversetter selv, så det Neon legger på
+utklippstavla kan limes rett inn.
 
-Slå `dev` inn i `main`. Appen har sin egen `Program.cs`, sin egen
-`infra/Dockerfile` og krever `ConnectionStrings__Postgres` satt i Render —
-den tar imot både nøkkel/verdi og URI-en Neon oppgir.
+Utrulling skjer fra Render, som bygger branchen tjenesten er koblet til.
+Det finnes ingen utrullingsarbeidsflyt i GitHub Actions, og ingen
+GitHub-hemmeligheter er nødvendige. Skjemaet legges inn ved oppstart —
+se [ADR 0010](docs/beslutninger/0010-migrasjoner-ved-oppstart.md).
 
-Landingssiden trenger ingen opprydding før det: filene her erstattes av
-appens egne i samme sammenslåing.
+---
+
+## Status
+
+**Hele funksjonsomfanget skal bygges før utrulling.** Det finnes ingen
+MVP-avgrensning — utrulling er fase 8, helt til slutt. Akseptansekriteriene i
+`docs/plan.md` kapittel 16 er definisjonen av ferdig.
+
+### Ferdig
+
+| Fase | Innhold |
+|---|---|
+| 1 og 1b | Monorepo, hele skjemaet med query-filtre, isolasjonstest og filterprøve, Identity med 30 dagers innlogging, Data Protection-nøkler i database, `Dyr`-CRUD, dashbord |
+| 2 | Vekt og behandling, med vektgraf |
+| 3 | Medisiner og doser |
+| 5a | Forsikring med selskap, premie, egenandeler og forsikringsbeløp |
+| 5c | Veterinær: steder med telefon som ringes med ett trykk, kommende og gjennomførte timer med pris og refusjon |
+| 6 | Handleliste |
+| 6b | Fôringslogg bak funksjonsbryter |
+| 6c | Husstand og konto, dataeksport, kontosletting |
+| 6d | Handlinger direkte på dashbordet: porsjon for neste måltid, gi mat, godbit, avkryssing av handleliste |
+| — | Flere husstander per bruker med gjesterolle, informasjonssider, designgjennomgang |
+
+Dashbordet gjør **åtte** databasespørringer uansett antall dyr. Kravet i
+kapittel 16 er ikke tallet, men at ingenting skal vokse med antall dyr: en ny
+kilde koster høyst én fast rundtur, og helst ingen fordi den slås sammen med
+en spørring som allerede finnes.
+
+**237 tester grønne.** Enhetstester for ren logikk, integrasjonstester mot
+ekte PostgreSQL via Testcontainers. Aldri EF Core InMemory.
+
+To fail-closed prøver holder sikkerheten på plass av seg selv: `FilterTester`
+sammenligner `IHusstandsbundet`-typene i Domain mot EF-modellen og krever
+query-filter på hver av dem, og `RolleTester` går gjennom hver eneste
+`POST`-handling og feiler hvis en mangler `[KreverEier]` uten å stå på den
+bevisste gjestelisten.
+
+### Gjenstår
+
+- **Fase 5b** — dokumenter med filopplasting
+- **Fase 4** — påminnelser på e-post
+- **Fase 7** — resten av poleringen, sikkerhetskopi-jobb
+- **Fase 8** — utrulling til Render mot Neon
