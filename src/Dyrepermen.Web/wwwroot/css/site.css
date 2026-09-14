@@ -144,9 +144,13 @@ h1, h2, h3, h4 {
     }
 }
 
+/* flex-grow ma settes eksplisitt. Bootstrap setter 0 pa .offcanvas-lg
+   .offcanvas-body fra lg og opp, og da blir ikke kroppen hoyere enn
+   innholdet - margin-top: auto pa .sidemeny-bunn har ingenting a skyve mot. */
 .sidemeny .offcanvas-body {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
     padding: 0;
 }
 
