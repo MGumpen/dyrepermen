@@ -240,14 +240,34 @@
                     <div class="sidemeny-bunn">
                         @* Brukerkortet. Her ligger DINE innstillinger.
                            Skillet mot menyen over er eierskap:
-                           personopplysninger mot husstandens delte data. *@
-                        <a class="brukerkort" href="/konto">
-                            <span class="initialer" aria-hidden="true">@initialer</span>
-                            <span class="min-w-0">
-                                <span class="navn d-block">@Meg.Visningsnavn</span>
-                                <span class="epost d-block">@Meg.Epost</span>
-                            </span>
-                        </a>
+                           personopplysninger mot husstandens delte data.
+                           dropup fordi kortet star nederst - en vanlig
+                           dropdown ville apnet seg under skjermkanten. *@
+                        <div class="dropup brukermeny">
+                            <button class="brukerkort w-100 text-start border-0"
+                                    type="button" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <span class="initialer" aria-hidden="true">@initialer</span>
+                                <span class="min-w-0">
+                                    <span class="navn d-block">@Meg.Visningsnavn</span>
+                                    <span class="epost d-block">@Meg.Epost</span>
+                                </span>
+                            </button>
+
+                            @* Utlogging er POST med antiforgery-token, ikke en
+                               lenke. En GET-utlogging kan utloses av et bilde
+                               pa en fremmed side. *@
+                            <ul class="dropdown-menu w-100">
+                                <li><a class="dropdown-item" href="/konto">Se profil</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form method="post" action="/logg-ut">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item">Logg ut</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
