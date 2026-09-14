@@ -1,18 +1,21 @@
 @{
     ViewData["Tittel"] = "Noe gikk galt";
     var kode = ViewData["Kode"] as int?;
+
+    // 429 kommer fra grensen pa kontaktskjemaet. Med den generelle teksten
+    // ville brukeren provd igjen straks - og blitt avvist igjen.
+    var (overskrift, forklaring) = kode switch
+    {
+        404 => ("Fant ikke siden", "Siden finnes ikke, eller du har ikke tilgang til den."),
+        429 => ("For mange forsøk", "Du har gjort dette mange ganger på kort tid. Vent litt, og prøv igjen."),
+        _ => ("Noe gikk galt", "Prøv igjen. Vedvarer det, gi beskjed.")
+    };
 }
 
 @* Ingen stakksporing, ingen melding fra databasen. *@
 <div class="apen-kort text-center">
     <img src="~/img/logo.svg" alt="" width="64" height="64" />
-    <h1 class="h4 mt-3">
-        @(kode == 404 ? "Fant ikke siden" : "Noe gikk galt")
-    </h1>
-    <p class="text-body-secondary">
-        @(kode == 404
-            ? "Siden finnes ikke, eller du har ikke tilgang til den."
-            : "Prøv igjen. Vedvarer det, gi beskjed.")
-    </p>
+    <h1 class="h4 mt-3">@overskrift</h1>
+    <p class="text-body-secondary">@forklaring</p>
     <a href="/" class="btn btn-outline-secondary">Til forsiden</a>
 </div>

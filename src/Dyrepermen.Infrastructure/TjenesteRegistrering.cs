@@ -27,6 +27,7 @@ public static class TjenesteRegistrering
         tjenester.AddScoped<IVeterinarService, VeterinarService>();
         tjenester.AddScoped<IForingService, ForingService>();
         tjenester.AddScoped<IUtskriftService, UtskriftService>();
+        tjenester.AddScoped<IKontaktService, KontaktService>();
         return tjenester;
     }
 }

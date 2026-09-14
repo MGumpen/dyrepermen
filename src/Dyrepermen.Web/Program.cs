@@ -1,11 +1,15 @@
 using System.Globalization;
 using System.Reflection;
+using System.Threading.RateLimiting;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Application.Services;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Infrastructure;
 using Dyrepermen.Web;
 using Dyrepermen.Infrastructure.Persistence;
+using Dyrepermen.Infrastructure.Services;
+using Dyrepermen.Web.Controllers;
+using Dyrepermen.Web.Extensions;
 using Dyrepermen.Web.Middleware;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -13,6 +17,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -84,6 +89,31 @@ builder.Services.AddScoped<IGjeldendeBruker>(
 
 // Implementasjonene bak grensesnittene i Application. Se ADR 0007.
 builder.Services.LeggTilInfrastruktur();
+
+// SMTP for kontaktskjemaet. Mangler oppsettet, starter appen likevel -
+// skjemaet sier fra til brukeren i stedet for a sende. Se ADR 0014.
+builder.Services.Configure<EpostInnstillinger>(
+    builder.Configuration.GetSection(EpostInnstillinger.Seksjon));
+
+// Kontaktskjemaet sender e-post fra SMTP-kontoen, og hvem som helst kan
+// registrere seg. Uten et tak kan en enkelt bruker fa appen til a sende
+// ubegrenset e-post, og kontoen havner pa en svarteliste.
+//
+// Grensen telles per bruker, ikke per IP. En husstand bak samme ruter skal
+// ikke dele kvoten.
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddPolicy(KontaktController.Grense, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            ctx.User.BrukerId()?.ToString(CultureInfo.InvariantCulture) ?? "anonym",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0
+            }));
+});
 
 builder.Services.AddIdentity<Bruker, IdentityRole<int>>(o =>
 {
@@ -245,6 +275,10 @@ app.UseAuthentication();
 app.UseMiddleware<HusstandMiddleware>();
 
 app.UseAuthorization();
+
+// Etter UseAuthentication, fordi grensen for kontaktskjemaet telles per
+// bruker. Kjorer den for, er alle anonyme og deler en og samme kvote.
+app.UseRateLimiter();
 
 // MapControllers, ikke MapControllerRoute. Alle controllere bruker
 // attributtruting med norske ruter (plan kapittel 9), og en konvensjonell

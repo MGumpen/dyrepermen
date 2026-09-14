@@ -109,6 +109,7 @@ public sealed class SikkerhetTester : IAsyncLifetime
     [InlineData("/handleliste")]
     [InlineData("/innstillinger")]
     [InlineData("/konto")]
+    [InlineData("/kontakt")]
     public async Task Sider_krever_innlogging(string sti)
     {
         // FallbackPolicy: alt uten [AllowAnonymous] er last. Glemmer noen a
