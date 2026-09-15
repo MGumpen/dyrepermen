@@ -19,17 +19,23 @@ public sealed class KontoController : Controller
     private readonly SignInManager<Bruker> _paalogging;
     private readonly UserManager<Bruker> _brukere;
     private readonly IHusstandService _husstand;
+    private readonly IDemoService _demo;
+    private readonly IGjeldendeBruker _meg;
     private readonly ILogger<KontoController> _log;
 
     public KontoController(
         SignInManager<Bruker> paalogging,
         UserManager<Bruker> brukere,
         IHusstandService husstand,
+        IDemoService demo,
+        IGjeldendeBruker meg,
         ILogger<KontoController> log)
     {
         _paalogging = paalogging;
         _brukere = brukere;
         _husstand = husstand;
+        _demo = demo;
+        _meg = meg;
         _log = log;
     }
 
@@ -145,11 +151,23 @@ public sealed class KontoController : Controller
     [HttpPost("/logg-ut")]
     [Authorize]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> LoggUt()
+    public async Task<IActionResult> LoggUt(bool registrer, CancellationToken ct)
     {
+        // En demo slettes straks ved utlogging - ingen grunn til a vente pa
+        // oppryddingen. Se ADR 0015.
+        if (_meg.ErDemo && _meg.BrukerId is { } demo)
+        {
+            await _demo.Avslutt(demo, ct);
+        }
+
         await _paalogging.SignOutAsync();
         _log.LogInformation("Utlogging");
-        return RedirectToAction(nameof(LoggInn));
+
+        // «Opprett din egen konto» fra demobanneret. En bool og ikke en
+        // adresse, sa skjemaet ikke kan sende noen videre til en fremmed side.
+        return registrer
+            ? RedirectToAction(nameof(Registrer))
+            : RedirectToAction(nameof(LoggInn));
     }
 
     /// <summary>

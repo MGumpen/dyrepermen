@@ -23,14 +23,16 @@ internal static class Testoppsett
     /// er stengt til husstanden finnes, og en test som hopper over steg to
     /// far 302 i stedet for siden den skulle lest.
     /// </summary>
-    public static async Task<Skjemaklient> InnloggetKlient(Appfabrikk app)
+    public static async Task<Skjemaklient> InnloggetKlient(
+        Appfabrikk app, string? epost = null)
     {
         var klient = new Skjemaklient(app.LagKlient());
 
         var registrert = await klient.Post("/registrer", new Dictionary<string, string>
         {
-            // Unik adresse per test, sa rekkefolgen aldri spiller inn.
-            ["Epost"] = $"test-{Guid.NewGuid():N}@example.test",
+            // Unik adresse per test, sa rekkefolgen aldri spiller inn. Oppgis
+            // den, er det for at testen skal finne brukeren igjen i databasen.
+            ["Epost"] = epost ?? $"test-{Guid.NewGuid():N}@example.test",
             ["Visningsnavn"] = "Testbruker",
             ["Passord"] = "Passord123",
             ["BekreftPassord"] = "Passord123"

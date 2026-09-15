@@ -50,6 +50,7 @@ public sealed class InnstillingController : Controller
 
     [HttpPost("medlem")]
     [KreverEier]
+    [StengtIDemo]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> LeggTilMedlem(
         string? nyttMedlemEpost, Husstandsrolle rolle, CancellationToken ct)
@@ -92,6 +93,7 @@ public sealed class InnstillingController : Controller
 
     [HttpPost("invitasjon/{invitasjonId:int}/angre")]
     [KreverEier]
+    [StengtIDemo]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AngreInvitasjon(
         int invitasjonId, CancellationToken ct)
@@ -106,6 +108,7 @@ public sealed class InnstillingController : Controller
 
     [HttpPost("medlem/{brukerId:int}/fjern")]
     [KreverEier]
+    [StengtIDemo]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> FjernMedlem(
         int brukerId, CancellationToken ct)

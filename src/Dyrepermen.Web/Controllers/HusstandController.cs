@@ -1,6 +1,7 @@
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Web.Extensions;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Dyrepermen.Web.Middleware;
@@ -71,6 +72,8 @@ public sealed class HusstandController : Controller
 
     [HttpPost("opprett")]
     [ValidateAntiForgeryToken]
+    // Ellers kan en demo lage ubegrenset mange husstander. Se ADR 0015.
+    [StengtIDemo]
     public async Task<IActionResult> Opprett(OppsettVm vm, CancellationToken ct)
     {
         if (!ModelState.IsValid)

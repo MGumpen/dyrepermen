@@ -29,6 +29,9 @@ public sealed class RolleTester
         $"{nameof(KontoController)}.LoggInn",
         $"{nameof(KontoController)}.Registrer",
         $"{nameof(KontoController)}.LoggUt",
+        // Anonym inngang til en fersk demo. Den som klikker, har ingen rolle
+        // ennå. Se ADR 0015.
+        $"{nameof(DemoController)}.Start",
         $"{nameof(MinKontoController)}.Slett",
         $"{nameof(HusstandController)}.Opprett",
         $"{nameof(HusstandController)}.Bytt",

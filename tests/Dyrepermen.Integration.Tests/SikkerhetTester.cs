@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -158,5 +159,32 @@ public sealed class SikkerhetTester : IAsyncLifetime
 
         Assert.Contains("httponly", kapsel, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("samesite=lax", kapsel, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Slettet_bruker_med_gyldig_kapsel_blir_logget_ut()
+    {
+        // Kontoen slettes fra en annen enhet, eller demoen ryddes bort, mens
+        // kapselen fortsatt gjelder. For rettelsen havnet hun pa oppsettsiden.
+        var epost = $"slettet-{Guid.NewGuid():N}@example.test";
+        var klient = await Testoppsett.InnloggetKlient(_app, epost);
+
+        await using (var db = _fixture.LagContext(husstandId: 0))
+        {
+            await db.Users
+                .Where(u => u.NormalizedEmail == epost.ToUpperInvariant())
+                .ExecuteDeleteAsync();
+        }
+
+        var svar = await klient.Hent("/");
+
+        Assert.Equal(HttpStatusCode.Found, svar.StatusCode);
+        Assert.Equal("/logg-inn", svar.Headers.Location?.ToString());
+
+        // Kapselen er faktisk fjernet: neste foresporsel er uinnlogget og far
+        // innloggingsutfordringen med ReturnUrl - ikke middlewarens omdirigering.
+        var neste = await klient.Hent("/");
+
+        Assert.Contains("ReturnUrl", neste.Headers.Location?.ToString());
     }
 }

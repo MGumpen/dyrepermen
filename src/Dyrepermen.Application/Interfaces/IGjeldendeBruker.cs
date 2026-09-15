@@ -31,4 +31,10 @@ public interface IGjeldendeBruker
     IReadOnlyList<HusstandsValg> Husstander { get; }
 
     bool ErInnlogget { get; }
+
+    /// <summary>
+    /// En demobruker fra «Prov en demo». Stenger det som ikke skal kunne
+    /// gjores i en demo - se StengtIDemoAttribute og ADR 0015.
+    /// </summary>
+    bool ErDemo { get; }
 }
