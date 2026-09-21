@@ -241,14 +241,18 @@
                         @* Kontakt star her nede, over brukerkortet, og ikke i
                            menyen over. Den gjelder deg og appen, ikke
                            husstanden. Se ADR 0014. *@
-                        <ul class="sidemeny-nav">
-                            <li>
-                                <a href="/kontakt" aria-current="@Aktiv("Kontakt")">
-                                    <svg class="ikon" aria-hidden="true"><use href="#i-kontakt" /></svg>
-                                    Kontakt
-                                </a>
-                            </li>
-                        </ul>
+                        @* Skjult i demo: skjemaet er stengt der. *@
+                        @if (!Meg.ErDemo)
+                        {
+                            <ul class="sidemeny-nav">
+                                <li>
+                                    <a href="/kontakt" aria-current="@Aktiv("Kontakt")">
+                                        <svg class="ikon" aria-hidden="true"><use href="#i-kontakt" /></svg>
+                                        Kontakt
+                                    </a>
+                                </li>
+                            </ul>
+                        }
 
                         @* Brukerkortet. Her ligger DINE innstillinger.
                            Skillet mot menyen over er eierskap:
@@ -262,7 +266,10 @@
                                 <span class="initialer" aria-hidden="true">@initialer</span>
                                 <span class="min-w-0">
                                     <span class="navn d-block">@Meg.Visningsnavn</span>
-                                    <span class="epost d-block">@Meg.Epost</span>
+                                    @if (!Meg.ErDemo)
+                                    {
+                                        <span class="epost d-block">@Meg.Epost</span>
+                                    }
                                 </span>
                             </button>
 
@@ -275,7 +282,9 @@
                                 <li>
                                     <form method="post" action="/logg-ut">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="dropdown-item">Logg ut</button>
+                                        <button type="submit" class="dropdown-item">
+                                            @(Meg.ErDemo ? "Avslutt demo" : "Logg ut")
+                                        </button>
                                     </form>
                                 </li>
                             </ul>
@@ -285,6 +294,23 @@
             </div>
 
             <main class="dp-innhold">
+                @if (Meg.ErDemo)
+                {
+                    @* Utlogging sletter demoen, sa knappen logger ut for den
+                       sender til registreringen. Se ADR 0015. *@
+                    <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 py-2" role="status">
+                        <span class="flex-grow-1">
+                            Du prøver en demo. Alt slettes automatisk innen 24 timer.
+                        </span>
+                        <form method="post" action="/logg-ut">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="registrer" value="true" />
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                Opprett din egen konto
+                            </button>
+                        </form>
+                    </div>
+                }
                 @if (TempData["Melding"] is string melding)
                 {
                     <div class="alert alert-success py-2" role="status">@melding</div>

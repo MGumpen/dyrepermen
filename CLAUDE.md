@@ -50,6 +50,7 @@ Ikke bruk æ, ø eller å i klassenavn, filnavn, tabellnavn eller ruter. Skriv `
 - **Grensesnittene bor i `Application/Interfaces`, implementasjonene i `Infrastructure/Services`.** Tjenestene spør databasen, og `DbContext` hører hjemme i Infrastructure — se ADR 0007. Application inneholder kun grensesnittene, DTO-ene og `Husstandskontekst`. Ny tjeneste: grensesnitt i Application, klasse i Infrastructure, registrering i `LeggTilInfrastruktur()`.
 - **Ren logikk uten databasetilgang ligger i `Application/Extensions`** — `Tidssone`, `Maltidsfordeling`, `Vektgrafberegning`, `Vektformat`, `Alderformat`. Det er disse enhetstestene dekker. Kan en regel skilles ut hit, skal den hit.
 - **Legger du en EF Core-avhengighet i Domain, er lagdelingen borte.** Ingenting feiler — du må passe på selv.
+- **`src/Dyrepermen.Landingsside` er ikke en del av appen.** Et frittstående «under utvikling»-nettsted for `main` mens appen bygges på `dev`, med egen `Program.cs` uten database og egne innstillinger i `.csproj`. Det står utenfor `Dyrepermen.sln` og bygges ikke av `infra/Dockerfile`. Ikke legg det inn i løsningen og ikke gi det avhengigheter.
 
 ### Web-oppsett som ikke er synlig i en controller
 
@@ -59,6 +60,8 @@ Fire ting settes i `Program.cs` og gjelder alt. Leser du bare controlleren, ser 
 - **Kun `MapControllers`.** All ruting er attributtruting med norske ruter. En controller uten rutattributt er utilgjengelig — den dukker ikke opp på `{controller}/{action}`.
 - **`HusstandMiddleware` kjører etter `UseAuthentication` og før alt som leser `IHusstandContext`.** Kjører den ikke, står `HusstandId` på 0, og hvert eneste query-filter gir tomt resultat. Symptomet er en tom app, ikke en feilmelding.
 - **Kulturen er fast `nb-NO` med `RequestCultureProviders.Clear()`.** Desimalskilletegnet er komma. Fjernes tømmingen, leser ASP.NET Core `Accept-Language`, og en engelsk nettleser sender punktum inn i et skjema som venter komma.
+
+`Husstandskontekst` er én scoped instans bak både `IHusstandContext` (query-filtrene) og `IGjeldendeBruker` (bruker, aktiv husstand og rolle), og fylles av `HusstandMiddleware`. Rollene er `Husstandsrolle.Beboer` og `Gjest` — det finnes ingen rolle som heter «Eier». `[KreverEier]` sjekker `KanEndre`, som er sann for `Beboer`. Standardrollen er `Gjest`, så en middleware som ikke kjører gir færrest mulige rettigheter.
 
 ## Datalag
 
@@ -104,6 +107,8 @@ dotnet ef migrations add <navn> \
   --project src/Dyrepermen.Infrastructure \
   --startup-project src/Dyrepermen.Web \
   --output-dir Persistence/Migrations
+tools/migrer.sh                 # skriv idempotent migrations.sql for å se SQL-en
+tools/migrer.sh --kjor          # ... og kjør den mot $DATABASE_URL (postgres://-form)
 
 # Bygg og test
 dotnet build
@@ -128,7 +133,9 @@ Sentral pakkestyring i `Directory.Packages.props`. **Legg aldri `Version` i en `
 - Enhetstester for ren logikk, integrasjonstester mot ekte PostgreSQL via Testcontainers
 - **Bruk aldri EF Core InMemory.** Den håndhever ikke constraints og gir grønne tester på kode som feiler i produksjon
 - Hver testklasse er uavhengig av rekkefølge og av andre testers data
-- Ny entitet med husstandstilknytning → legg til i isolasjonstesten samme commit
+- Ny entitet med husstandstilknytning → legg til i isolasjonstesten samme commit. `IsolasjonsTester` har én håndskrevet test per entitet — den oppdager ikke nye typer selv, i motsetning til `FilterTester`
+- Alle integrasjonstestklasser deler én container gjennom `[Collection(Databasesamling.Navn)]` og tar `DatabaseFixture` i konstruktøren. En ny klasse uten attributtet får ikke fixturen. Isolasjon mellom tester kommer av at hver test oppretter egne husstander (`OpprettHusstand`) og unike e-postadresser — ikke av at databasen tømmes
+- HTTP-tester bygges med `Testoppsett.InnloggetKlient(app)`, som registrerer en bruker og oppretter husstanden, og `Skjemaklient`, som henter antiforgery-tokenet fra siden før den poster. Uten husstand svarer alt 302 til `/husstand/oppsett`
 - `Appfabrikk` starter den **ekte** appen med `WebApplicationFactory<Program>` — samme middleware, samme Identity-oppsett. Bytt aldri ut oppstarten i en test; da tester du noe annet enn det som kjører. Klienten følger ikke omdirigeringer, fordi 302 mot 200 *er* målingen
 - `DatabaseFixture` kjører migrasjonene i containeren. Feiler en migrasjon, feiler hele suiten med én gang
 
@@ -149,7 +156,7 @@ Tre tester feiler når noen glemmer noe. De skal aldri «fikses» ved å legge t
 3. Implementer
 4. `dotnet build` med null advarsler, `dotnet test` grønt
 5. Commit på norsk, imperativ form: «Legg til vektregistrering»
-6. Push utløser `Bygg og test` på alle brancher
+6. Push utløser `Bygg og test` på alle brancher — men bare når den rører `src/`, `tests/`, `infra/`, `Directory.*.props`, `global.json`, `Dyrepermen.sln` eller arbeidsflyten selv. En push med bare dokumentasjon bygges ikke. Pull requests bygges alltid
 
 Brancher: `feature/*` → `dev` → `main`. `main` er produksjon.
 

@@ -194,47 +194,13 @@ public sealed class KontoService : IKontoService
             return SlettResultat.MaBekrefteHusstandsletting;
         }
 
-        await using var tx = await _db.Database.BeginTransactionAsync(ct);
-
-        // ON DELETE SET NULL i skjemaet gjor avidentifiseringen: vektrader,
-        // doser og foringer beholdes med null i *_av_bruker_id. Visningslaget
-        // skriver "slettet bruker" der navnet sto.
-        //
-        // En kaskadesletting ville tatt med seg hele vekthistorikken til
-        // hunden fordi det tilfeldigvis var denne personen som registrerte
-        // malingene. Det er feil, og det er ikke til a reversere.
-        var resultat = await _brukere.DeleteAsync(bruker);
-        if (!resultat.Succeeded)
-        {
-            await tx.RollbackAsync(ct);
-            return SlettResultat.FeilPassord;
-        }
-
-        if (alene.Count > 0)
-        {
-            await _db.Dyr.IgnoreQueryFilters()
-                .Where(d => alene.Contains(d.HusstandId))
-                .ExecuteDeleteAsync(ct);
-
-            await _db.Handleliste.IgnoreQueryFilters()
-                .Where(x => alene.Contains(x.HusstandId))
-                .ExecuteDeleteAsync(ct);
-
-            await _db.Informasjon.IgnoreQueryFilters()
-                .Where(x => alene.Contains(x.HusstandId))
-                .ExecuteDeleteAsync(ct);
-
-            await _db.Husstand
-                .Where(h => alene.Contains(h.Id))
-                .ExecuteDeleteAsync(ct);
-        }
-
-        await tx.CommitAsync(ct);
+        // Samme sletting som demooppryddingen bruker. Se Brukersletting.
+        var husstander = await _db.SlettBrukere([brukerId], ct);
 
         // Logg bruker-ID, aldri e-postadressen.
         _log.LogInformation(
             "Bruker {BrukerId} slettet permanent. Husstander slettet: {Antall}",
-            brukerId, alene.Count);
+            brukerId, husstander);
 
         return SlettResultat.Ok;
     }

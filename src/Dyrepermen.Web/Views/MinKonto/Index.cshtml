@@ -60,6 +60,28 @@
         </div>
     </section>
 
+    @if (Meg.ErDemo)
+    {
+        @* En demo har ikke passord a slette med. Utlogging sletter demoen
+           straks, sa avslutning er utlogging. Se ADR 0015. *@
+        <section class="kort">
+            <div class="kort-hode">
+                <h2>Avslutt demoen</h2>
+            </div>
+            <div class="kort-kropp">
+                <p class="small">
+                    Alt i demoen slettes med en gang. Avslutter du ikke, slettes
+                    den automatisk innen 24 timer.
+                </p>
+                <form method="post" action="/logg-ut">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Avslutt demo</button>
+                </form>
+            </div>
+        </section>
+    }
+    else
+    {
     <section class="kort fare">
         <div class="kort-hode">
             <h2>Slett kontoen permanent</h2>
@@ -125,6 +147,7 @@
         @Html.AntiForgeryToken()
         <button type="submit" class="btn btn-outline-secondary btn-sm">Logg ut</button>
     </form>
+    }
 </div>
 
 @section Skript {
