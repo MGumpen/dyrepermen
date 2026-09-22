@@ -48,9 +48,10 @@ Ikke bruk æ, ø eller å i klassenavn, filnavn, tabellnavn eller ruter. Skriv `
 
 - **Controllere er tynne.** De mapper mellom ViewModel og tjeneste. Ingen forretningsregler, ingen `DbContext` direkte.
 - **Grensesnittene bor i `Application/Interfaces`, implementasjonene i `Infrastructure/Services`.** Tjenestene spør databasen, og `DbContext` hører hjemme i Infrastructure — se ADR 0007. Application inneholder kun grensesnittene, DTO-ene og `Husstandskontekst`. Ny tjeneste: grensesnitt i Application, klasse i Infrastructure, registrering i `LeggTilInfrastruktur()`.
-- **Ren logikk uten databasetilgang ligger i `Application/Extensions`** — `Tidssone`, `Maltidsfordeling`, `Vektgrafberegning`, `Vektformat`, `Alderformat`. Det er disse enhetstestene dekker. Kan en regel skilles ut hit, skal den hit.
+- **Ren logikk uten databasetilgang ligger i `Application/Extensions`** — blant annet `Tidssone`, `Maltidsfordeling`, `Vektgrafberegning`, `Fortabell` og `Demomal`. Det er disse enhetstestene dekker. Kan en regel skilles ut hit, skal den hit.
 - **Legger du en EF Core-avhengighet i Domain, er lagdelingen borte.** Ingenting feiler — du må passe på selv.
 - **`src/Dyrepermen.Landingsside` er ikke en del av appen.** Et frittstående «under utvikling»-nettsted for `main` mens appen bygges på `dev`, med egen `Program.cs` uten database og egne innstillinger i `.csproj`. Det står utenfor `Dyrepermen.sln` og bygges ikke av `infra/Dockerfile`. Ikke legg det inn i løsningen og ikke gi det avhengigheter.
+- **`clients/` er reservert for en fremtidig React-klient** og står i `.dockerignore`. Skal den bygges inn i containeren, må regelen fjernes og Dockerfile-en få et eget byggesteg.
 
 ### Web-oppsett som ikke er synlig i en controller
 
@@ -62,6 +63,15 @@ Fire ting settes i `Program.cs` og gjelder alt. Leser du bare controlleren, ser 
 - **Kulturen er fast `nb-NO` med `RequestCultureProviders.Clear()`.** Desimalskilletegnet er komma. Fjernes tømmingen, leser ASP.NET Core `Accept-Language`, og en engelsk nettleser sender punktum inn i et skjema som venter komma.
 
 `Husstandskontekst` er én scoped instans bak både `IHusstandContext` (query-filtrene) og `IGjeldendeBruker` (bruker, aktiv husstand og rolle), og fylles av `HusstandMiddleware`. Rollene er `Husstandsrolle.Beboer` og `Gjest` — det finnes ingen rolle som heter «Eier». `[KreverEier]` sjekker `KanEndre`, som er sann for `Beboer`. Standardrollen er `Gjest`, så en middleware som ikke kjører gir færrest mulige rettigheter.
+
+### Demomodus (ADR 0015)
+
+`POST /demo` er anonym og oppretter en ekte bruker uten passord (`demo-{guid}@demo.invalid`) med egen husstand, fylt fra `Demomal`. Brukeren kjennes på `bruker.demo_utloper` (satt = demo) og `IGjeldendeBruker.ErDemo`. Det finnes ingen egne demostier i tjenestene — demoen *er* den ekte appen, isolert av de vanlige query-filtrene.
+
+- **Ny handling som kan nå fremmede personer** (e-post, medlemmer, nye husstander) skal ha `[StengtIDemo]`, og legges inn i `DemoTester.Handlingen_er_stengt_i_demo`. Skjult knapp er ikke sperre.
+- **Kode som sender e-post skal hoppe over brukere med `demo_utloper IS NOT NULL`** — gjelder også påminnelsesjobben når den bygges.
+- **All sletting av brukere går gjennom `Brukersletting.SlettBrukere`**, både kontosletting og demoopprydding. Rekkefølgen styres av `RESTRICT`-nøklene. Ny husstandsbundet tabell som peker på `Dyr` eller husstanden må ryddes der.
+- Utløpte demoer ryddes når en ny demo startes; det finnes ingen planlagt jobb. Taket er 300 aktive demoer og 5 per IP i timen.
 
 ## Datalag
 
@@ -141,13 +151,14 @@ Sentral pakkestyring i `Directory.Packages.props`. **Legg aldri `Version` i en `
 
 ### Prøvene som holder seg selv i orden
 
-Tre tester feiler når noen glemmer noe. De skal aldri «fikses» ved å legge typen inn i et unntak uten at det er et bevisst valg.
+Fire tester feiler når noen glemmer noe. De skal aldri «fikses» ved å legge typen inn i et unntak uten at det er et bevisst valg.
 
 | Prøve | Fanger |
 |---|---|
 | `FilterTester.Alle_husstandsbundne_entiteter_har_query_filter` | `IHusstandsbundet` uten query-filter i `DyrepermenDbContext` |
 | `FilterTester.Alle_husstandsbundne_typer_er_med_i_modellen` | Entitet som mangler i EF-modellen — da hjelper ikke filterprøven |
 | `RolleTester` | `POST`-handling uten `[KreverEier]` som ikke står på den bevisste gjestelisten |
+| `DemoTester.Utlopt_demo_ryddes_uten_a_etterlate_rader` | Husstandsbundet tabell som `Brukersletting` ikke rydder |
 
 ## Arbeidsflyt
 
