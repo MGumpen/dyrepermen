@@ -3,6 +3,7 @@ using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Web.Extensions;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -53,6 +54,7 @@ public sealed class MinKontoController : Controller
 
     [HttpPost("slett")]
     [ValidateAntiForgeryToken]
+    [StengtIDemo]
     // Parameteren MA hete "slett": skjemaet poster "Slett.Passord", og
     // modellbinderen bruker parameternavnet som prefiks. Heter den noe annet,
     // binder ingenting - og siden lastes pa nytt uten a gjore noe.

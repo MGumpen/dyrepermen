@@ -51,6 +51,18 @@
             <a asp-action="Registrer" class="btn btn-aksent-omriss w-100">
                 Opprett ny konto
             </a>
+
+            @if (TempData["Feil"] is string feil)
+            {
+                <div class="alert alert-warning py-2 mt-3 mb-0" role="status">@feil</div>
+            }
+
+            @* Diskret tekstknapp under de to hovedvalgene. POST-skjema, ikke
+               lenke: klikket oppretter en demo. Se ADR 0015. *@
+            <form method="post" action="/demo" class="text-center mt-2">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-link btn-sm">Prøv en demo</button>
+            </form>
         </div>
     </div>
 </div>

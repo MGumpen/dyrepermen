@@ -1,7 +1,9 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Services;
+using Dyrepermen.Domain.Entities;
 using Dyrepermen.Infrastructure.Persistence;
 using Dyrepermen.Web.Extensions;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Dyrepermen.Web.Middleware;
@@ -47,7 +49,8 @@ public sealed class HusstandMiddleware
     public async Task InvokeAsync(
         HttpContext ctx,
         DyrepermenDbContext db,
-        Husstandskontekst kontekst)
+        Husstandskontekst kontekst,
+        SignInManager<Bruker> paalogging)
     {
         var brukerId = ctx.User.Identity?.IsAuthenticated == true
             ? ctx.User.BrukerId()
@@ -63,12 +66,24 @@ public sealed class HusstandMiddleware
 
         var bruker = await db.Users
             .Where(u => u.Id == brukerId.Value)
-            .Select(u => new { u.Visningsnavn, u.Email })
+            .Select(u => new { u.Visningsnavn, u.Email, ErDemo = u.DemoUtloper != null })
             .FirstOrDefaultAsync(ctx.RequestAborted);
 
+        if (bruker is null)
+        {
+            // Kapselen er gyldig, men brukeren er slettet - fra en annen enhet,
+            // eller en demo som er ryddet bort. SecurityStampValidator merker
+            // det forst etter 12 timer. Uten dette havner hun pa oppsettsiden,
+            // der det a opprette en husstand feiler pa fremmednokkelen.
+            await paalogging.SignOutAsync();
+            ctx.Response.Redirect("/logg-inn");
+            return;
+        }
+
         kontekst.BrukerId = brukerId;
-        kontekst.Visningsnavn = bruker?.Visningsnavn ?? "";
-        kontekst.Epost = bruker?.Email ?? "";
+        kontekst.Visningsnavn = bruker.Visningsnavn;
+        kontekst.Epost = bruker.Email ?? "";
+        kontekst.ErDemo = bruker.ErDemo;
 
         // Alle husstander brukeren er med i, med rolle. Ett oppslag.
         var medlemskap = await db.Husstandsmedlemskap

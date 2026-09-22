@@ -18,6 +18,14 @@ public sealed class Bruker : IdentityUser<int>
 {
     public string Visningsnavn { get; set; } = null!;
 
+    /// <summary>
+    /// Nar demoen slettes. <c>null</c> for alle ekte brukere. Se ADR 0015.
+    ///
+    /// Nullbar og uten standardverdi med vilje - samme familie som fella med
+    /// HasDefaultValue i CLAUDE.md.
+    /// </summary>
+    public DateTimeOffset? DemoUtloper { get; set; }
+
     public ICollection<Husstandsmedlemskap> Medlemskap { get; set; }
         = new List<Husstandsmedlemskap>();
 }

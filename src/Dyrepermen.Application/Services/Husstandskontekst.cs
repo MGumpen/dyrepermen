@@ -39,4 +39,6 @@ public sealed class Husstandskontekst : IHusstandContext, IGjeldendeBruker
     public IReadOnlyList<HusstandsValg> Husstander { get; set; } = [];
 
     public bool ErInnlogget => BrukerId is not null;
+
+    public bool ErDemo { get; set; }
 }

@@ -113,6 +113,20 @@ builder.Services.AddRateLimiter(o =>
                 Window = TimeSpan.FromHours(1),
                 QueueLimit = 0
             }));
+
+    // Demoer telles per IP. De er anonyme, sa det finnes ingen bruker a
+    // telle pa, og ForwardedHeaders gir den ekte adressen bak Render. Taket
+    // pa aktive demoer i DemoService stopper det samme fra mange IP-er.
+    // Se ADR 0015.
+    o.AddPolicy(DemoController.Grense, ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            ctx.Connection.RemoteIpAddress?.ToString() ?? "ukjent",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0
+            }));
 });
 
 builder.Services.AddIdentity<Bruker, IdentityRole<int>>(o =>

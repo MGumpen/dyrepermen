@@ -1,5 +1,6 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -29,6 +30,7 @@ public sealed class KontaktController : Controller
     [HttpPost("")]
     [ValidateAntiForgeryToken]
     [EnableRateLimiting(Grense)]
+    [StengtIDemo]
     public async Task<IActionResult> Send(KontaktVm kontakt, CancellationToken ct)
     {
         if (!ModelState.IsValid)

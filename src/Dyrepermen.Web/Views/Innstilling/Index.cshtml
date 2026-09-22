@@ -1,4 +1,6 @@
+@using Dyrepermen.Application.Interfaces
 @using Dyrepermen.Domain.Enums
+@inject IGjeldendeBruker Meg
 @model InnstillingerVm
 @{
     ViewData["Tittel"] = "Innstillinger";
@@ -142,6 +144,10 @@
                 </ul>
             }
 
+            @* Skjult i demo: ellers kan en anonym besokende legge en ekte
+               persons adresse inn i demohusstanden. Se ADR 0015. *@
+            @if (!Meg.ErDemo)
+            {
             <div class="kort-kropp border-top">
                 <h3 class="h6">Legg til medlem</h3>
                 <p class="form-text mt-0">
@@ -175,6 +181,7 @@
                     </div>
                 </form>
             </div>
+            }
         </section>
     </div>
 
