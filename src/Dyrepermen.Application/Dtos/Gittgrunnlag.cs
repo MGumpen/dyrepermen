@@ -5,7 +5,7 @@ namespace Dyrepermen.Application.Dtos;
 /// sto sist. Appen foreslar ingen neste gang - feltet star tomt, og
 /// brukeren fyller det inn selv. Se ADR 0016.
 /// </summary>
-public sealed record Gittforslag(
+public sealed record Gittgrunnlag(
     int DyrId,
     int BehandlingId,
     string DyreNavn,

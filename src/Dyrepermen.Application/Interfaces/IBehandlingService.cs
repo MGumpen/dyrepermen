@@ -31,7 +31,7 @@ public interface IBehandlingService
     /// Null betyr at behandlingen ikke finnes pa dette dyret i denne
     /// husstanden.
     /// </summary>
-    Task<Gittforslag?> HentGittforslag(
+    Task<Gittgrunnlag?> HentGittgrunnlag(
         int dyrId, int behandlingId, CancellationToken ct);
 
     /// <summary>

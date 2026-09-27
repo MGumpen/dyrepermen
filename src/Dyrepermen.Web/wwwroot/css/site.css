@@ -406,6 +406,17 @@ h1, h2, h3, h4 {
     padding: 1rem;
 }
 
+/* Knapperad nederst i et kort: historikk til venstre, hovedknappen til
+   hoyre - samme plassering som i sidehodet. */
+.kort-handlinger {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .5rem;
+    padding: .6rem .9rem;
+    border-top: 1px solid var(--dp-kant);
+}
+
 .kort-kropp.tett {
     padding: .5rem 1rem;
 }

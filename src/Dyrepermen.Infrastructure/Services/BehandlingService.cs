@@ -48,7 +48,7 @@ public sealed class BehandlingService : IBehandlingService
             .ToList();
     }
 
-    public async Task<Gittforslag?> HentGittforslag(
+    public async Task<Gittgrunnlag?> HentGittgrunnlag(
         int dyrId, int behandlingId, CancellationToken ct)
     {
         var forrige = await _db.Behandling
@@ -70,7 +70,7 @@ public sealed class BehandlingService : IBehandlingService
 
         var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
 
-        return new Gittforslag(
+        return new Gittgrunnlag(
             dyrId,
             behandlingId,
             forrige.DyreNavn,

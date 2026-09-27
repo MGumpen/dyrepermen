@@ -134,7 +134,8 @@ public sealed class UtskriftService : IUtskriftService
                     m.Doser.OrderByDescending(d => d.GittTid)
                         .Select(d => d.GittAv == null
                             ? null : d.GittAv.Visningsnavn)
-                        .FirstOrDefault())
+                        .FirstOrDefault(),
+                    m.AvsluttetTid)
             })
             .ToListAsync(ct))
             .GroupBy(m => m.DyrId)

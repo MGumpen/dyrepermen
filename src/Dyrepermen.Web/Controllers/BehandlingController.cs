@@ -33,7 +33,7 @@ public sealed class BehandlingController : Controller
     public async Task<IActionResult> Index(
         int dyrId, int? rediger, int? gjenta, CancellationToken ct)
     {
-        var vm = await ByggSide(dyrId, ny: null, redigerId: rediger, ct, gjenta);
+        var vm = await ByggSide(dyrId, ny: null, redigerId: rediger, gjentaId: gjenta, ct);
         return vm is null ? NotFound() : View(vm);
     }
 
@@ -45,7 +45,7 @@ public sealed class BehandlingController : Controller
     {
         if (!ModelState.IsValid)
         {
-            var vm = await ByggSide(dyrId, ny, redigerId: null, ct);
+            var vm = await ByggSide(dyrId, ny, redigerId: null, gjentaId: null, ct);
             return vm is null ? NotFound() : View(nameof(Index), vm);
         }
 
@@ -78,7 +78,7 @@ public sealed class BehandlingController : Controller
         {
             // redigerId beholdes, sa skjemaet star igjen i endringsmodus med
             // feilmeldingene - ikke som et tomt registreringsskjema.
-            var vm = await ByggSide(dyrId, ny, redigerId: behandlingId, ct);
+            var vm = await ByggSide(dyrId, ny, redigerId: behandlingId, gjentaId: null, ct);
             return vm is null ? NotFound() : View(nameof(Index), vm);
         }
 
@@ -104,14 +104,14 @@ public sealed class BehandlingController : Controller
     public async Task<IActionResult> Gittdialog(
         int dyrId, int behandlingId, bool fraOversikt, CancellationToken ct)
     {
-        var forslag = await _behandling.HentGittforslag(dyrId, behandlingId, ct);
+        var grunnlag = await _behandling.HentGittgrunnlag(dyrId, behandlingId, ct);
 
-        if (forslag is null)
+        if (grunnlag is null)
         {
             return NotFound();
         }
 
-        var vm = new GittdialogVm(forslag, NesteDato: null, fraOversikt);
+        var vm = new GittdialogVm(grunnlag, NesteDato: null, fraOversikt);
 
         return ErHtmx
             ? PartialView("_Gittdialog", vm)
@@ -133,12 +133,12 @@ public sealed class BehandlingController : Controller
             // Vanlig side med feilmeldingen, ikke dialogen: skjemaet postes
             // uten htmx, og en side som svarer 200 med et skjema er det
             // nettleseren kan vise.
-            var forslag = await _behandling.HentGittforslag(dyrId, behandlingId, ct);
+            var grunnlag = await _behandling.HentGittgrunnlag(dyrId, behandlingId, ct);
 
-            return forslag is null
+            return grunnlag is null
                 ? NotFound()
                 : View("Gittdialog", new GittdialogVm(
-                    forslag, skjema.NesteDato, skjema.FraOversikt));
+                    grunnlag, skjema.NesteDato, skjema.FraOversikt));
         }
 
         var resultat = await _behandling.Gitt(
@@ -197,8 +197,8 @@ public sealed class BehandlingController : Controller
     /// fylles det fra behandlingen som skal endres, eller star tomt.
     /// </summary>
     private async Task<BehandlingSideVm?> ByggSide(
-        int dyrId, NyBehandlingVm? ny, int? redigerId, CancellationToken ct,
-        int? gjentaId = null)
+        int dyrId, NyBehandlingVm? ny, int? redigerId, int? gjentaId,
+        CancellationToken ct)
     {
         var dyr = await _dyr.HentDetaljer(dyrId, ct);
         if (dyr is null)

@@ -5,6 +5,8 @@ namespace Dyrepermen.Application.Tests;
 /// <summary>
 /// Hvilke medisindoser som dukker opp i "Forfaller snart" pa dashbordet:
 /// de med fast intervall som forfaller i lopet av dagen, i norsk tid.
+/// Avsluttede medisiner tas bort av Medisinfilter for de kommer hit - det
+/// dekkes av OppfolgingTester.
 /// </summary>
 public sealed class DosevarselTester
 {
@@ -20,7 +22,7 @@ public sealed class DosevarselTester
         var siste = Naa.AddHours(-6);
 
         Assert.Equal(siste.AddHours(12), Dosevarsel.NesteDose(
-            12, Idag.AddDays(-3), null, siste, Naa));
+            12, Idag.AddDays(-3), siste, Naa));
     }
 
     [Fact]
@@ -29,7 +31,7 @@ public sealed class DosevarselTester
         // Gitt 09:00 med 24 timers intervall - neste er 09:00 i morgen.
         var siste = Naa.AddHours(-1);
 
-        Assert.Null(Dosevarsel.NesteDose(24, Idag.AddDays(-3), null, siste, Naa));
+        Assert.Null(Dosevarsel.NesteDose(24, Idag.AddDays(-3), siste, Naa));
     }
 
     [Fact]
@@ -39,41 +41,25 @@ public sealed class DosevarselTester
         var siste = Naa.AddDays(-3);
 
         Assert.Equal(siste.AddHours(24), Dosevarsel.NesteDose(
-            24, Idag.AddDays(-5), null, siste, Naa));
+            24, Idag.AddDays(-5), siste, Naa));
     }
 
     [Fact]
     public void Medisin_uten_doser_forfaller_na()
     {
-        Assert.Equal(Naa, Dosevarsel.NesteDose(12, Idag, null, null, Naa));
+        Assert.Equal(Naa, Dosevarsel.NesteDose(12, Idag, null, Naa));
     }
 
     [Fact]
     public void Ved_behov_varsles_aldri()
     {
-        Assert.Null(Dosevarsel.NesteDose(0, Idag.AddDays(-3), null, null, Naa));
+        Assert.Null(Dosevarsel.NesteDose(0, Idag.AddDays(-3), null, Naa));
     }
 
     [Fact]
     public void Medisin_som_ikke_har_startet_varsles_ikke()
     {
-        Assert.Null(Dosevarsel.NesteDose(12, Idag.AddDays(1), null, null, Naa));
-    }
-
-    [Fact]
-    public void Avsluttet_medisin_varsles_ikke()
-    {
-        Assert.Null(Dosevarsel.NesteDose(
-            12, Idag.AddDays(-10), Idag.AddDays(-1), Naa.AddDays(-2), Naa));
-    }
-
-    [Fact]
-    public void Siste_dag_av_kuren_varsles()
-    {
-        // Sluttdatoen er inkludert - kuren varer til og med den dagen.
-        var siste = Naa.AddHours(-13);
-
-        Assert.NotNull(Dosevarsel.NesteDose(12, Idag.AddDays(-10), Idag, siste, Naa));
+        Assert.Null(Dosevarsel.NesteDose(12, Idag.AddDays(1), null, Naa));
     }
 
     [Fact]
@@ -85,8 +71,8 @@ public sealed class DosevarselTester
         var kveld = new DateTimeOffset(2026, 5, 14, 20, 0, 0, TimeSpan.Zero);
 
         Assert.Null(Dosevarsel.NesteDose(
-            12, Idag.AddDays(-3), null, kveld.AddHours(-9.5), kveld));
+            12, Idag.AddDays(-3), kveld.AddHours(-9.5), kveld));
         Assert.NotNull(Dosevarsel.NesteDose(
-            12, Idag.AddDays(-3), null, kveld.AddHours(-10.5), kveld));
+            12, Idag.AddDays(-3), kveld.AddHours(-10.5), kveld));
     }
 }

@@ -16,7 +16,7 @@ public sealed record BehandlingRad(
     /// type og preparat finnes pa dyret. Bare da kan raden krysses av som
     /// gitt. Se ADR 0016.
     /// </summary>
-    bool ErApen = false)
+    bool ErApen)
 {
     /// <summary>
     /// Knappen "gitt i dag" vises bare her: paminnelsen venter, og

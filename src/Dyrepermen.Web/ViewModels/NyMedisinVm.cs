@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Dyrepermen.Web.ViewModels;
 
-public sealed class NyMedisinVm
+public sealed class NyMedisinVm : IValidatableObject
 {
     [Required(ErrorMessage = "Skriv inn navnet på medisinen.")]
     [StringLength(80, ErrorMessage = "Navnet kan være høyst 80 tegn.")]
@@ -29,4 +29,17 @@ public sealed class NyMedisinVm
     [DataType(DataType.Date)]
     [Display(Name = "Til")]
     public DateOnly? SluttDato { get; set; }
+
+    /// <summary>
+    /// En kur som slutter for den begynner, gir en medisin som aldri er
+    /// aktiv - og som forsvinner fra dashbordet uten at noen skjonner hvorfor.
+    /// </summary>
+    public IEnumerable<ValidationResult> Validate(ValidationContext ctx)
+    {
+        if (SluttDato is { } slutt && slutt < StartDato)
+        {
+            yield return new ValidationResult(
+                "Til-datoen kan ikke være før fra-datoen.", [nameof(SluttDato)]);
+        }
+    }
 }

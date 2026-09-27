@@ -7,6 +7,7 @@
     var tittel = (erNy, erKontroll, ny.Gjennomfort) switch
     {
         (_, true, _) => "Ny kontrolltime",
+        (true, _, true) => "Registrer besøk",
         (false, _, true) => "Registrer besøket",
         (true, _, _) => "Ny time",
         _ => "Rediger time"
@@ -27,6 +28,11 @@
             {
                 @:Fyll inn diagnose, pris og eventuell ny kontroll. Resten står
                 @:som da timen ble lagt inn.
+            }
+            else if (ny.Gjennomfort)
+            {
+                @:Et besøk som allerede har vært. Velg dyret og veterinæren, og
+                @:fyll inn det som kom ut av det.
             }
             else
             {

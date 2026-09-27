@@ -294,6 +294,23 @@
             }
         </ul>
     }
+
+    @* Samme knapperad som kortene pa dyrets side. Skjemaet spor etter dyr
+       og veterinaer, sa knappene trenger ikke vite noe om hvilket. *@
+    @if (Meg.KanEndre)
+    {
+        <div class="kort-handlinger">
+            <a class="btn btn-outline-secondary btn-sm"
+               asp-controller="Veterinar" asp-action="NyTime" asp-route-besok="true">
+                Registrer besøk
+            </a>
+            <a class="btn btn-primary btn-sm"
+               asp-controller="Veterinar" asp-action="NyTime">
+                <svg class="ikon" aria-hidden="true"><use href="#i-klokke" /></svg>
+                Ny time
+            </a>
+        </div>
+    }
         </section>
     </div>
 

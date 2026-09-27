@@ -29,6 +29,7 @@ public sealed class DashbordService : IDashbordService
         // folger alderen i hele uker, og en dags avvik flytter hele ukeskiftet.
         var naa = DateTimeOffset.UtcNow;
         var idag = Tidssone.Idag(naa);
+        var aktivMedisin = Medisinfilter.Aktiv(idag);
         var grense = idag.AddDays(Varselvindu);
 
         // Midnatt i Norge, ikke i UTC. Ellers nullstilles maltidstelleren
@@ -89,21 +90,21 @@ public sealed class DashbordService : IDashbordService
                 // dag kan bygges herfra. Det sparer en egen rundtur for
                 // "Forfaller snart".
                 Medisiner = d.Medisiner
-                    .Where(m => m.SluttDato == null || m.SluttDato >= idag)
+                    .AsQueryable()
+                    .Where(aktivMedisin)
                     .OrderBy(m => m.Navn)
-                    .Select(m => new
-                    {
+                    .Select(m => new AktivMedisin(
+                        d.Id,
+                        d.Navn,
                         m.Id,
                         m.Navn,
                         m.Dose,
                         m.IntervallTimer,
                         m.StartDato,
-                        m.SluttDato,
-                        SisteDose = m.Doser
+                        m.Doser
                             .OrderByDescending(x => x.GittTid)
                             .Select(x => (DateTimeOffset?)x.GittTid)
-                            .FirstOrDefault()
-                    })
+                            .FirstOrDefault()))
                     .ToList(),
 
                 // Korrelert undersporring - siste foring i samme rundtur.
@@ -280,11 +281,7 @@ public sealed class DashbordService : IDashbordService
                 f.Id,
                 $"Fornyelse {f.Selskap}",
                 f.Dato)))
-            .Concat(Doser(raa
-                .SelectMany(d => d.Medisiner.Select(m => (
-                    DyrId: d.Id, DyreNavn: d.Navn, m.Id, m.Navn, m.Dose,
-                    m.IntervallTimer, m.StartDato, m.SluttDato, m.SisteDose))),
-                naa))
+            .Concat(Doser(raa.SelectMany(d => d.Medisiner), naa))
             // Selve timen. Klokkeslettet tas med nar det finnes - "torsdag"
             // er ubrukelig hvis timen er 08:15 og du ma ta fri.
             .Concat(vetbesok
@@ -389,19 +386,30 @@ public sealed class DashbordService : IDashbordService
     }
 
     /// <summary>
-    /// Medisindosene som forfaller i dag, en rad per medisin. Regelen for
-    /// hva som forfaller ligger i <see cref="Dosevarsel"/>.
+    /// En aktiv medisin slik sporring 1 henter den, med det som trengs for a
+    /// avgjore om en dose forfaller i dag.
+    /// </summary>
+    private sealed record AktivMedisin(
+        int DyrId,
+        string DyreNavn,
+        int Id,
+        string Navn,
+        string Dose,
+        int IntervallTimer,
+        DateOnly StartDato,
+        DateTimeOffset? SisteDose);
+
+    /// <summary>
+    /// Medisindosene som forfaller i dag, en rad per medisin. Medisinene er
+    /// allerede aktive - Medisinfilter i sporringen - og regelen for hva som
+    /// forfaller ligger i <see cref="Dosevarsel"/>.
     /// </summary>
     private static IEnumerable<Paminnelse> Doser(
-        IEnumerable<(int DyrId, string DyreNavn, int Id, string Navn, string Dose,
-            int IntervallTimer, DateOnly StartDato, DateOnly? SluttDato,
-            DateTimeOffset? SisteDose)> medisiner,
-        DateTimeOffset naa)
+        IEnumerable<AktivMedisin> medisiner, DateTimeOffset naa)
     {
         foreach (var m in medisiner)
         {
-            if (Dosevarsel.NesteDose(
-                    m.IntervallTimer, m.StartDato, m.SluttDato, m.SisteDose, naa)
+            if (Dosevarsel.NesteDose(m.IntervallTimer, m.StartDato, m.SisteDose, naa)
                 is not { } neste)
             {
                 continue;

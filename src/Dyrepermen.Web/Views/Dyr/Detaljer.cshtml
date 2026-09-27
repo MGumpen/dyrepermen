@@ -1,4 +1,6 @@
 @using Dyrepermen.Application.Extensions
+@using Dyrepermen.Application.Interfaces
+@inject IGjeldendeBruker Meg
 @model DyrDetaljerVm
 @{
     var d = Model.Dyr;
@@ -158,15 +160,11 @@
         <section class="kort">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-medisin" /></svg>
-                <h2>Medisin</h2>
+                <h2>Aktive medisiner</h2>
                 @if (s.AktiveMedisiner.Count > 0)
                 {
                     <span class="antall">@s.AktiveMedisiner.Count</span>
                 }
-                <a class="se-alle" asp-controller="Medisin" asp-action="Index"
-                   asp-route-dyrId="@d.Id">
-                    @(s.AntallMedisiner > 0 ? "Se alle" : "Legg til")
-                </a>
             </div>
 
             @if (s.AktiveMedisiner.Count > 0)
@@ -186,54 +184,108 @@
             {
                 <div class="tomt">
                     @(s.AntallMedisiner > 0
-                        ? "Ingen aktive medisiner. Se historikken."
+                        ? "Ingen aktive medisiner."
                         : "Ingen medisiner registrert.")
                 </div>
             }
+
+            <div class="kort-handlinger">
+                @if (s.AntallMedisiner > 0)
+                {
+                    @* Medisinsiden har bade dosene og de avsluttede. *@
+                    <a class="btn btn-outline-secondary btn-sm"
+                       asp-controller="Medisin" asp-action="Index"
+                       asp-route-dyrId="@d.Id">
+                        Se historikk (@s.AntallMedisiner)
+                    </a>
+                }
+                @if (Meg.KanEndre)
+                {
+                    <a class="btn btn-primary btn-sm"
+                       asp-controller="Medisin" asp-action="Index"
+                       asp-route-dyrId="@d.Id" asp-fragment="skjema">
+                        <svg class="ikon" aria-hidden="true"><use href="#i-pluss" /></svg>
+                        Registrer medisin
+                    </a>
+                }
+            </div>
         </section>
 
-        @* --- Behandlinger ---------------------------------------------- *@
+        @* --- Behandlinger ----------------------------------------------
+           Det som kommer, ikke det som har vaert. Historikken har sin egen
+           side; her er sporsmalet hva som ma gjores. *@
         <section class="kort">
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
-                <h2>Behandlinger</h2>
-                @if (s.AntallBehandlinger > 0)
+                <h2>Kommende behandlinger</h2>
+                @if (s.KommendeBehandlinger.Count > 0)
                 {
-                    <span class="antall">@s.AntallBehandlinger</span>
+                    <span class="antall">@s.KommendeBehandlinger.Count</span>
                 }
-                <a class="se-alle" asp-controller="Behandling" asp-action="Index"
-                   asp-route-dyrId="@d.Id">
-                    @(s.AntallBehandlinger > 0 ? "Se alle" : "Registrer")
-                </a>
             </div>
 
-            @if (s.NesteBehandlingDato is { } neste)
+            @if (s.KommendeBehandlinger.Count > 0)
             {
-                var forfalt = neste < idag;
                 <ul class="rad-liste">
-                    <li>
-                        <span class="flex-grow-1 min-w-0">
-                            <span class="tittel">@s.NesteBehandlingTekst</span>
-                            <span class="under d-block">neste gang</span>
-                        </span>
-                        <span class="hoyre">
-                            @if (forfalt)
-                            {
-                                <span class="merkelapp forfalt">forfalt</span>
-                            }
-                            <span class="d-block">@($"{neste:d. MMM yyyy}")</span>
-                        </span>
-                    </li>
+                    @foreach (var b in s.KommendeBehandlinger)
+                    {
+                        <li>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">@b.Tekst</span>
+                            </span>
+                            <span class="hoyre d-flex align-items-center gap-2">
+                                <span>
+                                    @if (b.NesteDato < idag)
+                                    {
+                                        <span class="merkelapp forfalt">forfalt</span>
+                                    }
+                                    <span class="d-block">@($"{b.NesteDato:d. MMM yyyy}")</span>
+                                </span>
+                                @* Samme dialog som pa dashbordet og i historikken. *@
+                                @if (Meg.KanEndre && b.KanGis)
+                                {
+                                    <a class="btn btn-outline-primary btn-sm"
+                                       asp-controller="Behandling" asp-action="Gittdialog"
+                                       asp-route-dyrId="@d.Id" asp-route-behandlingId="@b.Id"
+                                       hx-get="@Url.Action("Gittdialog", "Behandling", new { dyrId = d.Id, behandlingId = b.Id })"
+                                       hx-target="#dpdialog-innhold" hx-swap="innerHTML"
+                                       aria-label="Registrer @b.Tekst som gitt i dag">
+                                        Gitt
+                                    </a>
+                                }
+                            </span>
+                        </li>
+                    }
                 </ul>
-            }
-            else if (s.AntallBehandlinger > 0)
-            {
-                <div class="tomt">Ingen behandlinger har fått «neste gang».</div>
             }
             else
             {
-                <div class="tomt">Ingen behandlinger registrert.</div>
+                <div class="tomt">
+                    @(s.AntallBehandlinger > 0
+                        ? "Ingenting venter. Behandlinger med «neste gang» dukker opp her."
+                        : "Ingen behandlinger registrert.")
+                </div>
             }
+
+            <div class="kort-handlinger">
+                @if (s.AntallBehandlinger > 0)
+                {
+                    <a class="btn btn-outline-secondary btn-sm"
+                       asp-controller="Behandling" asp-action="Index"
+                       asp-route-dyrId="@d.Id">
+                        Se historikk (@s.AntallBehandlinger)
+                    </a>
+                }
+                @if (Meg.KanEndre)
+                {
+                    <a class="btn btn-primary btn-sm"
+                       asp-controller="Behandling" asp-action="Index"
+                       asp-route-dyrId="@d.Id" asp-fragment="skjema">
+                        <svg class="ikon" aria-hidden="true"><use href="#i-pluss" /></svg>
+                        Registrer behandling
+                    </a>
+                }
+            </div>
         </section>
 
     </div>

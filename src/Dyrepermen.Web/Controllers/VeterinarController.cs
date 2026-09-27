@@ -175,10 +175,15 @@ public sealed class VeterinarController : Controller
     /// <paramref name="kontrollFra"/> fyller skjemaet fra et besok med avtalt
     /// kontroll: samme dyr, samme sted, kontrolldatoen. Lagres timen,
     /// fjernes paminnelsen fra besoket den kom fra. Se ADR 0016.
+    ///
+    /// <paramref name="besok"/> apner skjemaet for et besok som allerede har
+    /// vaert: samme skjema og samme tabell, men med overskriften "Registrer
+    /// besok". Datoen er det som skiller en time fra et besok - se Vetbesok.
     /// </summary>
     [HttpGet("time/ny")]
     [KreverEier]
-    public async Task<IActionResult> NyTime(int? kontrollFra, CancellationToken ct)
+    public async Task<IActionResult> NyTime(
+        int? kontrollFra, bool besok, CancellationToken ct)
     {
         var fra = kontrollFra is { } fraId
             ? (await _veterinar.HentBesok(ct)).SingleOrDefault(b => b.Id == fraId)
@@ -196,7 +201,7 @@ public sealed class VeterinarController : Controller
                 Dato = kontroll,
                 Arsak = Kontrollarsak(fra.Arsak)
             }
-            : new NyttVetbesokVm();
+            : new NyttVetbesokVm { Gjennomfort = besok };
 
         return View(Timeskjema, await ByggTime(ny, ct));
     }

@@ -112,6 +112,7 @@ public sealed class InformasjonService : IInformasjonService
         CancellationToken ct)
     {
         var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
+        var aktivMedisin = Medisinfilter.Aktiv(idag);
 
         // Korrelerte undersporringer, ikke Include etterfulgt av filtrering i
         // C#. Hele oversikten kommer i en rundtur uansett antall dyr.
@@ -134,7 +135,8 @@ public sealed class InformasjonService : IInformasjonService
                     .Select(v => new { v.VektGram, v.Dato })
                     .FirstOrDefault(),
                 Medisiner = d.Medisiner
-                    .Where(m => m.SluttDato == null || m.SluttDato >= idag)
+                    .AsQueryable()
+                    .Where(aktivMedisin)
                     .OrderBy(m => m.Navn)
                     .Select(m => m.Navn + " – " + m.Dose)
                     .ToList(),

@@ -7,6 +7,6 @@ namespace Dyrepermen.Web.ViewModels;
 /// feltet: tomt forste gang, det brukeren skrev etter en valideringsfeil.
 /// </summary>
 public sealed record GittdialogVm(
-    Gittforslag Forslag,
+    Gittgrunnlag Grunnlag,
     DateOnly? NesteDato,
     bool FraOversikt);

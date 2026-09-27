@@ -8,8 +8,19 @@ public interface IMedisinService
 
     Task<bool> Registrer(NyMedisin input, CancellationToken ct);
 
-    /// <summary>Setter sluttdato til i dag. Raden og doseloggen beholdes.</summary>
+    /// <summary>
+    /// Avslutter medisinen med en gang. Raden og doseloggen beholdes.
+    /// Se ADR 0017.
+    /// </summary>
     Task<bool> Avslutt(int dyrId, int medisinId, CancellationToken ct);
+
+    /// <summary>
+    /// Retter navn, dose, intervall og datoer - for eksempel nar dosen
+    /// trappes ned. Doseloggen rores ikke. False betyr at medisinen ikke
+    /// finnes pa dette dyret i denne husstanden.
+    /// </summary>
+    Task<bool> Oppdater(
+        int dyrId, int medisinId, NyMedisin input, CancellationToken ct);
 
     /// <summary>
     /// Sjekken mot forrige dose ligger her, ikke i controlleren.

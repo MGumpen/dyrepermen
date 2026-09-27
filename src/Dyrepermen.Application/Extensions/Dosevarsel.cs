@@ -7,6 +7,10 @@ namespace Dyrepermen.Application.Extensions;
 /// dagen i norsk tid. En daglig medisin star der hver dag til den er gitt -
 /// det er nettopp sporsmalet dashbordet skal svare pa. Ved behov har ingen
 /// neste dose, og varsles aldri.
+///
+/// Om medisinen er aktiv - ikke avsluttet, sluttdato ikke passert - avgjor
+/// ikke denne klassen. Det gjor Medisinfilter i sporringen, og regelen skal
+/// ikke sta to steder.
 /// </summary>
 public static class Dosevarsel
 {
@@ -18,19 +22,12 @@ public static class Dosevarsel
     public static DateTimeOffset? NesteDose(
         int intervallTimer,
         DateOnly startDato,
-        DateOnly? sluttDato,
         DateTimeOffset? sisteDose,
         DateTimeOffset naa)
     {
-        if (intervallTimer <= 0)
-        {
-            return null;
-        }
-
         var idag = Tidssone.Idag(naa);
 
-        // Sluttdatoen er med: kuren varer til og med den dagen.
-        if (startDato > idag || sluttDato is { } slutt && slutt < idag)
+        if (intervallTimer <= 0 || startDato > idag)
         {
             return null;
         }

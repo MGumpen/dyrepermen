@@ -83,14 +83,14 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
     [Fact]
     public async Task Dialogen_viser_hva_som_gis_og_hva_som_sto_sist()
     {
-        var h = await _fixture.OpprettHusstand("Gittforslag");
+        var h = await _fixture.OpprettHusstand("Gittgrunnlag");
         await using var db = _fixture.LagContext(h);
         var dyrId = await NyttDyr(db, h);
 
         var forrige = await Behandling(db, dyrId, BehandlingType.Ormekur, "Milbemax",
             Idag.AddMonths(-3), Idag);
 
-        var forslag = await new BehandlingService(db).HentGittforslag(dyrId, forrige, default);
+        var forslag = await new BehandlingService(db).HentGittgrunnlag(dyrId, forrige, default);
 
         Assert.NotNull(forslag);
         Assert.True(forslag.KanGis);
@@ -262,7 +262,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
         Assert.False((await tjeneste.HentFor(dyrId, default)).Single().KanKrysseAv(Idag));
         Assert.False(Assert.Single((await Dashbord(db, h)).Forfaller,
             p => p.Kilde == Kilde.Behandling).KanFolgesOpp);
-        Assert.False((await tjeneste.HentGittforslag(dyrId, idag, default))!.KanGis);
+        Assert.False((await tjeneste.HentGittgrunnlag(dyrId, idag, default))!.KanGis);
     }
 
     [Fact]

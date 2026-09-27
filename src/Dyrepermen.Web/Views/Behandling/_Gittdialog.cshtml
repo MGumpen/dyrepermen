@@ -1,6 +1,6 @@
 @model GittdialogVm
 @{
-    var f = Model.Forslag;
+    var f = Model.Grunnlag;
     var tilbake = Model.FraOversikt
         ? Url.Action("Index", "Hjem")
         : Url.Action("Index", "Behandling", new { dyrId = f.DyrId });

@@ -113,6 +113,7 @@ public sealed class KontoService : IKontoService
                             m.IntervallTimer,
                             m.StartDato,
                             m.SluttDato,
+                            m.AvsluttetTid,
                             doser = m.Doser.OrderBy(x => x.GittTid).Select(x => x.GittTid)
                         }),
                     forplaner = d.Forplaner
