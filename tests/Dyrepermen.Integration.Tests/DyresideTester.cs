@@ -63,8 +63,8 @@ public sealed class DyresideTester : IAsyncLifetime
 
         // Den nyere ormekuren er forfalt, den fulgt opp er ikke med.
         Assert.Contains("forfalt", html);
-        Assert.Contains($"{Idag.AddDays(-2):d. MMM yyyy}", html);
-        Assert.DoesNotContain($"{Idag.AddMonths(-3):d. MMM yyyy}", html);
+        Assert.Contains(Norsk.Dato(Idag.AddDays(-2), "d. MMM yyyy"), html);
+        Assert.DoesNotContain(Norsk.Dato(Idag.AddMonths(-3), "d. MMM yyyy"), html);
 
         // Historikken teller alle tre, ogsa den som er fulgt opp.
         Assert.Contains("Se historikk (3)", html);

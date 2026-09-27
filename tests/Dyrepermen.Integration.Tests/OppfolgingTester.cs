@@ -490,7 +490,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
 
         var historikk = await (await klient.Hent($"/dyr/{dyrId}/behandling")).Content
             .ReadAsStringAsync();
-        Assert.Contains($"neste {valgt:d. MMM yyyy}", WebUtility.HtmlDecode(historikk));
+        Assert.Contains($"neste {Norsk.Dato(valgt, "d. MMM yyyy")}", WebUtility.HtmlDecode(historikk));
     }
 
     [Fact]
