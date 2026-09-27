@@ -71,6 +71,35 @@ public sealed partial class Skjemaklient
     }
 
     /// <summary>
+    /// Poster felter og filer som multipart, slik et skjema med
+    /// enctype="multipart/form-data" gjor. Tokenet hentes fra
+    /// <paramref name="tokenFra"/>, som i <see cref="Post(string, Dictionary{string, string}, string)"/>.
+    /// </summary>
+    public async Task<HttpResponseMessage> PostMedFiler(
+        string sti,
+        Dictionary<string, string> felter,
+        IEnumerable<(string Felt, string Filnavn, byte[] Data)> filer,
+        string tokenFra)
+    {
+        using var innhold = new MultipartFormDataContent
+        {
+            { new StringContent(await HentToken(tokenFra)), "__RequestVerificationToken" }
+        };
+
+        foreach (var (navn, verdi) in felter)
+        {
+            innhold.Add(new StringContent(verdi), navn);
+        }
+
+        foreach (var (felt, filnavn, data) in filer)
+        {
+            innhold.Add(new ByteArrayContent(data), felt, filnavn);
+        }
+
+        return await _klient.PostAsync(sti, innhold);
+    }
+
+    /// <summary>
     /// True nar svaret er en omdirigering, altsa at handlingen gikk gjennom.
     /// Et skjema som avvises svarer 200 med seg selv og feilmeldingene.
     /// </summary>

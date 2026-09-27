@@ -24,6 +24,18 @@ public interface IKontoService
         bool bekreftetSletteHusstand,
         CancellationToken ct);
 
+    /// <summary>
+    /// Brukerens eget telefonnummer, eller null. Fylles inn pa
+    /// savnet-plakaten, der noen skal kunne ringe.
+    /// </summary>
+    Task<string?> HentTelefon(int brukerId, CancellationToken ct);
+
+    /// <summary>
+    /// Lagrer telefonnummeret. Tomt fjerner det. False betyr at brukeren ikke
+    /// finnes.
+    /// </summary>
+    Task<bool> LagreTelefon(int brukerId, string? telefon, CancellationToken ct);
+
     /// <summary>Antall dyr i husstanden, for varselet til siste medlem.</summary>
     Task<(bool ErSisteMedlem, int AntallDyr)> Slettekonsekvens(
         int brukerId, CancellationToken ct);

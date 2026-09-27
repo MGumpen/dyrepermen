@@ -1,0 +1,18 @@
+@using Dyrepermen.Application.Dtos
+@model IReadOnlyList<Vedleggsrad>
+
+@* En lenke per vedlegg, rett til filen. Kvitteringen skal kunne vises fram
+   uten a apne timen for redigering - ogsa for en gjest. *@
+@if (Model.Count > 0)
+{
+    <span class="under d-flex flex-wrap gap-2 mt-1">
+        @foreach (var v in Model)
+        {
+            <a class="vedleggslenke" asp-controller="Dokument" asp-action="Vis"
+               asp-route-id="@v.Id" target="_blank" rel="noopener">
+                <svg class="ikon" aria-hidden="true"><use href="#i-vedlegg" /></svg>
+                <span class="text-truncate">@v.Navn</span>
+            </a>
+        }
+    </span>
+}

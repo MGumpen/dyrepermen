@@ -39,16 +39,14 @@ public sealed class DyrService : IDyrService
         // null, som controlleren gjor om til 404.
         => await _db.Dyr
             .Where(d => d.Id == dyrId)
-            .Select(d => new DyrDetaljer(
-                d.Id, d.Navn, d.Art, d.Kjonn, d.Rase, d.Fodselsdato,
-                d.ChipNr, d.RegNrNkk, d.Kastrert,
-                d.ForingsloggAktiv, d.ForplanAktiv))
+            .Select(Dyrprojeksjon.Detaljer)
             .SingleOrDefaultAsync(ct);
 
     public async Task<DyrSammendrag?> HentSammendrag(
         int dyrId, CancellationToken ct)
     {
         var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
+        var aktivMedisin = Medisinfilter.Aktiv(idag);
 
         // Korrelerte undersporringer i ett Select. Npgsql oversetter dem til
         // LEFT JOIN LATERAL, sa hele sammendraget kommer i en rundtur.
@@ -65,15 +63,27 @@ public sealed class DyrService : IDyrService
                     .FirstOrDefault(),
 
                 AntallBehandlinger = d.Behandlinger.Count(),
-                Neste = d.Behandlinger
-                    .Where(b => b.NesteDato != null)
+                // Samme regel som dashbordet: en paminnelse som er fulgt
+                // opp av en nyere behandling, er ikke lenger kommende.
+                Kommende = d.Behandlinger
+                    .AsQueryable()
+                    .Where(Behandlingsfilter.ApenPaminnelse)
                     .OrderBy(b => b.NesteDato)
-                    .Select(b => new { b.Type, b.Preparat, Dato = b.NesteDato!.Value })
-                    .FirstOrDefault(),
+                    .ThenBy(b => b.Id)
+                    .Select(b => new
+                    {
+                        b.Id,
+                        b.Type,
+                        b.Preparat,
+                        b.Dato,
+                        Neste = b.NesteDato!.Value
+                    })
+                    .ToList(),
 
                 AntallMedisiner = d.Medisiner.Count(),
                 Aktive = d.Medisiner
-                    .Where(m => m.SluttDato == null || m.SluttDato >= idag)
+                    .AsQueryable()
+                    .Where(aktivMedisin)
                     .OrderBy(m => m.Navn)
                     .Select(m => m.Navn + " – " + m.Dose)
                     .ToList(),
@@ -121,8 +131,13 @@ public sealed class DyrService : IDyrService
             rad.SisteVekt?.VektGram,
             rad.SisteVekt?.Dato,
             rad.AntallBehandlinger,
-            rad.Neste is null ? null : Behandlingstekst(rad.Neste.Type, rad.Neste.Preparat),
-            rad.Neste?.Dato,
+            rad.Kommende
+                .Select(b => new KommendeBehandling(
+                    b.Id,
+                    Behandlingstekst(b.Type, b.Preparat),
+                    b.Neste,
+                    Behandlingsintervall.KanGisIgjen(b.Dato, idag)))
+                .ToList(),
             rad.AntallMedisiner,
             rad.Aktive,
             Forplanformat.Sammendrag(regel, mengde),
@@ -171,6 +186,8 @@ public sealed class DyrService : IDyrService
                 ? input.RegNrNkk.TomTilNull()?.ToUpperInvariant()
                 : null,
             Kastrert = input.Kastrert,
+            Farge = input.Farge.TomTilNull(),
+            Kjennetegn = input.Kjennetegn.TomTilNull(),
             ForingsloggAktiv = std?.ForingsloggStandard ?? false,
             ForplanAktiv = std?.ForplanStandard ?? true
         };
@@ -209,6 +226,8 @@ public sealed class DyrService : IDyrService
             ? input.RegNrNkk.TomTilNull()?.ToUpperInvariant()
             : null;
         dyr.Kastrert = input.Kastrert;
+        dyr.Farge = input.Farge.TomTilNull();
+        dyr.Kjennetegn = input.Kjennetegn.TomTilNull();
         dyr.ForingsloggAktiv = input.ForingsloggAktiv;
         dyr.ForplanAktiv = input.ForplanAktiv;
 

@@ -14,4 +14,6 @@ public sealed record NyttDyr(
     DateOnly? Fodselsdato,
     string? ChipNr,
     string? RegNrNkk,
-    bool Kastrert);
+    bool Kastrert,
+    string? Farge,
+    string? Kjennetegn);

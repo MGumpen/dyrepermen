@@ -28,11 +28,22 @@ public sealed class MinKontoController : Controller
         _paalogging = paalogging;
     }
 
+    /// <summary>
+    /// <paramref name="endre"/> = "telefon" apner skjemaet for nummeret.
+    /// Uten lagret nummer star skjemaet apent uansett - det er ingenting a
+    /// vise i raden.
+    /// </summary>
     [HttpGet("")]
-    public async Task<IActionResult> Index(CancellationToken ct)
+    public async Task<IActionResult> Index(string? endre, CancellationToken ct)
     {
         var vm = await Bygg(ct);
-        return vm is null ? Forbid() : View(vm);
+        if (vm is null)
+        {
+            return Forbid();
+        }
+
+        vm.EndrerTelefon = endre == "telefon" || vm.Telefon.Nummer is null;
+        return View(vm);
     }
 
     [HttpGet("data")]
@@ -50,6 +61,48 @@ public sealed class MinKontoController : Controller
             Encoding.UTF8.GetBytes(json),
             "application/json",
             $"dyrepermen-{DateTime.Now:yyyy-MM-dd}.json");
+    }
+
+    /// <summary>
+    /// Brukerens eget nummer. Ingen [KreverEier]: det er personens egne
+    /// opplysninger, ikke husstandens, og en gjest skal kunne legge inn sitt.
+    /// Star pa den bevisste gjestelisten i RolleTester.
+    /// </summary>
+    [HttpPost("telefon")]
+    [ValidateAntiForgeryToken]
+    // Parameteren MA hete "telefon" - skjemaet poster "Telefon.Nummer".
+    public async Task<IActionResult> LagreTelefon(TelefonVm telefon, CancellationToken ct)
+    {
+        var brukerId = User.BrukerId();
+        if (brukerId is null)
+        {
+            return Forbid();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var side = await Bygg(ct);
+            if (side is null)
+            {
+                return Forbid();
+            }
+
+            // Skjemaet star apent med feilmeldingen og det brukeren skrev.
+            side.Telefon = telefon;
+            side.EndrerTelefon = true;
+            return View(nameof(Index), side);
+        }
+
+        if (!await _konto.LagreTelefon(brukerId.Value, telefon.Nummer, ct))
+        {
+            return Forbid();
+        }
+
+        TempData["Melding"] = string.IsNullOrWhiteSpace(telefon.Nummer)
+            ? "Telefonnummeret er fjernet."
+            : "Telefonnummeret er lagret.";
+
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost("slett")]
@@ -116,6 +169,10 @@ public sealed class MinKontoController : Controller
         return new MinKontoVm
         {
             Visningsnavn = User.Identity?.Name ?? "",
+            Telefon = new TelefonVm
+            {
+                Nummer = await _konto.HentTelefon(brukerId.Value, ct)
+            },
             Slett = new SlettKontoVm
             {
                 ErSisteMedlem = sisteMedlem,

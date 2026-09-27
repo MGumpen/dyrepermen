@@ -25,17 +25,54 @@
         <ul class="rad-liste">
             <li>
                 <span class="flex-grow-1">Navn</span>
-                <span class="hoyre">@Meg.Visningsnavn</span>
+                <span class="hoyre bryt">@Meg.Visningsnavn</span>
             </li>
             <li>
                 <span class="flex-grow-1">E-post</span>
-                <span class="hoyre">@Meg.Epost</span>
+                <span class="hoyre bryt">@Meg.Epost</span>
             </li>
             <li>
                 <span class="flex-grow-1">Husstand</span>
-                <span class="hoyre">@Meg.HusstandNavn</span>
+                <span class="hoyre bryt">@Meg.HusstandNavn</span>
             </li>
+            @* Lagret nummer vises som de andre opplysningene. Skjemaet kommer
+               fram nar man vil endre - ikke som et apent felt hele tiden. *@
+            @if (!Model.EndrerTelefon)
+            {
+                <li>
+                    <span class="flex-grow-1">Telefon</span>
+                    <span class="hoyre bryt">
+                        @Model.Telefon.Nummer
+                        <a class="btn-lenke ms-2" asp-action="Index"
+                           asp-route-endre="telefon" asp-fragment="telefon">Endre</a>
+                    </span>
+                </li>
+            }
         </ul>
+        @if (Model.EndrerTelefon)
+        {
+            <div class="kort-kropp border-top" id="telefon">
+                <form method="post" asp-action="LagreTelefon">
+                    @Html.AntiForgeryToken()
+                    <label asp-for="Telefon.Nummer" class="form-label"></label>
+                    <div class="d-flex gap-2">
+                        <input asp-for="Telefon.Nummer" class="form-control form-control-sm"
+                               type="tel" inputmode="tel" autocomplete="tel" />
+                        <button type="submit" class="btn btn-primary btn-sm">Lagre</button>
+                        @if (Model.Telefon.Nummer is not null)
+                        {
+                            <a class="btn btn-outline-secondary btn-sm" asp-action="Index">Avbryt</a>
+                        }
+                    </div>
+                    <span asp-validation-for="Telefon.Nummer" class="text-danger small"></span>
+                    <div class="form-text">
+                        Fylles inn på savnet-plakaten, så den som finner dyret kan ringe
+                        deg. Vises ikke for andre i husstanden. La feltet stå tomt for
+                        å fjerne nummeret.
+                    </div>
+                </form>
+            </div>
+        }
         <div class="kort-kropp tett border-top">
             <p class="form-text mb-2">
                 Endring av navn, e-post og passord kommer i en senere fase.
@@ -87,7 +124,9 @@
             <h2>Slett kontoen permanent</h2>
         </div>
         <div class="kort-kropp">
-            <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+            @* ModelOnly: feltfeil vises ved feltet. Med All ville en feil i
+               telefonnummeret dukket opp i boksen for sletting. *@
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2" role="alert"></div>
 
             <p class="small">
                 Navn, e-post og passord slettes. <strong>Husstandens data

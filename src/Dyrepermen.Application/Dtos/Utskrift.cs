@@ -24,9 +24,15 @@ public sealed record DyrUtskrift(
     IReadOnlyList<ForsikringRad> Forsikringer,
     IReadOnlyList<InformasjonRad> Notater);
 
-/// <summary>Hele husstanden, klar for utskrift.</summary>
+/// <summary>
+/// Utvalget av husstanden, klar for utskrift. Listene for deler som ikke er
+/// valgt, er tomme; visningen sporr <see cref="Valg"/> om hva som skal vises,
+/// slik at "ingen vekt registrert" ikke star pa et ark der vekt ikke var valgt.
+/// </summary>
 public sealed record Utskrift(
     IReadOnlyList<DyrUtskrift> Dyr,
 
     /// <summary>Notater som ikke horer til et bestemt dyr.</summary>
-    IReadOnlyList<InformasjonRad> FellesNotater);
+    IReadOnlyList<InformasjonRad> FellesNotater,
+
+    Utskriftsvalg Valg);

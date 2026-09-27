@@ -1,4 +1,5 @@
 using Dyrepermen.Application.Dtos;
+using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Infrastructure.Persistence;
@@ -25,7 +26,10 @@ public sealed class MedisinService : IMedisinService
         int dyrId, CancellationToken ct)
         => await _db.Medisin
             .Where(m => m.DyrId == dyrId)
-            .OrderBy(m => m.SluttDato != null)
+            // Avsluttede nederst. Sluttdato alene er ikke nok - en kur med
+            // planlagt slutt kan godt vaere i gang.
+            .OrderBy(m => m.AvsluttetTid != null)
+            .ThenBy(m => m.SluttDato != null)
             .ThenByDescending(m => m.StartDato)
             .Select(m => new MedisinRad(
                 m.Id,
@@ -42,7 +46,8 @@ public sealed class MedisinService : IMedisinService
                 m.Doser
                     .OrderByDescending(d => d.GittTid)
                     .Select(d => d.GittAv == null ? null : d.GittAv.Visningsnavn)
-                    .FirstOrDefault()))
+                    .FirstOrDefault(),
+                m.AvsluttetTid))
             .ToListAsync(ct);
 
     public async Task<bool> Registrer(NyMedisin input, CancellationToken ct)
@@ -76,7 +81,44 @@ public sealed class MedisinService : IMedisinService
             return false;
         }
 
-        medisin.SluttDato = DateOnly.FromDateTime(DateTime.UtcNow);
+        // Avsluttet na, ikke ved midnatt. Sluttdatoen settes til i dag nar
+        // den mangler eller ligger lenger fram, sa perioden viser nar kuren
+        // faktisk sluttet. En sluttdato som allerede har passert, beholdes.
+        var naa = DateTimeOffset.UtcNow;
+        var idag = Tidssone.Idag(naa);
+
+        medisin.AvsluttetTid ??= naa;
+
+        if (medisin.SluttDato is null || medisin.SluttDato > idag)
+        {
+            medisin.SluttDato = idag;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> Oppdater(
+        int dyrId, int medisinId, NyMedisin input, CancellationToken ct)
+    {
+        // Query-filteret er autorisasjonen, DyrId hindrer at en id fra et
+        // annet dyr i egen husstand treffer.
+        var medisin = await _db.Medisin
+            .SingleOrDefaultAsync(m => m.Id == medisinId && m.DyrId == dyrId, ct);
+
+        if (medisin is null)
+        {
+            return false;
+        }
+
+        // Doseloggen rores ikke. Den sier nar noe ble gitt og av hvem, og
+        // det er like sant etter at dosen er trappet ned.
+        medisin.Navn = input.Navn.Trim();
+        medisin.Dose = input.Dose.Trim();
+        medisin.IntervallTimer = input.IntervallTimer;
+        medisin.StartDato = input.StartDato;
+        medisin.SluttDato = input.SluttDato;
+
         await _db.SaveChangesAsync(ct);
         return true;
     }
@@ -91,7 +133,9 @@ public sealed class MedisinService : IMedisinService
         var medisin = await _db.Medisin
             .SingleOrDefaultAsync(m => m.Id == medisinId && m.DyrId == dyrId, ct);
 
-        if (medisin is null)
+        // En avsluttet medisin skal ikke gis. Knappen er skjult, men en fane
+        // som har statt apen, kan fortsatt poste.
+        if (medisin is null || medisin.AvsluttetTid is not null)
         {
             return DoseResultat.FinnesIkke();
         }

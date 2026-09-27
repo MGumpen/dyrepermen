@@ -15,7 +15,8 @@ public sealed record DyrKort(
     int Id,
     string Navn,
     Art Art,
-    string? BildeFilnavn,
+    /// <summary>Dokument-id-en til profilbildet, eller null.</summary>
+    int? ProfilbildeId,
     DateOnly? Fodselsdato,
     bool ForingsloggAktiv,
     int? SisteVektGram,

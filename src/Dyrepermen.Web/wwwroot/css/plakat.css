@@ -1,0 +1,159 @@
+/* Savnet-plakaten. Egen fil, lastet bare av plakatsiden: @page gjelder hele
+   dokumentet, og regelen under ville ellers tatt bort margen fra den vanlige
+   utskriften ogsa. */
+
+/* Marg null fjerner topptekst og bunntekst som nettleseren legger i margen -
+   dato, sidetittel og adresse har ingenting pa en plakat. Plakaten lager sin
+   egen marg med padding. */
+@page {
+    size: A4 portrait;
+    margin: 0;
+}
+
+/* stretch, ikke center: med center kan ikke bildets width: 100% regnes ut,
+   og bildet fikk sin naturlige bredde - begrenset bare av max-width. Pa en
+   smal telefon ble siden da bredere enn skjermen. Bildet og faktalisten
+   sentreres hver for seg under. */
+.savnet {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+}
+
+/* Rodt og stort: det er det forste ordet folk skal se pa avstand. */
+.savnet-overskrift {
+    margin: 0 0 1rem;
+    font-size: 4rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    line-height: 1;
+    color: #b42318;
+}
+
+/* Kvadratisk, ikke rund: et utsnitt av hodet alene er darligere til
+   gjenkjenning enn hele bildet. */
+.profilbilde.plakat {
+    width: 100%;
+    max-width: 22rem;
+    height: auto;
+    aspect-ratio: 1;
+    margin: 0 auto 1rem;
+    border-radius: .5rem;
+    font-size: 6rem;
+}
+
+.savnet-navn {
+    margin: 0;
+    font-size: 2.4rem;
+    font-weight: 800;
+}
+
+.savnet-beskrivelse {
+    margin: .25rem 0 1.25rem;
+    font-size: 1.15rem;
+    color: var(--dp-tekst-svak);
+}
+
+.savnet-fakta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: .35rem 1rem;
+    max-width: 32rem;
+    margin: 0 auto 1.5rem;
+    text-align: left;
+    font-size: 1.1rem;
+}
+
+.savnet-fakta dt {
+    font-weight: 600;
+}
+
+.savnet-fakta dd {
+    margin: 0;
+}
+
+.savnet-kontakt {
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.savnet-telefon {
+    display: block;
+    margin-top: .25rem;
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+
+@media print {
+    /* Hodet har bare knapper og en overskrift for skjermen - men streken
+       under det ville kommet med. */
+    .utskrift-hode {
+        display: none;
+    }
+
+    .utskrift-ark {
+        padding: 0;
+    }
+
+    /* Nøyaktig ett A4-ark. Bildet tar plassen som er igjen etter teksten, sa
+       arket fylles enten kjennetegnene er en linje eller fem. 296 og ikke 297
+       mm: en brokdel over, og nettleseren lager et tomt ark nummer to. */
+    .savnet {
+        box-sizing: border-box;
+        height: 296mm;
+        padding: 14mm 16mm 16mm;
+        overflow: hidden;
+        justify-content: space-between;
+    }
+
+    .savnet-overskrift {
+        margin: 0;
+        font-size: 84pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Pa arket bestemmer hoyden bredden (kvadrat), sa bildet skal ikke
+       strekkes i bredden - det ville gjort det til et avlangt utsnitt. */
+    .profilbilde.plakat {
+        align-self: center;
+        flex: 1 1 0;
+        min-height: 60mm;
+        max-height: 150mm;
+        width: auto;
+        max-width: 100%;
+        margin: 6mm 0;
+        font-size: 90pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .savnet-navn {
+        font-size: 44pt;
+        line-height: 1.1;
+    }
+
+    .savnet-beskrivelse {
+        margin: 2mm 0 6mm;
+        font-size: 17pt;
+    }
+
+    .savnet-fakta {
+        align-self: center;
+        max-width: none;
+        margin: 0 0 6mm;
+        gap: 2mm 6mm;
+        font-size: 16pt;
+    }
+
+    .savnet-kontakt {
+        font-size: 20pt;
+    }
+
+    .savnet-telefon {
+        margin-top: 2mm;
+        font-size: 46pt;
+    }
+}

@@ -20,6 +20,8 @@
         <article class="dyrekort">
             <a class="dyrekort-hode" asp-controller="Dyr" asp-action="Detaljer"
                asp-route-dyrId="@dyr.Id">
+                <partial name="_Profilbilde"
+                         model='new ProfilbildeVm(dyr.ProfilbildeId, dyr.Navn, "liten")' />
                 <span class="min-w-0">
                     <span class="navn">@dyr.Navn</span>
                     <span class="art">

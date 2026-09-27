@@ -12,9 +12,9 @@
     string Behandlingsnavn(BehandlingType t) => Behandlingsformat.Navn(t);
 }
 
-@if (Model.Dyr.Count == 0)
+@if (Model.Dyr.Count == 0 && Model.FellesNotater.Count == 0)
 {
-    <p class="tomt">Ingen dyr registrert.</p>
+    <p class="tomt">Ingenting å skrive ut med dette utvalget.</p>
 }
 
 @foreach (var side in Model.Dyr)
@@ -26,6 +26,8 @@
     <section class="utskrift-dyr">
         <h2>@d.Navn</h2>
 
+        @if (Model.Valg.Har(Utskriftsdel.OmDyret))
+        {
         <div class="utskrift-blokk">
             <h3>Om dyret</h3>
             <dl class="utskrift-fakta">
@@ -48,8 +50,17 @@
                 {
                     <dt>Reg.nr. NKK</dt><dd>@nkk</dd>
                 }
+                @if (d.Farge is { } farge)
+                {
+                    <dt>Farge og pels</dt><dd>@farge</dd>
+                }
+                @if (d.Kjennetegn is { } kjennetegn)
+                {
+                    <dt>Kjennetegn</dt><dd>@kjennetegn</dd>
+                }
             </dl>
         </div>
+        }
 
         @if (side.Forplan is { } plan)
         {
@@ -93,6 +104,10 @@
             </div>
         }
 
+        @* Tomtilstanden vises bare nar vekt er valgt. Ellers ville "ingen vekt
+           registrert" statt pa et ark der ingen ba om vekt. *@
+        @if (Model.Valg.Har(Utskriftsdel.Vekt))
+        {
         <div class="utskrift-blokk">
             <h3>Vekt</h3>
             @if (side.Vekter.Count == 0)
@@ -125,6 +140,7 @@
                 </table>
             }
         </div>
+        }
 
         @if (side.Behandlinger.Count > 0)
         {
@@ -141,7 +157,11 @@
                                 <td>@Dato(b.Dato)</td>
                                 <td>@Behandlingsnavn(b.Type)</td>
                                 <td>@(b.Preparat ?? "–")</td>
-                                <td>@(b.NesteDato is { } n ? Dato(n) : "–")</td>
+                                @* Bare der neste gang fortsatt venter. En dato
+                                   som er fulgt opp av en nyere behandling,
+                                   sender leseren til dyrlegen for ingenting.
+                                   Se ADR 0016. *@
+                                <td>@(b.ErApen && b.NesteDato is { } n ? Dato(n) : "–")</td>
                             </tr>
                         }
                     </tbody>

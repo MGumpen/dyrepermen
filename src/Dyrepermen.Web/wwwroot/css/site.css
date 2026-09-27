@@ -406,6 +406,17 @@ h1, h2, h3, h4 {
     padding: 1rem;
 }
 
+/* Knapperad nederst i et kort: historikk til venstre, hovedknappen til
+   hoyre - samme plassering som i sidehodet. */
+.kort-handlinger {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .5rem;
+    padding: .6rem .9rem;
+    border-top: 1px solid var(--dp-kant);
+}
+
 .kort-kropp.tett {
     padding: .5rem 1rem;
 }
@@ -468,6 +479,28 @@ h1, h2, h3, h4 {
 .rad-liste .under {
     font-size: .82rem;
     color: var(--dp-tekst-svak);
+    /* En e-postadresse under et medlemsnavn er ett langt ord. Uten dette
+       gjorde den hele siden bredere enn telefonen. Brytes bare nar den ikke
+       far plass. */
+    overflow-wrap: anywhere;
+}
+
+/* Pa mobil kan raden legge hoyredelen - dato, knapper - pa en egen linje
+   nar den ikke far plass ved siden av teksten. Ellers er radens minste
+   bredde tekst OG knapper til sammen, og pa en smal telefon gjor det hele
+   siden bredere enn skjermen. Teksten far en rimelig startbredde (11rem), sa
+   knappene flytter ned for teksten blir en smal stripe.
+
+   Bare pa smale skjermer: pa PC er det plass, og en lang beskrivelse skal
+   ikke dytte datoen under seg der. */
+@media (max-width: 575.98px) {
+    .rad-liste > li {
+        flex-wrap: wrap;
+    }
+
+    .rad-liste > li > .flex-grow-1 {
+        flex-basis: 11rem;
+    }
 }
 
 .hoyre {
@@ -476,6 +509,14 @@ h1, h2, h3, h4 {
     white-space: nowrap;
     font-size: .85rem;
     color: var(--dp-tekst-svak);
+}
+
+/* For verdier som kan vaere lengre enn skjermen, som en e-postadresse. Uten
+   nowrap-unntaket gjorde en lang adresse hele siden bredere enn telefonen. */
+.hoyre.bryt {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 /* --- Tomtilstander ------------------------------------------------------
@@ -799,8 +840,14 @@ h1, h2, h3, h4 {
     opacity: .55;
 }
 
+/* flex-wrap: pa en smal skjerm legger knappene seg pa to linjer i stedet for
+   a gjore raden - og dermed hele siden - bredere enn telefonen. Mobil-
+   nettleseren zoomer da ut hele siden, og alt blir smatt. Pa PC er det plass,
+   og ingenting brytes. */
 .radhandlinger {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     align-items: center;
     gap: .4rem;
     flex-shrink: 0;
@@ -1538,8 +1585,11 @@ h1, h2, h3, h4 {
     padding: 1.5rem 1rem 3rem;
 }
 
+/* flex-wrap: pa en telefon far overskriften og tre knapper ikke plass pa
+   en linje, og uten brytning ble siden bredere enn skjermen. */
 .utskrift-hode {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
@@ -1561,8 +1611,9 @@ h1, h2, h3, h4 {
 
 .utskrift-knapper {
     display: flex;
+    flex-wrap: wrap;
     gap: .5rem;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
 }
 
 /* HVERT DYR STARTER OEVERST PA ET NYTT ARK.
@@ -1619,6 +1670,15 @@ h1, h2, h3, h4 {
 
 .utskrift-fakta dd {
     margin: 0;
+}
+
+/* Pa en telefon far en tabell med fire kolonner ikke plass. Den ruller da
+   sidelengs for seg selv i stedet for a gjore hele siden bredere. Bare pa
+   skjerm: pa arket er det plass, og en rullefelt har ingenting der a gjore. */
+@media screen {
+    .utskrift-blokk:has(> .utskrift-tabell) {
+        overflow-x: auto;
+    }
 }
 
 .utskrift-tabell {
@@ -1682,5 +1742,128 @@ h1, h2, h3, h4 {
        sa bred som arket og dermed uforholdsmessig hoy. */
     .vektgraf {
         max-width: 30rem;
+    }
+}
+
+/* --- Vedlegg ----------------------------------------------------------- */
+
+.vedlegg-miniatyr {
+    width: 3rem;
+    height: 3rem;
+    object-fit: cover;
+    border-radius: .35rem;
+    border: 1px solid var(--dp-kant);
+    flex-shrink: 0;
+}
+
+.vedleggslenke {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    max-width: 14rem;
+    font-size: .85rem;
+    text-decoration: none;
+}
+
+/* --- Profilbilde ------------------------------------------------------- */
+
+.profilbilde {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent);
+    font-weight: 700;
+    border: 1px solid var(--dp-kant);
+}
+
+.profilbilde.liten {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.05rem;
+}
+
+.profilbilde.stor {
+    width: 4.5rem;
+    height: 4.5rem;
+    font-size: 1.8rem;
+}
+
+/* --- Beskjaering av profilbildet ---------------------------------------- */
+
+.beskjaer-flate {
+    position: relative;
+    width: 100%;
+    max-width: 16rem;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: .5rem;
+    background: var(--dp-flate-2);
+    /* Fingeren skal flytte bildet, ikke rulle siden. */
+    touch-action: none;
+}
+
+.beskjaer-flate canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+.beskjaer-flate canvas:active {
+    cursor: grabbing;
+}
+
+.beskjaer-flate canvas:focus-visible {
+    outline: 3px solid var(--dp-aksent);
+    outline-offset: -3px;
+}
+
+/* Alt utenfor sirkelen dempes, slik at man ser utsnittet slik det blir
+   pa oversikten. Skyggen er det som demper; sirkelen selv er gjennomsiktig. */
+.beskjaer-sirkel {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 999px rgba(0, 0, 0, .45);
+    border: 2px solid rgba(255, 255, 255, .85);
+    pointer-events: none;
+}
+
+/* --- Trykkflater pa beroringsskjerm --------------------------------------
+   Plan kapittel 10.2: minst 44 px trykkflate for tommelen. Bare for pekere
+   som er fingre (pointer: coarse). Med mus er de sma lenkene riktige, og
+   storre knapper ville bare tatt plass. */
+@media (pointer: coarse) {
+    .btn-sm {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+    }
+
+    /* Tekstlenkene i radene far storre trykkflate uten a bli storre: en
+       usynlig flate rundt hver av dem. Sidelengs holdes den innenfor
+       mellomrommet, sa Rediger og Slett aldri overlapper - et bom der skal
+       ikke slette noe. */
+    .btn-lenke,
+    .btn-lenke-fare,
+    .se-alle {
+        position: relative;
+    }
+
+    .btn-lenke::after,
+    .btn-lenke-fare::after,
+    .se-alle::after {
+        content: "";
+        position: absolute;
+        inset: -12px -.3rem;
+    }
+
+    .radhandlinger {
+        gap: .9rem;
     }
 }

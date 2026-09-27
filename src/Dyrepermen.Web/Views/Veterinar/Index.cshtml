@@ -28,13 +28,15 @@
     @if (Meg.KanEndre)
     {
         <div class="handlinger">
-            <a asp-action="NyTime" class="btn btn-outline-secondary btn-sm">
-                <svg class="ikon" aria-hidden="true"><use href="#i-klokke" /></svg>
-                Ny time
-            </a>
-            <a asp-action="Ny" class="btn btn-primary btn-sm">
+            @* Ny time er det man oftest gjor her, og er hovedknappen. Den
+               star til hoyre, der hovedknappen star ellers i appen. *@
+            <a asp-action="Ny" class="btn btn-outline-secondary btn-sm">
                 <svg class="ikon" aria-hidden="true"><use href="#i-pluss" /></svg>
                 Nytt sted
+            </a>
+            <a asp-action="NyTime" class="btn btn-primary btn-sm">
+                <svg class="ikon" aria-hidden="true"><use href="#i-klokke" /></svg>
+                Ny time
             </a>
         </div>
     }
@@ -173,13 +175,14 @@
                                 {
                                     <span class="under d-block">@sted</span>
                                 }
+                                <partial name="_Vedleggslenker" model="b.Vedlegg" />
                             </span>
                             <span class="hoyre">
                                 <span class="d-block">@Tid(b)</span>
                                 @if (Meg.KanEndre)
                                 {
                                     <a asp-action="RedigerTime" asp-route-id="@b.Id"
-                                       class="small">Endre</a>
+                                       class="btn-lenke">Endre</a>
                                 }
                             </span>
                         </li>
@@ -234,6 +237,7 @@
                                 <span class="under d-block">
                                     @Tid(b)@(b.Sted is { } s ? $" · {s}" : "")
                                 </span>
+                                <partial name="_Vedleggslenker" model="b.Vedlegg" />
                             </span>
                             <span class="hoyre">
                                 @if (b.KostnadKr is { } kr)
@@ -256,7 +260,7 @@
                                 @if (Meg.KanEndre)
                                 {
                                     <a asp-action="RedigerTime" asp-route-id="@b.Id"
-                                       class="small d-block">Endre</a>
+                                       class="btn-lenke d-block">Endre</a>
                                 }
                             </span>
                         </li>

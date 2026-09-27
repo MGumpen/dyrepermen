@@ -33,6 +33,9 @@ public sealed class RolleTester
         // ennå. Se ADR 0015.
         $"{nameof(DemoController)}.Start",
         $"{nameof(MinKontoController)}.Slett",
+        // Brukerens eget telefonnummer - personens opplysninger, ikke
+        // husstandens.
+        $"{nameof(MinKontoController)}.LagreTelefon",
         $"{nameof(HusstandController)}.Opprett",
         $"{nameof(HusstandController)}.Bytt",
 

@@ -61,10 +61,15 @@ Fire ting settes i `Program.cs` og gjelder alt. Leser du bare controlleren, ser 
 - **`HusstandMiddleware` kjører etter `UseAuthentication` og før alt som leser `IHusstandContext`.** Kjører den ikke, står `HusstandId` på 0, og hvert eneste query-filter gir tomt resultat. Symptomet er en tom app, ikke en feilmelding.
 - **Kulturen er fast `nb-NO` med `RequestCultureProviders.Clear()`.** Desimalskilletegnet er komma. Fjernes tømmingen, leser ASP.NET Core `Accept-Language`, og en engelsk nettleser sender punktum inn i et skjema som venter komma.
 
+### Frontend
+
+Razor-visninger med Bootstrap, htmx og jQuery Validation, lagt inn under `wwwroot/lib`. Det finnes ingen npm, bundler eller byggesteg for klientkoden. `wwwroot/js/norsk-validering.js` lar klientvalideringen godta desimalkomma og må lastes **etter** `jquery.validate.unobtrusive`. HTTP-testene kjører ikke JavaScript, så en feil der synes bare i nettleseren.
+
 `Husstandskontekst` er én scoped instans bak både `IHusstandContext` (query-filtrene) og `IGjeldendeBruker` (bruker, aktiv husstand og rolle), og fylles av `HusstandMiddleware`. Rollene er `Husstandsrolle.Beboer` og `Gjest` — det finnes ingen rolle som heter «Eier». `[KreverEier]` sjekker `KanEndre`, som er sann for `Beboer`. Standardrollen er `Gjest`, så en middleware som ikke kjører gir færrest mulige rettigheter.
 
 ## Datalag
 
+- `UseSnakeCaseNamingConvention` gir `snake_case` på tabeller og kolonner. Identity-tabellene navngis for hånd i `IdentityTabellnavn`, fordi konvensjonen ikke rører dem. Entitetskonfigurasjon ligger i `Infrastructure/Persistence/Configurations`, én fil per entitet.
 - Alle husstandsbundne entiteter implementerer `IHusstandsbundet` **og** får query-filter i `DyrepermenDbContext`. Filterprøven fanger glemte filtre, men bare hvis markørgrensesnittet er satt.
 - `IHusstandContext` leser fra database, ikke fra claim. Se plan 7.2 og 12.3.1.
 - Enkle datatyper: `INT`, `VARCHAR`, `CHAR`. Enums lagres som `char(1)` med eksplisitt `HasConversion`.
@@ -191,4 +196,6 @@ Ikke gjett på ting som er sikkerhetsrelatert eller påvirker skjemaet. Spør.
 - **Identitys `RequireUppercase` er ASCII-basert** (`c >= 'A' && c <= 'Z'`), ikke `char.IsUpper`. «Ørnulf7» avvises med «mangler stor bokstav» mens brukeren ser rett på en. Bruk `StorBokstavValidator`.
 - **Identity krever tall, små og store bokstaver og spesialtegn som standard.** Setter du bare `RequiredLength`, står de fire andre igjen — usynlig for brukeren og for den som leser koden. Overstyr alle eksplisitt.
 - **En regel som står to steder, spriker.** Passordkravet sto i Identity, i en DataAnnotation og i en hjelpetekst. Skjemaet lovet noe annet enn serveren krevde, og brukeren fikk en feil hun ikke kunne forutse. Legg regelen i én konstant, og skriv en test som feiler når de to kommer i utakt.
+- **Filer på disk forsvinner på Render.** Gratistjenesten har midlertidig disk som tømmes ved utrulling, omstart og når tjenesten sovner. Planens «fillager i v1» ville mistet alt uten en feilmelding. Opplastede filer ligger i databasen (`dokument_innhold`) — se ADR 0018.
+- **Full Neon-database blokkerer alle skrivinger**, ikke bare det som fylte den. Alt som lar brukere legge inn store mengder data, trenger et tak — slik `Vedleggsregler` har for vedlegg.
 - **Dagsgrenser i UTC** flytter kveldsaktivitet til «i morgen». Bruk `Tidssone.DagStart`, som henter forskyvningen på midnatt — ikke på nåtidspunktet.
