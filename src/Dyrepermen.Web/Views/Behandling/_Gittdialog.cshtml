@@ -1,0 +1,65 @@
+@model GittdialogVm
+@{
+    var f = Model.Forslag;
+    var tilbake = Model.FraOversikt
+        ? Url.Action("Index", "Hjem")
+        : Url.Action("Index", "Behandling", new { dyrId = f.DyrId });
+}
+
+@* Vanlig POST, ikke hx-post. Svaret er en omdirigering med bekreftelse,
+   og siden bak dialogen - dashbordet eller historikken - skal tegnes pa
+   nytt uansett. *@
+<form method="post" asp-controller="Behandling" asp-action="Gitt"
+      asp-route-dyrId="@f.DyrId" asp-route-behandlingId="@f.BehandlingId">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="FraOversikt" value="@(Model.FraOversikt ? "true" : "false")" />
+
+    <div class="dialog-hode">
+        <h2 class="h5 mb-0">Gitt i dag</h2>
+        <button type="button" class="btn lukkeknapp" aria-label="Lukk"
+                onclick="this.closest('dialog')?.close()">&times;</button>
+    </div>
+
+    <div class="dialog-kropp">
+        <div asp-validation-summary="All" class="tekst-feil small mb-2"></div>
+
+        <p class="mb-1"><strong>@f.Beskrivelse</strong> til @f.DyreNavn</p>
+        <p class="form-text mt-0">
+            Sist gitt @($"{f.ForrigeDato:d. MMMM yyyy}")@(f.ForrigeNeste is { } n
+                ? $", med neste gang satt til {n:d. MMMM yyyy}" : "").
+        </p>
+
+        @if (!f.KanGis)
+        {
+            @* Knappen skjules i slike tilfeller, men en fane som har statt
+               apen, kan fortsatt lede hit. Da forklarer vi i stedet for a
+               vise et skjema serveren uansett ville avvist. *@
+            <p class="mb-0">
+                Denne er allerede gitt i dag, eller fulgt opp av en nyere
+                behandling. Det er ingenting å krysse av.
+            </p>
+        }
+        else
+        {
+            <div class="mb-1">
+                <label class="form-label" for="neste-dato">Ny påminnelse – neste gang</label>
+                <input class="form-control" id="neste-dato" name="NesteDato"
+                       type="date" value="@Model.NesteDato?.ToString("yyyy-MM-dd")" />
+                <div class="form-text">
+                    Valgfritt. La feltet stå tomt hvis den ikke skal gis igjen.
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="dialog-fot">
+        @* Lenke som lukker dialogen nar den finnes, og ellers gar tilbake.
+           Samme skjema brukes som egen side nar skriptet ikke lastes. *@
+        <a href="@tilbake" class="btn btn-outline-secondary"
+           onclick="const d = this.closest('dialog'); if (d) { d.close(); return false; }">Avbryt</a>
+        @if (f.KanGis)
+        {
+            <button type="submit" class="btn btn-primary">Registrer</button>
+        }
+    </div>
+</form>

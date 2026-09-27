@@ -216,6 +216,7 @@ public sealed class DashbordService : IDashbordService
             {
                 b.Id,
                 b.DyrId,
+                GittDato = b.Dato,
                 DyreNavn = b.Dyr.Navn,
                 b.Type,
                 b.Preparat,
@@ -268,7 +269,10 @@ public sealed class DashbordService : IDashbordService
                 Kilde.Behandling,
                 b.Id,
                 TypeTekst(b.Type, b.Preparat),
-                b.Dato))
+                b.Dato,
+                // Gitt i dag betyr ingen "gitt"-knapp. Paminnelsen star, men
+                // den er ikke noe a krysse av for i morgen.
+                KanFolgesOpp: Behandlingsintervall.KanGisIgjen(b.GittDato, idag)))
             .Concat(forsikringer.Select(f => new Paminnelse(
                 f.DyrId,
                 f.DyreNavn,

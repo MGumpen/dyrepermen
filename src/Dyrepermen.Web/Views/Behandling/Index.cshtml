@@ -72,19 +72,21 @@
                                     <span class="d-block">neste @($"{neste:d. MMM yyyy}")</span>
                                 }
                                 <span class="radhandlinger">
-                                    @* Kun pa raden som fortsatt venter. En
-                                       paminnelse som er fulgt opp av en nyere
-                                       behandling, har ingenting a krysse av. *@
-                                    @if (rad.ErApen)
+                                    @* Kun pa raden som fortsatt venter, og som
+                                       ble gitt for i dag. Apner dialogen der
+                                       neste gang kan endres for noe lagres.
+                                       Lenke, ikke knapp: href-en apner skjemaet
+                                       som egen side hvis skriptet ikke lastes. *@
+                                    @if (rad.KanKrysseAv(idag))
                                     {
-                                        <form method="post" asp-action="Gitt"
-                                              asp-route-dyrId="@Model.DyrId"
-                                              asp-route-behandlingId="@rad.Id">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-primary btn-sm">
-                                                Gitt i dag
-                                            </button>
-                                        </form>
+                                        <a class="btn btn-primary btn-sm"
+                                           asp-action="Gittdialog"
+                                           asp-route-dyrId="@Model.DyrId"
+                                           asp-route-behandlingId="@rad.Id"
+                                           hx-get="@Url.Action("Gittdialog", new { dyrId = Model.DyrId, behandlingId = rad.Id })"
+                                           hx-target="#dpdialog-innhold" hx-swap="innerHTML">
+                                            Gitt i dag
+                                        </a>
                                     }
                                     @* Lenke, ikke knapp: endringen skjer i
                                        skjemaet ved siden av, og historikken

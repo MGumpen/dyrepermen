@@ -11,6 +11,12 @@ public enum Gittstatus
     /// </summary>
     AlleredeFulgtOpp,
 
+    /// <summary>
+    /// Behandlingen ble gitt i dag, eller har en dato fram i tid. Se
+    /// Behandlingsintervall.KanGisIgjen.
+    /// </summary>
+    GittIdag,
+
     /// <summary>Behandlingen finnes ikke pa dette dyret i denne husstanden.</summary>
     FinnesIkke
 }

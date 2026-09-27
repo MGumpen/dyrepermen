@@ -11,6 +11,18 @@ namespace Dyrepermen.Application.Extensions;
 /// </summary>
 public static class Behandlingsintervall
 {
+    /// <summary>
+    /// Om en behandling gitt <paramref name="forrigeDato"/> kan krysses av
+    /// som gitt pa nytt i dag.
+    ///
+    /// Ikke hvis den ble gitt i dag eller har en dato fram i tid. Da ville den
+    /// nye raden fatt samme dato som den gamle - og med et intervall pa en
+    /// dag ogsa samme neste gang. Raden ville sett uendret ut, med en ny knapp
+    /// som ga enda en kopi.
+    /// </summary>
+    public static bool KanGisIgjen(DateOnly forrigeDato, DateOnly idag)
+        => forrigeDato < idag;
+
     /// <summary>Ti ar. Lengre enn det er ikke et intervall, men en tastefeil.</summary>
     private const int MaksManeder = 120;
 

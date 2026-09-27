@@ -81,7 +81,27 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
     // --- Gitt ------------------------------------------------------------
 
     [Fact]
-    public async Task Gitt_registrerer_samme_behandling_i_dag_med_samme_intervall()
+    public async Task Dialogen_viser_hva_som_gis_og_hva_som_sto_sist()
+    {
+        var h = await _fixture.OpprettHusstand("Gittforslag");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h);
+
+        var forrige = await Behandling(db, dyrId, BehandlingType.Ormekur, "Milbemax",
+            Idag.AddMonths(-3), Idag);
+
+        var forslag = await new BehandlingService(db).HentGittforslag(dyrId, forrige, default);
+
+        Assert.NotNull(forslag);
+        Assert.True(forslag.KanGis);
+        Assert.Equal(Idag.AddMonths(-3), forslag.ForrigeDato);
+        Assert.Equal(Idag, forslag.ForrigeNeste);
+        Assert.Equal("Ormekur – Milbemax", forslag.Beskrivelse);
+        Assert.Equal("Luna", forslag.DyreNavn);
+    }
+
+    [Fact]
+    public async Task Gitt_registrerer_samme_behandling_i_dag_med_valgt_neste_gang()
     {
         var h = await _fixture.OpprettHusstand("Gitt");
         await using var db = _fixture.LagContext(h);
@@ -91,7 +111,8 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
         var forrige = await Behandling(db, dyrId, BehandlingType.Ormekur, "Milbemax",
             Idag.AddMonths(-3), Idag);
 
-        var resultat = await new BehandlingService(db).Gitt(dyrId, forrige, default);
+        var resultat = await new BehandlingService(db).Gitt(
+            dyrId, forrige, Idag.AddMonths(3), default);
 
         Assert.Equal(Gittstatus.Lagret, resultat.Status);
         Assert.Equal(Idag.AddMonths(3), resultat.NesteDato);
@@ -123,7 +144,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
         Assert.Single((await Dashbord(db, h)).Forfaller,
             p => p.Kilde == Kilde.Behandling && p.KildeId == forrige);
 
-        await new BehandlingService(db).Gitt(dyrId, forrige, default);
+        await new BehandlingService(db).Gitt(dyrId, forrige, Idag.AddMonths(3), default);
 
         var etter = await Dashbord(db, h);
 
@@ -190,11 +211,58 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             Idag.AddMonths(-3), Idag);
 
         Assert.Equal(Gittstatus.Lagret,
-            (await tjeneste.Gitt(dyrId, forrige, default)).Status);
+            (await tjeneste.Gitt(dyrId, forrige, null, default)).Status);
         Assert.Equal(Gittstatus.AlleredeFulgtOpp,
-            (await tjeneste.Gitt(dyrId, forrige, default)).Status);
+            (await tjeneste.Gitt(dyrId, forrige, null, default)).Status);
 
         Assert.Equal(2, await db.Behandling.CountAsync(b => b.DyrId == dyrId));
+    }
+
+    [Fact]
+    public async Task Gitt_uten_neste_gang_gir_ingen_ny_paminnelse()
+    {
+        var h = await _fixture.OpprettHusstand("Uten neste");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h);
+
+        var forrige = await Behandling(db, dyrId, BehandlingType.Ormekur, "Milbemax",
+            Idag.AddMonths(-3), Idag.AddDays(-1));
+
+        Assert.Equal(Gittstatus.Lagret,
+            (await new BehandlingService(db).Gitt(dyrId, forrige, null, default)).Status);
+
+        var dashbord = await Dashbord(db, h);
+        Assert.DoesNotContain(dashbord.Forfaller, p => p.Kilde == Kilde.Behandling);
+        Assert.Null(dashbord.Dyr.Single().NesteBehandlingDato);
+    }
+
+    /// <summary>
+    /// Feilen som ble meldt: en behandling registrert i dag, med neste gang i
+    /// morgen. "Gitt i dag" ga en ny rad med samme dato og - med et intervall
+    /// pa en dag - samme neste gang. Raden sa uendret ut, og knappen sto der
+    /// fortsatt. Hvert trykk ga en kopi til.
+    /// </summary>
+    [Fact]
+    public async Task Behandling_gitt_i_dag_kan_ikke_krysses_av_igjen()
+    {
+        var h = await _fixture.OpprettHusstand("Gitt i dag");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h);
+        var tjeneste = new BehandlingService(db);
+
+        var idag = await Behandling(db, dyrId, BehandlingType.Ormekur, "Milbemax",
+            Idag, Idag.AddDays(1));
+
+        Assert.Equal(Gittstatus.GittIdag,
+            (await tjeneste.Gitt(dyrId, idag, Idag.AddDays(2), default)).Status);
+        Assert.Equal(1, await db.Behandling.CountAsync(b => b.DyrId == dyrId));
+
+        // Ingen knapp noe sted: ikke i historikken, ikke pa dashbordet, og
+        // dialogen forklarer i stedet for a tilby et skjema.
+        Assert.False((await tjeneste.HentFor(dyrId, default)).Single().KanKrysseAv(Idag));
+        Assert.False(Assert.Single((await Dashbord(db, h)).Forfaller,
+            p => p.Kilde == Kilde.Behandling).KanFolgesOpp);
+        Assert.False((await tjeneste.HentGittforslag(dyrId, idag, default))!.KanGis);
     }
 
     [Fact]
@@ -209,7 +277,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             Idag.AddMonths(-3), Idag);
 
         Assert.Equal(Gittstatus.FinnesIkke,
-            (await new BehandlingService(db).Gitt(milo, lunas, default)).Status);
+            (await new BehandlingService(db).Gitt(milo, lunas, null, default)).Status);
         Assert.Equal(1, await db.Behandling.CountAsync());
     }
 
@@ -230,7 +298,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
         await using (var fremmed = _fixture.LagContext(b))
         {
             Assert.Equal(Gittstatus.FinnesIkke,
-                (await new BehandlingService(fremmed).Gitt(dyrId, behandlingId, default))
+                (await new BehandlingService(fremmed).Gitt(dyrId, behandlingId, null, default))
                     .Status);
         }
 
@@ -373,7 +441,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
     /// beviser regelen, men ikke at knappen havner pa siden og peker riktig.
     /// </summary>
     [Fact]
-    public async Task Gitt_fra_oversikten_registrerer_og_sender_tilbake_til_oversikten()
+    public async Task Gitt_fra_oversikten_apner_dialogen_og_sender_tilbake_til_oversikten()
     {
         var klient = await Testoppsett.InnloggetKlient(_app);
         var dyrId = await Testoppsett.NyttDyr(klient);
@@ -388,21 +456,75 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
         Assert.True(Skjemaklient.GikkGjennom(lagret));
 
         var oversikt = await (await klient.Hent("/")).Content.ReadAsStringAsync();
-        var handling = Gittmonster().Match(oversikt);
+        var lenke = Gittmonster().Match(oversikt);
 
-        Assert.True(handling.Success, "Fant ikke Gitt-knappen pa oversikten.");
-        Assert.StartsWith($"/dyr/{dyrId}/behandling/", handling.Groups[1].Value);
+        Assert.True(lenke.Success, "Fant ikke Gitt-knappen pa oversikten.");
+        var dialog = WebUtility.HtmlDecode(lenke.Groups[1].Value);
+        Assert.StartsWith($"/dyr/{dyrId}/behandling/", dialog);
 
+        // Uten htmx-hodet kommer dialogen som egen side - samme skjema.
+        var side = await (await klient.Hent(dialog)).Content.ReadAsStringAsync();
+
+        // Feltet star tomt. Appen gjetter ikke pa neste gang. Razor utelater
+        // value-attributtet helt nar verdien er null.
+        var felt = Regex.Match(side, """<input[^>]+name="NesteDato"[^>]*>""");
+        Assert.True(felt.Success, "Fant ikke feltet for neste gang.");
+        Assert.DoesNotContain("value=", felt.Value);
+
+        // Brukeren fyller inn datoen selv.
+        var valgt = Idag.AddDays(40);
         var svar = await klient.Post(
-            WebUtility.HtmlDecode(handling.Groups[1].Value),
-            new Dictionary<string, string>(),
-            tokenFra: "/");
+            dialog.Split('?')[0],
+            new Dictionary<string, string>
+            {
+                ["NesteDato"] = valgt.ToString("yyyy-MM-dd"),
+                ["FraOversikt"] = "true"
+            },
+            tokenFra: dialog);
 
         Assert.Equal(HttpStatusCode.Redirect, svar.StatusCode);
         Assert.Equal("/", svar.Headers.Location?.ToString());
 
         var etter = await (await klient.Hent("/")).Content.ReadAsStringAsync();
         Assert.DoesNotMatch(Gittmonster(), etter);
+
+        var historikk = await (await klient.Hent($"/dyr/{dyrId}/behandling")).Content
+            .ReadAsStringAsync();
+        Assert.Contains($"neste {valgt:d. MMM yyyy}", WebUtility.HtmlDecode(historikk));
+    }
+
+    [Fact]
+    public async Task Neste_gang_i_dag_avvises_og_ingenting_lagres()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient);
+
+        await klient.Post($"/dyr/{dyrId}/behandling", new Dictionary<string, string>
+        {
+            ["Type"] = BehandlingType.Ormekur.ToString(),
+            ["Preparat"] = "Milbemax",
+            ["Dato"] = Idag.AddMonths(-3).ToString("yyyy-MM-dd"),
+            ["NesteDato"] = Idag.ToString("yyyy-MM-dd")
+        });
+
+        var side = await (await klient.Hent($"/dyr/{dyrId}/behandling")).Content
+            .ReadAsStringAsync();
+        var dialog = Regex.Match(side, $"""href="(/dyr/{dyrId}/behandling/\d+/gitt)" """.TrimEnd());
+        Assert.True(dialog.Success, "Fant ikke Gitt i dag-knappen i historikken.");
+
+        var svar = await klient.Post(
+            dialog.Groups[1].Value,
+            new Dictionary<string, string> { ["NesteDato"] = Idag.ToString("yyyy-MM-dd") });
+
+        Assert.Equal(HttpStatusCode.OK, svar.StatusCode);
+        Assert.Contains("Neste gang må være etter i dag.",
+            WebUtility.HtmlDecode(await svar.Content.ReadAsStringAsync()));
+
+        var etter = await (await klient.Hent($"/dyr/{dyrId}/behandling")).Content
+            .ReadAsStringAsync();
+        // Ble noe lagret, ville den gamle raden vaert fulgt opp av en ny fra
+        // i dag - og da ville knappen vaert borte.
+        Assert.Contains(dialog.Groups[1].Value, etter);
     }
 
     [Fact]
@@ -432,6 +554,6 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             $"""value="{Idag.AddYears(1):yyyy-MM-dd}" """.TrimEnd(), skjema);
     }
 
-    [GeneratedRegex("""<form[^>]+action="([^"]+/gitt\?fraOversikt=true)"[^>]*>""")]
+    [GeneratedRegex("""<a[^>]+href="([^"]+/gitt\?fraOversikt=true)"[^>]*>""")]
     private static partial Regex Gittmonster();
 }

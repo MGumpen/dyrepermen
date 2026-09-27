@@ -27,13 +27,22 @@ public interface IBehandlingService
     Task<bool> Slett(int dyrId, int behandlingId, CancellationToken ct);
 
     /// <summary>
-    /// Krysser av en paminnelse: registrerer en ny behandling av samme type
-    /// og preparat med dagens dato, og neste gang med samme intervall som
-    /// forrige. Den gamle raden blir staende urort - den er historikk, og
-    /// paminnelsen forsvinner fordi en nyere behandling na finnes.
-    /// Se ADR 0016.
+    /// Innholdet i dialogen for "gitt i dag".
+    /// Null betyr at behandlingen ikke finnes pa dette dyret i denne
+    /// husstanden.
     /// </summary>
-    Task<GittResultat> Gitt(int dyrId, int behandlingId, CancellationToken ct);
+    Task<Gittforslag?> HentGittforslag(
+        int dyrId, int behandlingId, CancellationToken ct);
+
+    /// <summary>
+    /// Krysser av en paminnelse: registrerer en ny behandling av samme type
+    /// og preparat med dagens dato. <paramref name="nesteDato"/> er det
+    /// brukeren fylte inn i dialogen, eller null for ingen ny paminnelse. Den gamle raden blir staende urort - den er
+    /// historikk, og paminnelsen forsvinner fordi en nyere behandling na
+    /// finnes. Se ADR 0016.
+    /// </summary>
+    Task<GittResultat> Gitt(
+        int dyrId, int behandlingId, DateOnly? nesteDato, CancellationToken ct);
 
     /// <summary>
     /// Behandlingene husstanden har gitt for, nyeste forst, en per

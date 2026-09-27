@@ -38,15 +38,26 @@ stillhet er det ikke.
 registrering, og vanlig registrering ville ikke visst hvilken rad den fulgte opp.
 Regelen over trenger ingen slik kobling.
 
-### 2. «Gitt» registrerer samme behandling i dag, med samme intervall
+### 2. «Gitt» registrerer samme behandling i dag, med valgt neste gang
 
-Ett trykk. Den nye raden får samme type og preparat, dagens dato, og neste gang
-med samme intervall som forrige gang. Intervallet gjenkjennes som hele måneder når
-det er det (`Behandlingsintervall`), slik at «hver tredje måned» ikke kryper en dag
-for hver gang. Datoen står i bekreftelsen og kan rettes.
+«Gitt» åpner en dialog. Den nye raden får samme type og preparat og dagens dato.
+Feltet for neste gang står **tomt**. Brukeren fyller det inn, eller lar det stå
+tomt for ingen ny påminnelse. Neste gang må være etter i dag.
 
-Er raden allerede fulgt opp, blir det ingen ny behandling. Det hindrer at et
-dobbelttrykk, eller to i husstanden som krysser av samtidig, gir to rader.
+En tidligere versjon fylte ut feltet med samme intervall som sist. Det ble valgt
+bort av Marius: en dato appen har gjettet, blir lett stående uten at noen har tatt
+stilling til den. Forslaget med samme intervall brukes fortsatt når et skjema
+fylles ut fra «Gitt før» på behandlingssiden.
+
+Første versjon var ett trykk uten dialog. Den ble endret etter en feil i bruk: en
+behandling registrert i dag med neste gang i morgen ble krysset av, og den nye
+raden fikk samme dato og samme neste gang. Raden så uendret ut, med en ny knapp.
+Derfor kan en behandling bare krysses av når den ble gitt *før* i dag
+(`Behandlingsintervall.KanGisIgjen`). Knappen skjules ellers, og tjenesten sjekker
+det samme.
+
+Er raden allerede fulgt opp, blir det heller ingen ny behandling. Det hindrer at
+et dobbelttrykk, eller to i husstanden som krysser av samtidig, gir to rader.
 
 `Gitt` krever beboer, som resten av behandlingssiden.
 

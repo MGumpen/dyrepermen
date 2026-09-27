@@ -16,6 +16,9 @@ public sealed record GittResultat(
     public static GittResultat AlleredeFulgtOpp()
         => new(Gittstatus.AlleredeFulgtOpp, null, null);
 
+    public static GittResultat GittIdag()
+        => new(Gittstatus.GittIdag, null, null);
+
     public static GittResultat FinnesIkke()
         => new(Gittstatus.FinnesIkke, null, null);
 }

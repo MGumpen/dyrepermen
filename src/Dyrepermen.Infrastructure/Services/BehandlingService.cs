@@ -48,14 +48,47 @@ public sealed class BehandlingService : IBehandlingService
             .ToList();
     }
 
-    public async Task<GittResultat> Gitt(
+    public async Task<Gittforslag?> HentGittforslag(
         int dyrId, int behandlingId, CancellationToken ct)
+    {
+        var forrige = await _db.Behandling
+            .Where(b => b.Id == behandlingId && b.DyrId == dyrId)
+            .Select(b => new
+            {
+                b.Type,
+                b.Preparat,
+                b.Dato,
+                b.NesteDato,
+                DyreNavn = b.Dyr.Navn
+            })
+            .SingleOrDefaultAsync(ct);
+
+        if (forrige is null)
+        {
+            return null;
+        }
+
+        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
+
+        return new Gittforslag(
+            dyrId,
+            behandlingId,
+            forrige.DyreNavn,
+            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat),
+            forrige.Dato,
+            forrige.NesteDato,
+            Behandlingsintervall.KanGisIgjen(forrige.Dato, idag)
+                && await ErApen(behandlingId, ct));
+    }
+
+    public async Task<GittResultat> Gitt(
+        int dyrId, int behandlingId, DateOnly? nesteDato, CancellationToken ct)
     {
         // Query-filteret er autorisasjonen, DyrId hindrer at en id fra et
         // annet dyr i egen husstand treffer. Samme monster som Oppdater.
         var forrige = await _db.Behandling
             .Where(b => b.Id == behandlingId && b.DyrId == dyrId)
-            .Select(b => new { b.Type, b.Preparat, b.Dato, b.NesteDato })
+            .Select(b => new { b.Type, b.Preparat, b.Dato })
             .SingleOrDefaultAsync(ct);
 
         if (forrige is null)
@@ -63,22 +96,24 @@ public sealed class BehandlingService : IBehandlingService
             return GittResultat.FinnesIkke();
         }
 
+        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
+
+        // Gitt i dag allerede: en ny rad ville fatt samme dato, og sett ut
+        // som ingenting skjedde. Sjekkes her og ikke bare ved knappen - en
+        // fane som har statt apen siden i gar, viser fortsatt knappen.
+        if (!Behandlingsintervall.KanGisIgjen(forrige.Dato, idag))
+        {
+            return GittResultat.GittIdag();
+        }
+
         // En rad som allerede er fulgt opp, skal ikke gi en behandling til.
         // Uten sjekken ville et dobbelttrykk, eller to i husstanden som
         // krysser av samtidig fra hver sin telefon, registrert ormekuren to
         // ganger.
-        var apen = await _db.Behandling
-            .Where(b => b.Id == behandlingId)
-            .AnyAsync(Behandlingsfilter.ApenPaminnelse, ct);
-
-        if (!apen)
+        if (!await ErApen(behandlingId, ct))
         {
             return GittResultat.AlleredeFulgtOpp();
         }
-
-        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
-        var neste = Behandlingsintervall.NesteEtter(
-            forrige.Dato, forrige.NesteDato, idag);
 
         _db.Behandling.Add(new Behandling
         {
@@ -88,14 +123,19 @@ public sealed class BehandlingService : IBehandlingService
             // nye raden gjenkjennes som oppfolgingen av den gamle.
             Preparat = forrige.Preparat,
             Dato = idag,
-            NesteDato = neste
+            NesteDato = nesteDato
         });
 
         await _db.SaveChangesAsync(ct);
 
         return GittResultat.Lagret(
-            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat), neste);
+            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat), nesteDato);
     }
+
+    private Task<bool> ErApen(int behandlingId, CancellationToken ct)
+        => _db.Behandling
+            .Where(b => b.Id == behandlingId)
+            .AnyAsync(Behandlingsfilter.ApenPaminnelse, ct);
 
     public async Task<IReadOnlyList<Behandlingsforslag>> HentForslag(
         CancellationToken ct)

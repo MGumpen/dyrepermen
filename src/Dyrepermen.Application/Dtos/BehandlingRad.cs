@@ -1,3 +1,4 @@
+using Dyrepermen.Application.Extensions;
 using Dyrepermen.Domain.Enums;
 
 namespace Dyrepermen.Application.Dtos;
@@ -15,4 +16,12 @@ public sealed record BehandlingRad(
     /// type og preparat finnes pa dyret. Bare da kan raden krysses av som
     /// gitt. Se ADR 0016.
     /// </summary>
-    bool ErApen = false);
+    bool ErApen = false)
+{
+    /// <summary>
+    /// Knappen "gitt i dag" vises bare her: paminnelsen venter, og
+    /// behandlingen ble gitt for i dag. Se Behandlingsintervall.KanGisIgjen.
+    /// </summary>
+    public bool KanKrysseAv(DateOnly idag)
+        => ErApen && Behandlingsintervall.KanGisIgjen(Dato, idag);
+}

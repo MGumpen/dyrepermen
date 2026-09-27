@@ -20,7 +20,13 @@ public sealed record Paminnelse(
     /// Forfalt tidligere i dag. Kun medisindoser har klokkeslett - for resten
     /// er datoen hele sannheten.
     /// </summary>
-    bool Overtid = false)
+    bool Overtid = false,
+
+    /// <summary>
+    /// Raden kan folges opp herfra. False for en behandling som ble gitt i
+    /// dag, der "gitt" ville gitt en kopi. Se Behandlingsintervall.KanGisIgjen.
+    /// </summary>
+    bool KanFolgesOpp = true)
 {
     public bool ErForfalt(DateOnly idag) => Dato < idag || Overtid;
 }

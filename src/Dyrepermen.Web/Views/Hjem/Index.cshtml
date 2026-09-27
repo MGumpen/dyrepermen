@@ -130,18 +130,18 @@
                                    gjester. Serveren sperrer uansett. *@
                                 @switch (p.Kilde)
                                 {
-                                    case Kilde.Behandling when Meg.KanEndre:
-                                        <form method="post" asp-controller="Behandling"
-                                              asp-action="Gitt"
-                                              asp-route-dyrId="@p.DyrId"
-                                              asp-route-behandlingId="@p.KildeId"
-                                              asp-route-fraOversikt="true">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-primary btn-sm"
-                                                    aria-label="Registrer @p.Tekst for @p.DyreNavn som gitt i dag">
-                                                Gitt
-                                            </button>
-                                        </form>
+                                    case Kilde.Behandling when Meg.KanEndre && p.KanFolgesOpp:
+                                        <a class="btn btn-primary btn-sm"
+                                           asp-controller="Behandling" asp-action="Gittdialog"
+                                           asp-route-dyrId="@p.DyrId"
+                                           asp-route-behandlingId="@p.KildeId"
+                                           asp-route-fraOversikt="true"
+                                           hx-get="@Url.Action("Gittdialog", "Behandling",
+                                               new { dyrId = p.DyrId, behandlingId = p.KildeId, fraOversikt = true })"
+                                           hx-target="#dpdialog-innhold" hx-swap="innerHTML"
+                                           aria-label="Registrer @p.Tekst for @p.DyreNavn som gitt i dag">
+                                            Gitt
+                                        </a>
                                         break;
 
                                     case Kilde.Medisin:

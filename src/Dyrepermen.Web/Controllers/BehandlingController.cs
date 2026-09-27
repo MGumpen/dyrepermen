@@ -92,21 +92,57 @@ public sealed class BehandlingController : Controller
     }
 
     /// <summary>
-    /// Krysser av en paminnelse som gitt i dag. Ett trykk: behandlingen
-    /// registreres med samme type og preparat, og neste gang med samme
-    /// intervall som sist. Datoen appen foreslar, star i bekreftelsen, og
-    /// kan rettes pa behandlingssiden. Se ADR 0016.
+    /// Dialogen for "gitt i dag": hva som krysses av, og et tomt felt for
+    /// neste gang. Tomt som standard - en dato appen har gjettet, blir lett
+    /// staende uten at noen har tatt stilling til den. Se ADR 0016.
     ///
-    /// <paramref name="fraOversikt"/> sender brukeren tilbake til dashbordet,
-    /// der knappen sto. Se <see cref="MedisinController.LoggDose"/>.
+    /// Apnes i den felles dialogen med htmx. Uten skript havner man her som
+    /// en vanlig side, med samme skjema - samme monster som foringsdialogen.
+    /// </summary>
+    [HttpGet("{behandlingId:int}/gitt")]
+    [KreverEier]
+    public async Task<IActionResult> Gittdialog(
+        int dyrId, int behandlingId, bool fraOversikt, CancellationToken ct)
+    {
+        var forslag = await _behandling.HentGittforslag(dyrId, behandlingId, ct);
+
+        if (forslag is null)
+        {
+            return NotFound();
+        }
+
+        var vm = new GittdialogVm(forslag, NesteDato: null, fraOversikt);
+
+        return ErHtmx
+            ? PartialView("_Gittdialog", vm)
+            : View("Gittdialog", vm);
+    }
+
+    /// <summary>
+    /// Registrerer behandlingen som gitt i dag, med neste gang slik den sto
+    /// i dialogen. Tomt felt betyr ingen ny paminnelse.
     /// </summary>
     [HttpPost("{behandlingId:int}/gitt")]
     [KreverEier]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Gitt(
-        int dyrId, int behandlingId, bool fraOversikt, CancellationToken ct)
+        int dyrId, int behandlingId, GittVm skjema, CancellationToken ct)
     {
-        var resultat = await _behandling.Gitt(dyrId, behandlingId, ct);
+        if (!ModelState.IsValid)
+        {
+            // Vanlig side med feilmeldingen, ikke dialogen: skjemaet postes
+            // uten htmx, og en side som svarer 200 med et skjema er det
+            // nettleseren kan vise.
+            var forslag = await _behandling.HentGittforslag(dyrId, behandlingId, ct);
+
+            return forslag is null
+                ? NotFound()
+                : View("Gittdialog", new GittdialogVm(
+                    forslag, skjema.NesteDato, skjema.FraOversikt));
+        }
+
+        var resultat = await _behandling.Gitt(
+            dyrId, behandlingId, skjema.NesteDato, ct);
 
         switch (resultat.Status)
         {
@@ -119,18 +155,24 @@ public sealed class BehandlingController : Controller
                 TempData["Feil"] = "Behandlingen er allerede registrert som gitt.";
                 break;
 
+            case Gittstatus.GittIdag:
+                TempData["Feil"] = "Behandlingen er allerede registrert i dag.";
+                break;
+
             default:
                 TempData["Melding"] = resultat.NesteDato is { } neste
                     ? $"{resultat.Beskrivelse} er registrert som gitt i dag. "
-                      + $"Neste gang er satt til {neste:d. MMMM yyyy}."
+                      + $"Neste gang er {neste:d. MMMM yyyy}."
                     : $"{resultat.Beskrivelse} er registrert som gitt i dag.";
                 break;
         }
 
-        return fraOversikt
+        return skjema.FraOversikt
             ? RedirectToAction(nameof(HjemController.Index), "Hjem")
             : RedirectToAction(nameof(Index), new { dyrId });
     }
+
+    private bool ErHtmx => Request.Headers.ContainsKey("HX-Request");
 
     private static Behandlingsinnhold Innhold(int dyrId, NyBehandlingVm ny)
         => new(dyrId, ny.Type, ny.Preparat, ny.Dato, ny.NesteDato, ny.Notat);
