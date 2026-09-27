@@ -42,12 +42,25 @@ public sealed class SavnetTester : IAsyncLifetime
     {
         var klient = await Testoppsett.InnloggetKlient(_app);
 
-        Assert.True(Skjemaklient.GikkGjennom(await LagreTelefon(klient, "+47 412 34 567")));
-        Assert.Contains("value=\"+47 412 34 567\"", await Tekst(klient, "/konto"));
+        // Uten nummer star skjemaet apent - det er ingenting a vise i raden.
+        Assert.Contains("name=\"Telefon.Nummer\"", await Tekst(klient, "/konto"));
 
-        // Tomt felt fjerner nummeret.
+        Assert.True(Skjemaklient.GikkGjennom(await LagreTelefon(klient, "+47 412 34 567")));
+
+        // Lagret nummer star som en rad, som navn og e-post - ikke i et felt.
+        var etter = await Tekst(klient, "/konto");
+        Assert.Contains("+47 412 34 567", etter);
+        Assert.DoesNotContain("name=\"Telefon.Nummer\"", etter);
+        Assert.Contains("href=\"/konto?endre=telefon#telefon\"", etter);
+
+        // «Endre» apner skjemaet med nummeret fylt inn.
+        Assert.Contains("value=\"+47 412 34 567\"", await Tekst(klient, "/konto?endre=telefon"));
+
+        // Tomt felt fjerner nummeret, og skjemaet star apent igjen.
         Assert.True(Skjemaklient.GikkGjennom(await LagreTelefon(klient, "")));
-        Assert.DoesNotContain("412 34 567", await Tekst(klient, "/konto"));
+        var tom = await Tekst(klient, "/konto");
+        Assert.DoesNotContain("412 34 567", tom);
+        Assert.Contains("name=\"Telefon.Nummer\"", tom);
     }
 
     [Fact]

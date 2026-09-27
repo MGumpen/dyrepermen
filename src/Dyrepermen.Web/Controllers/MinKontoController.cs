@@ -28,11 +28,22 @@ public sealed class MinKontoController : Controller
         _paalogging = paalogging;
     }
 
+    /// <summary>
+    /// <paramref name="endre"/> = "telefon" apner skjemaet for nummeret.
+    /// Uten lagret nummer star skjemaet apent uansett - det er ingenting a
+    /// vise i raden.
+    /// </summary>
     [HttpGet("")]
-    public async Task<IActionResult> Index(CancellationToken ct)
+    public async Task<IActionResult> Index(string? endre, CancellationToken ct)
     {
         var vm = await Bygg(ct);
-        return vm is null ? Forbid() : View(vm);
+        if (vm is null)
+        {
+            return Forbid();
+        }
+
+        vm.EndrerTelefon = endre == "telefon" || vm.Telefon.Nummer is null;
+        return View(vm);
     }
 
     [HttpGet("data")]
@@ -76,7 +87,9 @@ public sealed class MinKontoController : Controller
                 return Forbid();
             }
 
+            // Skjemaet star apent med feilmeldingen og det brukeren skrev.
             side.Telefon = telefon;
+            side.EndrerTelefon = true;
             return View(nameof(Index), side);
         }
 
