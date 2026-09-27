@@ -276,7 +276,9 @@ public sealed class VeterinarTester
             db, new HandlelisteService(db,
                 new Husstandskontekst { HusstandId = h })).Hent(default);
 
-        var fra = dashbord.Forfaller.Where(p => p.Kilde == Kilde.Vetbesok).ToList();
+        var fra = dashbord.Forfaller
+            .Where(p => p.Kilde is Kilde.Vetbesok or Kilde.Vetkontroll)
+            .ToList();
 
         Assert.Equal(2, fra.Count);
 
@@ -284,5 +286,10 @@ public sealed class VeterinarTester
         Assert.Equal(idag.AddDays(3), fra[0].Dato);
         Assert.Contains("09:30", fra[0].Tekst);
         Assert.Contains("Kontroll", fra[1].Tekst);
+
+        // Hver sin kilde, fordi de folges opp hver sin vei: timen rettes,
+        // kontrollen bestilles som en ny time.
+        Assert.Equal(Kilde.Vetbesok, fra[0].Kilde);
+        Assert.Equal(Kilde.Vetkontroll, fra[1].Kilde);
     }
 }

@@ -28,13 +28,15 @@
     @if (Meg.KanEndre)
     {
         <div class="handlinger">
-            <a asp-action="NyTime" class="btn btn-outline-secondary btn-sm">
-                <svg class="ikon" aria-hidden="true"><use href="#i-klokke" /></svg>
-                Ny time
-            </a>
-            <a asp-action="Ny" class="btn btn-primary btn-sm">
+            @* Ny time er det man oftest gjor her, og er hovedknappen. Den
+               star til hoyre, der hovedknappen star ellers i appen. *@
+            <a asp-action="Ny" class="btn btn-outline-secondary btn-sm">
                 <svg class="ikon" aria-hidden="true"><use href="#i-pluss" /></svg>
                 Nytt sted
+            </a>
+            <a asp-action="NyTime" class="btn btn-primary btn-sm">
+                <svg class="ikon" aria-hidden="true"><use href="#i-klokke" /></svg>
+                Ny time
             </a>
         </div>
     }

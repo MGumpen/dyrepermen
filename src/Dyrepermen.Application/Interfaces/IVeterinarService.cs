@@ -37,6 +37,18 @@ public interface IVeterinarService
     /// </summary>
     Task<bool> OpprettBesok(NyttVetbesok input, CancellationToken ct);
 
+    /// <summary>
+    /// Legger inn timen for en avtalt kontroll, og fjerner paminnelsen fra
+    /// besoket den kom fra i samme lagring. Kontrollen star videre som den
+    /// nye timen - to rader om samme avtale ville gitt dobbelt varsel.
+    ///
+    /// Horer <paramref name="fraBesokId"/> til et annet dyr eller en annen
+    /// husstand, lagres timen likevel, men ingenting annet endres.
+    /// Se ADR 0016.
+    /// </summary>
+    Task<bool> BestillKontroll(
+        int fraBesokId, NyttVetbesok input, CancellationToken ct);
+
     Task<bool> OppdaterBesok(int besokId, NyttVetbesok input, CancellationToken ct);
 
     Task<bool> SlettBesok(int besokId, CancellationToken ct);

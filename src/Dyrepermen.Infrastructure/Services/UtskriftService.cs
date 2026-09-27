@@ -15,7 +15,8 @@ namespace Dyrepermen.Infrastructure.Services;
 /// rundturer GANGE antall dyr. Her grupperes radene i minnet etterpa, og
 /// tallet star stille uansett hvor mange dyr husstanden har.
 ///
-/// Query-filtrene gjor husstandsavgrensningen, som ellers i appen.
+/// Query-filtrene gjor husstandsavgrensningen, som ellers i appen. Utvalget
+/// av dyr legges oppa i SQL, og en del som ikke er valgt, hentes ikke.
 /// </summary>
 public sealed class UtskriftService : IUtskriftService
 {
@@ -29,10 +30,16 @@ public sealed class UtskriftService : IUtskriftService
         _informasjon = informasjon;
     }
 
-    public async Task<Utskrift> Hent(CancellationToken ct)
+    public async Task<Utskrift> Hent(Utskriftsvalg valg, CancellationToken ct)
     {
-        // Sporring 1. Dyrene selv. Query-filteret tar bort de deaktiverte.
+        // Null betyr alle dyr. En tom liste betyr ingen - da slipper vi
+        // resten av sporringene, men fellesnotatene kan fortsatt vaere valgt.
+        var ider = valg.DyrIder;
+
+        // Sporring 1. Dyrene selv. Query-filteret tar bort de deaktiverte, og
+        // ider fra en annen husstand.
         var dyr = await _db.Dyr
+            .Where(d => ider == null || ider.Contains(d.Id))
             .OrderBy(d => d.Navn)
             .Select(d => new DyrDetaljer(
                 d.Id, d.Navn, d.Art, d.Kjonn, d.Rase, d.Fodselsdato,
@@ -40,14 +47,27 @@ public sealed class UtskriftService : IUtskriftService
                 d.ForingsloggAktiv, d.ForplanAktiv))
             .ToListAsync(ct);
 
+        // Notatene hentes en gang og deles mellom dyrene og fellesdelen.
+        var notater = valg.Har(Utskriftsdel.Notater) || valg.Har(Utskriftsdel.FellesNotater)
+            ? await _informasjon.Hent(ct)
+            : [];
+
+        var felles = valg.Har(Utskriftsdel.FellesNotater)
+            ? notater.Where(n => n.DyrId is null).ToList()
+            : [];
+
         if (dyr.Count == 0)
         {
-            return new Utskrift([], await FellesNotater(ct));
+            return new Utskrift([], felles, valg);
         }
+
+        // Fra her av avgrenses alt til dyrene som faktisk ble funnet.
+        var dyrIder = dyr.Select(d => d.Id).ToList();
 
         // Sporring 2. Alle vekter, nyeste forst - samme rekkefolge som
         // vektsiden bruker.
-        var vekter = (await _db.Vekt
+        var vekter = !valg.Har(Utskriftsdel.Vekt) ? [] : (await _db.Vekt
+            .Where(v => dyrIder.Contains(v.DyrId))
             .OrderByDescending(v => v.Dato)
             .ThenByDescending(v => v.Id)
             .Select(v => new
@@ -64,22 +84,43 @@ public sealed class UtskriftService : IUtskriftService
                 g.Select(v => v.Rad).ToList());
 
         // Sporring 3. Behandlinger, nyeste forst.
-        var behandlinger = (await _db.Behandling
+        var behandlingsrader = !valg.Har(Utskriftsdel.Behandlinger) ? [] : await _db.Behandling
+            .Where(b => dyrIder.Contains(b.DyrId))
             .OrderByDescending(b => b.Dato)
+            .ThenByDescending(b => b.Id)
             .Select(b => new
             {
                 b.DyrId,
                 Rad = new BehandlingRad(
-                    b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat)
+                    b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat, false)
             })
+            .ToListAsync(ct);
+
+        // Sporring 3b. Hvilke som fortsatt venter. Et ark som sier "neste
+        // 1. mars" om en ormekur som ble fulgt opp i februar, sender
+        // hundepasseren til dyrlegen for ingenting. Samme regel som
+        // dashbordet, se ADR 0016.
+        var apne = behandlingsrader.Count == 0 ? [] : (await _db.Behandling
+            .Where(b => dyrIder.Contains(b.DyrId))
+            .Where(Behandlingsfilter.ApenPaminnelse)
+            .Select(b => b.Id)
             .ToListAsync(ct))
+            .ToHashSet();
+
+        var behandlinger = behandlingsrader
+            .Select(b => new
+            {
+                b.DyrId,
+                Rad = apne.Contains(b.Rad.Id) ? b.Rad with { ErApen = true } : b.Rad
+            })
             .GroupBy(b => b.DyrId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<BehandlingRad>)
                 g.Select(b => b.Rad).ToList());
 
         // Sporring 4. Medisiner. Siste dose hentes som korrelert
         // undersporring, i samme rundtur.
-        var medisiner = (await _db.Medisin
+        var medisiner = !valg.Har(Utskriftsdel.Medisiner) ? [] : (await _db.Medisin
+            .Where(m => dyrIder.Contains(m.DyrId))
             .OrderBy(m => m.Navn)
             .Select(m => new
             {
@@ -101,8 +142,8 @@ public sealed class UtskriftService : IUtskriftService
                 g.Select(m => m.Rad).ToList());
 
         // Sporring 5. Kun den aktive forplanen per dyr.
-        var forplaner = await _db.Forplan
-            .Where(f => f.Aktiv)
+        var forplaner = !valg.Har(Utskriftsdel.Forplan) ? [] : await _db.Forplan
+            .Where(f => f.Aktiv && dyrIder.Contains(f.DyrId))
             .Select(f => new
             {
                 f.DyrId,
@@ -121,7 +162,7 @@ public sealed class UtskriftService : IUtskriftService
         if (forplaner.Any(f => f.Rad.Metode == Formetode.Tabell))
         {
             var trinn = (await _db.Forplantrinn
-                .Where(t => t.Forplan.Aktiv)
+                .Where(t => t.Forplan.Aktiv && dyrIder.Contains(t.Forplan.DyrId))
                 .OrderBy(t => t.AlderMnd)
                 .Select(t => new { t.ForplanId, t.AlderMnd, t.GramPerDag })
                 .ToListAsync(ct))
@@ -145,7 +186,8 @@ public sealed class UtskriftService : IUtskriftService
         }
 
         // Sporring 6. Forsikringer.
-        var forsikringer = (await _db.Forsikring
+        var forsikringer = !valg.Har(Utskriftsdel.Forsikring) ? [] : (await _db.Forsikring
+            .Where(f => dyrIder.Contains(f.DyrId))
             .OrderBy(f => f.Selskap)
             .Select(f => new
             {
@@ -159,9 +201,6 @@ public sealed class UtskriftService : IUtskriftService
             .GroupBy(f => f.DyrId)
             .ToDictionary(g => g.Key, g => (IReadOnlyList<ForsikringRad>)
                 g.Select(f => f.Rad).ToList());
-
-        // Sporring 7. Notatene, gjennom den eksisterende tjenesten.
-        var notater = await _informasjon.Hent(ct);
 
         var sider = dyr.Select(d =>
         {
@@ -179,13 +218,11 @@ public sealed class UtskriftService : IUtskriftService
                 medisiner.GetValueOrDefault(d.Id, []),
                 forplaner.SingleOrDefault(f => f.DyrId == d.Id)?.Rad,
                 forsikringer.GetValueOrDefault(d.Id, []),
-                notater.Where(n => n.DyrId == d.Id).ToList());
+                valg.Har(Utskriftsdel.Notater)
+                    ? notater.Where(n => n.DyrId == d.Id).ToList()
+                    : []);
         }).ToList();
 
-        return new Utskrift(sider, notater.Where(n => n.DyrId is null).ToList());
+        return new Utskrift(sider, felles, valg);
     }
-
-    private async Task<IReadOnlyList<InformasjonRad>> FellesNotater(
-        CancellationToken ct)
-        => (await _informasjon.Hent(ct)).Where(n => n.DyrId is null).ToList();
 }

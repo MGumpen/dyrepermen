@@ -23,25 +23,24 @@
             </div>
 
             @* Skjules ved utskrift. Den er til for a starte utskriften, og
-               skal ikke ligge som en gra boks oeverst pa arket. *@
+               skal ikke ligge som en gra boks oeverst pa arket.
+
+               Utskriftsdialogen apnes ikke av seg selv. Siden er en
+               forhandsvisning: man skal se hva som kom med, og kunne endre
+               utvalget, for noe skrives ut. *@
             <div class="utskrift-knapper">
-                <button type="button" class="btn btn-primary btn-sm"
-                        onclick="window.print()">
-                    Lagre som PDF
-                </button>
+                <a href="@(ViewData["EndreUtvalg"] as string ?? Url.Action("Velg", "Informasjon"))"
+                   class="btn btn-outline-secondary btn-sm">Endre utvalg</a>
                 <a asp-controller="Informasjon" asp-action="Index"
                    class="btn btn-outline-secondary btn-sm">Tilbake</a>
+                <button type="button" class="btn btn-primary btn-sm"
+                        onclick="window.print()">
+                    Skriv ut / lagre som PDF
+                </button>
             </div>
         </header>
 
         @RenderBody()
     </div>
-
-    @* Apner utskriftsdialogen av seg selv. Kom man hit via knappen, er det
-       nettopp den man var ute etter - da skal man slippe a lete etter den.
-       Feiler den, eller lukker man den, star siden der med knappen sin. *@
-    <script>
-        window.addEventListener('load', function () { window.print(); });
-    </script>
 </body>
 </html>

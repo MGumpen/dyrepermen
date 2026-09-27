@@ -14,6 +14,13 @@
     var typer = Enum.GetValues<BehandlingType>()
         .Select(t => new SelectListItem(Behandlingsformat.Navn(t), t.ToString()))
         .ToList();
+
+    // Preparatene husstanden har brukt for, til forslagslisten i feltet.
+    var preparater = Model.Forslag
+        .Select(f => f.Preparat)
+        .OfType<string>()
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
 }
 
 <partial name="_Dyrhode" model='new DyrhodeVm("Behandlinger", Model.DyrId, Model.DyrNavn)' />
@@ -65,6 +72,20 @@
                                     <span class="d-block">neste @($"{neste:d. MMM yyyy}")</span>
                                 }
                                 <span class="radhandlinger">
+                                    @* Kun pa raden som fortsatt venter. En
+                                       paminnelse som er fulgt opp av en nyere
+                                       behandling, har ingenting a krysse av. *@
+                                    @if (rad.ErApen)
+                                    {
+                                        <form method="post" asp-action="Gitt"
+                                              asp-route-dyrId="@Model.DyrId"
+                                              asp-route-behandlingId="@rad.Id">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                Gitt i dag
+                                            </button>
+                                        </form>
+                                    }
                                     @* Lenke, ikke knapp: endringen skjer i
                                        skjemaet ved siden av, og historikken
                                        skal sta synlig mens man retter.
@@ -115,6 +136,36 @@
                         behandlingen må registreres på nytt.
                     </p>
                 }
+                else if (Model.Forslag.Count > 0)
+                {
+                    @* Lenker, ikke skript: skjemaet fylles pa serveren, pa
+                       samme mate som rediger. Da virker det uten JavaScript,
+                       og intervallet til neste gang regnes ett sted. *@
+                    <div class="mb-3">
+                        <div class="form-label">Gitt før</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var f in Model.Forslag)
+                            {
+                                <a class="btn btn-outline-secondary btn-sm"
+                                   asp-action="Index"
+                                   asp-route-dyrId="@Model.DyrId"
+                                   asp-route-gjenta="@f.Id"
+                                   asp-fragment="skjema">@Behandlingsformat.MedPreparat(f.Type, f.Preparat)</a>
+                            }
+                        </div>
+                        <div class="form-text">
+                            Trykk på en for å fylle ut skjemaet slik det var sist.
+                        </div>
+                    </div>
+                }
+
+                @if (Model.FraForslag)
+                {
+                    <p class="alert alert-info py-2 small">
+                        Fylt ut slik det var sist, med dagens dato. Sjekk
+                        «neste gang» før du lagrer.
+                    </p>
+                }
 
                 <form method="post" asp-route-dyrId="@Model.DyrId"
                       asp-action="@(Model.RedigerId is null ? "Ny" : "Rediger")"
@@ -131,7 +182,16 @@
                     <div class="mb-2">
                         <label asp-for="Ny.Preparat" class="form-label"></label>
                         <input asp-for="Ny.Preparat" class="form-control"
-                               placeholder="For eksempel «Milbemax»" />
+                               placeholder="For eksempel «Milbemax»"
+                               list="preparatforslag" autocomplete="off" />
+                        @* En datalist foreslar uten a begrense - et nytt
+                           preparat skrives inn som for. *@
+                        <datalist id="preparatforslag">
+                            @foreach (var preparat in preparater)
+                            {
+                                <option value="@preparat"></option>
+                            }
+                        </datalist>
                         <span asp-validation-for="Ny.Preparat" class="text-danger small"></span>
                         <div class="form-text">
                             Velger du «Annet», skriver du her hva behandlingen var.

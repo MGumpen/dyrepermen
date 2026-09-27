@@ -5,11 +5,10 @@ namespace Dyrepermen.Application.Interfaces;
 public interface IUtskriftService
 {
     /// <summary>
-    /// Alt om alle aktive dyr i husstanden, i ett kall.
+    /// Det som er valgt, om de valgte dyrene, i ett kall.
     ///
-    /// Ingen utvalg og ingen parametre: utskriften tar med alle dyrene, hver
-    /// gang. Skal man vise permen til dyrepasseren, er det nettopp helheten
-    /// som er poenget.
+    /// Deler som ikke er valgt, hentes ikke - de koster ingen rundtur. Antall
+    /// sporringer vokser fortsatt ikke med antall dyr.
     /// </summary>
-    Task<Utskrift> Hent(CancellationToken ct);
+    Task<Utskrift> Hent(Utskriftsvalg valg, CancellationToken ct);
 }

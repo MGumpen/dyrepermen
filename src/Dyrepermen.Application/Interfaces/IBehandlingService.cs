@@ -25,4 +25,20 @@ public interface IBehandlingService
         int behandlingId, Behandlingsinnhold input, CancellationToken ct);
 
     Task<bool> Slett(int dyrId, int behandlingId, CancellationToken ct);
+
+    /// <summary>
+    /// Krysser av en paminnelse: registrerer en ny behandling av samme type
+    /// og preparat med dagens dato, og neste gang med samme intervall som
+    /// forrige. Den gamle raden blir staende urort - den er historikk, og
+    /// paminnelsen forsvinner fordi en nyere behandling na finnes.
+    /// Se ADR 0016.
+    /// </summary>
+    Task<GittResultat> Gitt(int dyrId, int behandlingId, CancellationToken ct);
+
+    /// <summary>
+    /// Behandlingene husstanden har gitt for, nyeste forst, en per
+    /// kombinasjon av type og preparat. Pa tvers av dyrene: har den ene
+    /// hunden fatt Milbemax, er det et godt forslag for den andre ogsa.
+    /// </summary>
+    Task<IReadOnlyList<Behandlingsforslag>> HentForslag(CancellationToken ct);
 }

@@ -171,14 +171,45 @@ public sealed class VeterinarController : Controller
 
     // --- Timer --------------------------------------------------------------
 
+    /// <summary>
+    /// <paramref name="kontrollFra"/> fyller skjemaet fra et besok med avtalt
+    /// kontroll: samme dyr, samme sted, kontrolldatoen. Lagres timen,
+    /// fjernes paminnelsen fra besoket den kom fra. Se ADR 0016.
+    /// </summary>
     [HttpGet("time/ny")]
     [KreverEier]
-    public async Task<IActionResult> NyTime(CancellationToken ct)
-        => View(Timeskjema, await ByggTime(new NyttVetbesokVm(), ct));
+    public async Task<IActionResult> NyTime(int? kontrollFra, CancellationToken ct)
+    {
+        var fra = kontrollFra is { } fraId
+            ? (await _veterinar.HentBesok(ct)).SingleOrDefault(b => b.Id == fraId)
+            : null;
 
+        // Er besoket borte, eller kontrollen allerede bestilt, blir skjemaet
+        // et vanlig tomt timeskjema - ikke en feilside.
+        var ny = fra is { NesteKontrollDato: { } kontroll }
+            ? new NyttVetbesokVm
+            {
+                KontrollForBesokId = fra.Id,
+                DyrId = fra.DyrId,
+                VeterinarId = fra.VeterinarId,
+                Klinikk = fra.Klinikk,
+                Dato = kontroll,
+                Arsak = Kontrollarsak(fra.Arsak)
+            }
+            : new NyttVetbesokVm();
+
+        return View(Timeskjema, await ByggTime(ny, ct));
+    }
+
+    /// <summary>
+    /// <paramref name="gjennomfort"/> apner timen for a registrere hva som
+    /// kom ut av besoket. Skjemaet er det samme - alt som ble lagt inn da
+    /// timen ble bestilt, star allerede der.
+    /// </summary>
     [HttpGet("time/{id:int}/rediger")]
     [KreverEier]
-    public async Task<IActionResult> RedigerTime(int id, CancellationToken ct)
+    public async Task<IActionResult> RedigerTime(
+        int id, bool gjennomfort, CancellationToken ct)
     {
         var rad = (await _veterinar.HentBesok(ct)).SingleOrDefault(b => b.Id == id);
 
@@ -201,7 +232,8 @@ public sealed class VeterinarController : Controller
             ForsikringKrevd = rad.ForsikringKrevd,
             RefundertKr = rad.RefundertKr,
             NesteKontrollDato = rad.NesteKontrollDato,
-            Notat = rad.Notat
+            Notat = rad.Notat,
+            Gjennomfort = gjennomfort
         }, ct));
     }
 
@@ -221,18 +253,25 @@ public sealed class VeterinarController : Controller
             ny.Arsak, ny.Diagnose, ny.KostnadKr, ny.ForsikringKrevd,
             ny.RefundertKr, ny.NesteKontrollDato, ny.Notat);
 
-        var ok = ny.Id is { } id
-            ? await _veterinar.OppdaterBesok(id, input, ct)
-            : await _veterinar.OpprettBesok(input, ct);
+        var ok = (ny.Id, ny.KontrollForBesokId) switch
+        {
+            ({ } id, _) => await _veterinar.OppdaterBesok(id, input, ct),
+            (null, { } fraId) => await _veterinar.BestillKontroll(fraId, input, ct),
+            _ => await _veterinar.OpprettBesok(input, ct)
+        };
 
         if (!ok)
         {
             return NotFound();
         }
 
-        TempData["Melding"] = ny.Id is null
-            ? "Timen er lagt inn."
-            : "Timen er oppdatert.";
+        TempData["Melding"] = ny switch
+        {
+            { Gjennomfort: true } => "Besøket er registrert.",
+            { Id: not null } => "Timen er oppdatert.",
+            { KontrollForBesokId: not null } => "Kontrolltimen er lagt inn.",
+            _ => "Timen er lagt inn."
+        };
 
         return RedirectToAction(nameof(Index));
     }
@@ -258,6 +297,22 @@ public sealed class VeterinarController : Controller
     private const string Skjema = "Skjema";
 
     private const string Timeskjema = "Timeskjema";
+
+    /// <summary>
+    /// "Kontroll etter sarstell". Bare forste bokstav gjores liten, sa et
+    /// navn inne i arsaken beholder sin. Kuttes til feltets lengde - ellers
+    /// ville skjemaet avvist sin egen utfylling.
+    /// </summary>
+    private static string Kontrollarsak(string arsak)
+    {
+        var tekst = arsak.Length > 0
+            ? $"Kontroll etter {char.ToLower(arsak[0])}{arsak[1..]}"
+            : "Kontroll";
+
+        return tekst.Length <= NyttVetbesokVm.ArsakMaks
+            ? tekst
+            : tekst[..NyttVetbesokVm.ArsakMaks];
+    }
 
     private async Task<VetbesokSkjemaVm> ByggTime(
         NyttVetbesokVm ny, CancellationToken ct)

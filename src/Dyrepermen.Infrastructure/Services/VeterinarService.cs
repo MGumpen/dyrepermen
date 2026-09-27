@@ -176,27 +176,55 @@ public sealed class VeterinarService : IVeterinarService
             return false;
         }
 
-        _db.Vetbesok.Add(new Vetbesok
-        {
-            DyrId = input.DyrId,
-            VeterinarId = input.VeterinarId,
-            Klinikk = input.Klinikk.TomTilNull(),
-            Dato = input.Dato,
-            Klokkeslett = input.Klokkeslett,
-            Arsak = input.Arsak.Trim(),
-            Diagnose = input.Diagnose.TomTilNull(),
-            KostnadKr = input.KostnadKr,
-            ForsikringKrevd = input.ForsikringKrevd,
-            // Uten krav gir refusjon ingen mening, og CHECK-vilkaret ville
-            // avvist raden. Nulles her framfor a kaste.
-            RefundertKr = input.ForsikringKrevd ? input.RefundertKr : null,
-            NesteKontrollDato = input.NesteKontrollDato,
-            Notat = input.Notat.TomTilNull()
-        });
+        _db.Vetbesok.Add(NyttBesok(input));
 
         await _db.SaveChangesAsync(ct);
         return true;
     }
+
+    public async Task<bool> BestillKontroll(
+        int fraBesokId, NyttVetbesok input, CancellationToken ct)
+    {
+        if (!await ErGyldig(input, ct))
+        {
+            return false;
+        }
+
+        // DyrId i tillegg til query-filteret: kontrollen for Luna skal ikke
+        // kunne fjerne paminnelsen til Milo, selv i samme husstand.
+        var fra = await _db.Vetbesok.SingleOrDefaultAsync(
+            x => x.Id == fraBesokId && x.DyrId == input.DyrId, ct);
+
+        if (fra is not null)
+        {
+            fra.NesteKontrollDato = null;
+        }
+
+        _db.Vetbesok.Add(NyttBesok(input));
+
+        // Ett kall: timen og fjerningen av paminnelsen lagres sammen eller
+        // ikke i det hele tatt.
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    private static Vetbesok NyttBesok(NyttVetbesok input) => new()
+    {
+        DyrId = input.DyrId,
+        VeterinarId = input.VeterinarId,
+        Klinikk = input.Klinikk.TomTilNull(),
+        Dato = input.Dato,
+        Klokkeslett = input.Klokkeslett,
+        Arsak = input.Arsak.Trim(),
+        Diagnose = input.Diagnose.TomTilNull(),
+        KostnadKr = input.KostnadKr,
+        ForsikringKrevd = input.ForsikringKrevd,
+        // Uten krav gir refusjon ingen mening, og CHECK-vilkaret ville
+        // avvist raden. Nulles her framfor a kaste.
+        RefundertKr = input.ForsikringKrevd ? input.RefundertKr : null,
+        NesteKontrollDato = input.NesteKontrollDato,
+        Notat = input.Notat.TomTilNull()
+    };
 
     public async Task<bool> OppdaterBesok(
         int besokId, NyttVetbesok input, CancellationToken ct)

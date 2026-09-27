@@ -61,10 +61,15 @@ Fire ting settes i `Program.cs` og gjelder alt. Leser du bare controlleren, ser 
 - **`HusstandMiddleware` kjører etter `UseAuthentication` og før alt som leser `IHusstandContext`.** Kjører den ikke, står `HusstandId` på 0, og hvert eneste query-filter gir tomt resultat. Symptomet er en tom app, ikke en feilmelding.
 - **Kulturen er fast `nb-NO` med `RequestCultureProviders.Clear()`.** Desimalskilletegnet er komma. Fjernes tømmingen, leser ASP.NET Core `Accept-Language`, og en engelsk nettleser sender punktum inn i et skjema som venter komma.
 
+### Frontend
+
+Razor-visninger med Bootstrap, htmx og jQuery Validation, lagt inn under `wwwroot/lib`. Det finnes ingen npm, bundler eller byggesteg for klientkoden. `wwwroot/js/norsk-validering.js` lar klientvalideringen godta desimalkomma og må lastes **etter** `jquery.validate.unobtrusive`. HTTP-testene kjører ikke JavaScript, så en feil der synes bare i nettleseren.
+
 `Husstandskontekst` er én scoped instans bak både `IHusstandContext` (query-filtrene) og `IGjeldendeBruker` (bruker, aktiv husstand og rolle), og fylles av `HusstandMiddleware`. Rollene er `Husstandsrolle.Beboer` og `Gjest` — det finnes ingen rolle som heter «Eier». `[KreverEier]` sjekker `KanEndre`, som er sann for `Beboer`. Standardrollen er `Gjest`, så en middleware som ikke kjører gir færrest mulige rettigheter.
 
 ## Datalag
 
+- `UseSnakeCaseNamingConvention` gir `snake_case` på tabeller og kolonner. Identity-tabellene navngis for hånd i `IdentityTabellnavn`, fordi konvensjonen ikke rører dem. Entitetskonfigurasjon ligger i `Infrastructure/Persistence/Configurations`, én fil per entitet.
 - Alle husstandsbundne entiteter implementerer `IHusstandsbundet` **og** får query-filter i `DyrepermenDbContext`. Filterprøven fanger glemte filtre, men bare hvis markørgrensesnittet er satt.
 - `IHusstandContext` leser fra database, ikke fra claim. Se plan 7.2 og 12.3.1.
 - Enkle datatyper: `INT`, `VARCHAR`, `CHAR`. Enums lagres som `char(1)` med eksplisitt `HasConversion`.

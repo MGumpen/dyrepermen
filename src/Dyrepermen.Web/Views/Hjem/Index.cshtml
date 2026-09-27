@@ -95,8 +95,8 @@
                 <div class="tomt">
                     <p class="mb-1">Ingenting forfaller de neste 14 dagene.</p>
                     <p class="mb-0" style="font-size:.85em">
-                        Her dukker behandlinger, veterinærtimer og fornyelser
-                        opp når du fyller inn en dato.
+                        Her dukker behandlinger, medisindoser, veterinærtimer
+                        og fornyelser opp når du fyller inn en dato.
                     </p>
                 </div>
             }
@@ -113,12 +113,70 @@
                                 <span class="tittel">@p.DyreNavn</span>
                                 <span class="under d-block">@p.Tekst</span>
                             </span>
-                            <span class="hoyre">
-                                @if (forfalt)
+                            <span class="hoyre d-flex flex-column gap-1 align-items-end">
+                                <span>
+                                    @if (forfalt)
+                                    {
+                                        <span class="merkelapp forfalt">forfalt</span>
+                                    }
+                                    <span class="d-block">@($"{p.Dato:d. MMM}")</span>
+                                </span>
+                                @* Raden folges opp der den star, uten a lete den
+                                   fram pa dyrets side. Se ADR 0016.
+
+                                   Gi dose er gjesteapent, som pa medisinsiden -
+                                   passer du hunden, er det nettopp det du skal
+                                   gjore. Resten krever beboer, og skjules for
+                                   gjester. Serveren sperrer uansett. *@
+                                @switch (p.Kilde)
                                 {
-                                    <span class="merkelapp forfalt">forfalt</span>
+                                    case Kilde.Behandling when Meg.KanEndre:
+                                        <form method="post" asp-controller="Behandling"
+                                              asp-action="Gitt"
+                                              asp-route-dyrId="@p.DyrId"
+                                              asp-route-behandlingId="@p.KildeId"
+                                              asp-route-fraOversikt="true">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-primary btn-sm"
+                                                    aria-label="Registrer @p.Tekst for @p.DyreNavn som gitt i dag">
+                                                Gitt
+                                            </button>
+                                        </form>
+                                        break;
+
+                                    case Kilde.Medisin:
+                                        <form method="post" asp-controller="Medisin"
+                                              asp-action="LoggDose"
+                                              asp-route-dyrId="@p.DyrId"
+                                              asp-route-medisinId="@p.KildeId"
+                                              asp-route-fraOversikt="true">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-primary btn-sm"
+                                                    aria-label="Gi dose til @p.DyreNavn">
+                                                Gi dose
+                                            </button>
+                                        </form>
+                                        break;
+
+                                    @* En time i framtiden er ikke gjennomfort
+                                       enna. Knappen kommer pa dagen. *@
+                                    case Kilde.Vetbesok when Meg.KanEndre && p.Dato <= idag:
+                                        <a class="btn btn-primary btn-sm"
+                                           asp-controller="Veterinar" asp-action="RedigerTime"
+                                           asp-route-id="@p.KildeId"
+                                           asp-route-gjennomfort="true">
+                                            Gjennomført
+                                        </a>
+                                        break;
+
+                                    case Kilde.Vetkontroll when Meg.KanEndre:
+                                        <a class="btn btn-outline-primary btn-sm"
+                                           asp-controller="Veterinar" asp-action="NyTime"
+                                           asp-route-kontrollFra="@p.KildeId">
+                                            Bestill time
+                                        </a>
+                                        break;
                                 }
-                                <span class="d-block">@($"{p.Dato:d. MMM}")</span>
                             </span>
                         </li>
                     }

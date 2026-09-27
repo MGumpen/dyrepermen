@@ -52,10 +52,20 @@ public sealed class MedisinController : Controller
         return RedirectToAction(nameof(Index), new { dyrId });
     }
 
+    /// <summary>
+    /// <paramref name="fraOversikt"/> sender brukeren tilbake til dashbordet
+    /// etter dosen, der knappen sto i "Forfaller snart". Et flagg og ikke en
+    /// fri returadresse: det finnes bare to steder a lande, og en fri adresse
+    /// ville matte valideres mot apen omdirigering.
+    ///
+    /// Advarselen om for tidlig dose lander alltid pa medisinsiden. Det er
+    /// der knappen for a gi den likevel finnes.
+    /// </summary>
     [HttpPost("{medisinId:int}/dose")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> LoggDose(
-        int dyrId, int medisinId, bool bekreft, CancellationToken ct)
+        int dyrId, int medisinId, bool bekreft, bool fraOversikt,
+        CancellationToken ct)
     {
         var resultat = await _medisin.LoggDose(
             dyrId, medisinId, User.BrukerId(), bekreft, ct);
@@ -75,7 +85,10 @@ public sealed class MedisinController : Controller
         }
 
         TempData["Melding"] = "Dosen er logget.";
-        return RedirectToAction(nameof(Index), new { dyrId });
+
+        return fraOversikt
+            ? RedirectToAction(nameof(HjemController.Index), "Hjem")
+            : RedirectToAction(nameof(Index), new { dyrId });
     }
 
     [HttpPost("{medisinId:int}/avslutt")]

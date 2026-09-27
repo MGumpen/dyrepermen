@@ -1,0 +1,95 @@
+@model UtskriftsvalgVm
+@{
+    ViewData["Tittel"] = "Lagre som PDF";
+    var alleDyr = Model.Dyr.Count > 0 && Model.Dyr.All(d => d.Selected);
+}
+
+<div class="sidehode">
+    <div>
+        <h1>Lagre som PDF</h1>
+        <div class="undertittel">
+            Velg hvilke dyr og hva som skal med. Hvert dyr starter på en ny side.
+        </div>
+    </div>
+</div>
+
+@* GET, ikke POST: utvalget er en lesing, og havner i adressen til
+   utskriften. Da kan den lastes pa nytt og bokmerkes, og "Endre utvalg"
+   kommer tilbake hit med de samme avkryssingene. *@
+<form method="get" asp-action="Utskrift">
+    <input type="hidden" name="valgt" value="true" />
+
+    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+
+    <div class="dp-kolonner">
+        <div class="kolonne">
+            <section class="kort">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+                    <h2>Dyr</h2>
+                </div>
+                <div class="kort-kropp">
+                    @if (Model.Dyr.Count == 0)
+                    {
+                        <p class="form-text mt-0 mb-0">
+                            Ingen dyr registrert. Felles notater kan fortsatt tas med.
+                        </p>
+                    }
+                    else
+                    {
+                        @* Snarvei for a krysse av eller fjerne alle. Uten
+                           JavaScript virker boksene hver for seg, og ingenting
+                           annet mangler. *@
+                        <div class="form-check mb-2 pb-2 border-bottom">
+                            <input class="form-check-input" type="checkbox" id="alle-dyr"
+                                   checked="@alleDyr"
+                                   onchange="document.querySelectorAll('input[name=dyr]').forEach(function (c) { c.checked = this.checked; }, this);" />
+                            <label class="form-check-label fw-semibold" for="alle-dyr">
+                                Alle dyrene
+                            </label>
+                        </div>
+
+                        @foreach (var d in Model.Dyr)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="dyr" value="@d.Value" id="dyr-@d.Value"
+                                       checked="@d.Selected"
+                                       onchange="document.getElementById('alle-dyr').checked = Array.prototype.every.call(document.querySelectorAll('input[name=dyr]'), function (c) { return c.checked; });" />
+                                <label class="form-check-label" for="dyr-@d.Value">@d.Text</label>
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+        </div>
+
+        <div class="kolonne">
+            <section class="kort">
+                <div class="kort-hode">
+                    <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-informasjon" /></svg>
+                    <h2>Hva skal med</h2>
+                </div>
+                <div class="kort-kropp">
+                    @foreach (var del in Model.Deler)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   name="del" value="@del.Value" id="del-@del.Value"
+                                   checked="@del.Selected" />
+                            <label class="form-check-label" for="del-@del.Value">@del.Text</label>
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mt-3">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Avbryt</a>
+        <button type="submit" class="btn btn-primary btn-sm">
+            <svg class="ikon" aria-hidden="true"><use href="#i-informasjon" /></svg>
+            Lag PDF
+        </button>
+    </div>
+</form>

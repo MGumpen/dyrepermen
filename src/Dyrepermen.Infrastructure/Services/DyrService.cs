@@ -65,8 +65,11 @@ public sealed class DyrService : IDyrService
                     .FirstOrDefault(),
 
                 AntallBehandlinger = d.Behandlinger.Count(),
+                // Samme regel som dashbordet: en paminnelse som er fulgt
+                // opp av en nyere behandling, er ikke lenger "neste".
                 Neste = d.Behandlinger
-                    .Where(b => b.NesteDato != null)
+                    .AsQueryable()
+                    .Where(Behandlingsfilter.ApenPaminnelse)
                     .OrderBy(b => b.NesteDato)
                     .Select(b => new { b.Type, b.Preparat, Dato = b.NesteDato!.Value })
                     .FirstOrDefault(),

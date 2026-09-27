@@ -3,15 +3,36 @@
 @{
     var ny = Model.Ny;
     var erNy = ny.Id is null;
-    ViewData["Tittel"] = erNy ? "Ny time" : "Rediger time";
+    var erKontroll = erNy && ny.KontrollForBesokId is not null;
+    var tittel = (erNy, erKontroll, ny.Gjennomfort) switch
+    {
+        (_, true, _) => "Ny kontrolltime",
+        (false, _, true) => "Registrer besøket",
+        (true, _, _) => "Ny time",
+        _ => "Rediger time"
+    };
+    ViewData["Tittel"] = tittel;
 }
 
 <div class="sidehode">
     <div>
-        <h1>@(erNy ? "Ny time" : "Rediger time")</h1>
+        <h1>@tittel</h1>
         <div class="undertittel">
-            En time i framtiden er «kommende». Har datoen passert, flyttes den
-            til tidligere besøk av seg selv.
+            @if (erKontroll)
+            {
+                @:Fylt ut fra besøket kontrollen ble avtalt på. Påminnelsen
+                @:forsvinner fra oversikten når timen er lagt inn.
+            }
+            else if (!erNy && ny.Gjennomfort)
+            {
+                @:Fyll inn diagnose, pris og eventuell ny kontroll. Resten står
+                @:som da timen ble lagt inn.
+            }
+            else
+            {
+                @:En time i framtiden er «kommende». Har datoen passert, flyttes den
+                @:til tidligere besøk av seg selv.
+            }
         </div>
     </div>
 </div>
@@ -21,6 +42,8 @@
     <form method="post" asp-action="LagreTime">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Ny.Id" />
+        <input type="hidden" asp-for="Ny.KontrollForBesokId" />
+        <input type="hidden" asp-for="Ny.Gjennomfort" />
 
         <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
 
@@ -71,7 +94,10 @@
 
             <div class="col-12 col-md-6">
                 <label asp-for="Ny.Diagnose" class="form-label"></label>
-                <input asp-for="Ny.Diagnose" class="form-control" />
+                @* Nar besoket registreres, er diagnosen det forste som
+                   skal fylles inn. Markoren settes der. *@
+                <input asp-for="Ny.Diagnose" class="form-control"
+                       autofocus="@(ny.Gjennomfort ? "autofocus" : null)" />
             </div>
 
             <div class="col-12 col-md-6">
