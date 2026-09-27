@@ -218,6 +218,26 @@ public sealed partial class ProfilbildeTester : IAsyncLifetime
         Assert.Equal("image/jpeg", fil.Content.Headers.ContentType?.MediaType);
     }
 
+    /// <summary>
+    /// Selve beskjaeringen skjer i nettleseren, og HTTP-testene kjorer ikke
+    /// skript. Det testen kan fange, er at feltet, flaten og skriptet henger
+    /// sammen: uten data-beskjaer, eller med feil id pa redigereren, faller
+    /// siden stille tilbake til a laste opp originalen.
+    /// </summary>
+    [Fact]
+    public async Task Redigeringssiden_har_beskjaering_av_bildet()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient);
+
+        var side = await (await klient.Hent($"/dyr/{dyrId}/rediger")).Content.ReadAsStringAsync();
+
+        Assert.Contains("data-beskjaer=\"800\"", side);
+        Assert.Contains("data-beskjaer-redigerer=\"beskjaer\"", side);
+        Assert.Contains("id=\"beskjaer\"", side);
+        Assert.Contains("/js/beskjaering.js", side);
+    }
+
     [Fact]
     public async Task Farge_og_kjennetegn_lagres_og_vises()
     {

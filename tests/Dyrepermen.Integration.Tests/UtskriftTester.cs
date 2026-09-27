@@ -313,6 +313,39 @@ public sealed class UtskriftTester : IAsyncLifetime
         Assert.DoesNotContain("1. mai 2026", html);
     }
 
+    /// <summary>
+    /// Knappen pa hvert dyr pa informasjonssiden: bare det dyret, alle delene
+    /// om det, uten fellesnotatene - og uten a ga via valgsiden.
+    /// </summary>
+    [Fact]
+    public async Task Skriv_ut_informasjon_pa_ett_dyr_tar_bare_med_det_dyret()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var luna = await Testoppsett.NyttDyr(klient, "Luna");
+        await Testoppsett.NyttDyr(klient, "Tiger");
+
+        await klient.Post("/informasjon", new Dictionary<string, string>
+        {
+            ["Ny.Tittel"] = "Portkode",
+            ["Ny.Tekst"] = "1234"
+        });
+
+        var side = await (await klient.Hent("/informasjon")).Content.ReadAsStringAsync();
+        var lenke = System.Text.RegularExpressions.Regex.Match(
+            side, $"""href="(/informasjon/utskrift\?valgt=true&amp;dyr={luna}[^"]*)""");
+        Assert.True(lenke.Success, "Fant ikke «Skriv ut informasjon» pa Luna.");
+
+        var utskrift = await (await klient.Hent(WebUtility.HtmlDecode(lenke.Groups[1].Value)))
+            .Content.ReadAsStringAsync();
+
+        Assert.Contains("Luna", utskrift);
+        Assert.DoesNotContain("Tiger", utskrift);
+        Assert.Contains("<h3>Om dyret</h3>", utskrift);
+        Assert.Contains("<h3>Vekt</h3>", utskrift);
+        // Fellesnotatene horer ikke til dyret.
+        Assert.DoesNotContain("Portkode", utskrift);
+    }
+
     private static async Task<string> Side(Skjemaklient klient, string sporring)
     {
         var svar = await klient.Hent($"/informasjon/utskrift?{sporring}");

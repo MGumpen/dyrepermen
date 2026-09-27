@@ -251,7 +251,7 @@
                                 @* Samme dialog som pa dashbordet og i historikken. *@
                                 @if (Meg.KanEndre && b.KanGis)
                                 {
-                                    <a class="btn btn-outline-primary btn-sm"
+                                    <a class="btn btn-aksent-omriss btn-sm"
                                        asp-controller="Behandling" asp-action="Gittdialog"
                                        asp-route-dyrId="@d.Id" asp-route-behandlingId="@b.Id"
                                        hx-get="@Url.Action("Gittdialog", "Behandling", new { dyrId = d.Id, behandlingId = b.Id })"

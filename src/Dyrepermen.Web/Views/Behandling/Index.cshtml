@@ -26,98 +26,9 @@
 <partial name="_Dyrhode" model='new DyrhodeVm("Behandlinger", Model.DyrId, Model.DyrNavn)' />
 
 <div class="dp-kolonner">
-    <div class="kolonne">
-        <section class="kort">
-            <div class="kort-hode">
-                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
-                <h2>Historikk</h2>
-                @if (Model.Historikk.Count > 0)
-                {
-                    <span class="antall">@Model.Historikk.Count</span>
-                }
-            </div>
-
-            @if (Model.Historikk.Count == 0)
-            {
-                <div class="tomt">Ingen behandlinger registrert ennå.</div>
-            }
-            else
-            {
-                <ul class="rad-liste">
-                    @foreach (var rad in Model.Historikk)
-                    {
-                        var redigeres = Model.RedigerId == rad.Id;
-
-                        <li class="@(redigeres ? "redigeres" : null)"
-                            aria-current="@(redigeres ? "true" : null)">
-                            <span class="flex-grow-1 min-w-0">
-                                <span class="tittel">
-                                    @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat)
-                                </span>
-                                <span class="under d-block">
-                                    @($"{rad.Dato:d. MMMM yyyy}")
-                                    @if (rad.Notat is not null)
-                                    {
-                                        <span class="d-block">@rad.Notat</span>
-                                    }
-                                </span>
-                            </span>
-                            <span class="hoyre">
-                                @if (rad.NesteDato is { } neste)
-                                {
-                                    @if (neste < idag)
-                                    {
-                                        <span class="merkelapp forfalt">forfalt</span>
-                                    }
-                                    <span class="d-block">neste @($"{neste:d. MMM yyyy}")</span>
-                                }
-                                <span class="radhandlinger">
-                                    @* Kun pa raden som fortsatt venter, og som
-                                       ble gitt for i dag. Apner dialogen der
-                                       neste gang kan endres for noe lagres.
-                                       Lenke, ikke knapp: href-en apner skjemaet
-                                       som egen side hvis skriptet ikke lastes. *@
-                                    @if (rad.KanKrysseAv(idag))
-                                    {
-                                        <a class="btn btn-primary btn-sm"
-                                           asp-action="Gittdialog"
-                                           asp-route-dyrId="@Model.DyrId"
-                                           asp-route-behandlingId="@rad.Id"
-                                           hx-get="@Url.Action("Gittdialog", new { dyrId = Model.DyrId, behandlingId = rad.Id })"
-                                           hx-target="#dpdialog-innhold" hx-swap="innerHTML">
-                                            Gitt i dag
-                                        </a>
-                                    }
-                                    @* Lenke, ikke knapp: endringen skjer i
-                                       skjemaet ved siden av, og historikken
-                                       skal sta synlig mens man retter.
-                                       Fragmentet tar deg til skjemaet pa en
-                                       skjerm der kolonnene ligger under
-                                       hverandre. *@
-                                    @if (!redigeres)
-                                    {
-                                        <a class="btn-lenke"
-                                           asp-action="Index"
-                                           asp-route-dyrId="@Model.DyrId"
-                                           asp-route-rediger="@rad.Id"
-                                           asp-fragment="skjema">Rediger</a>
-                                    }
-                                    <form method="post" asp-action="Slett"
-                                          asp-route-dyrId="@Model.DyrId"
-                                          asp-route-behandlingId="@rad.Id"
-                                          onsubmit="return confirm('Slette denne behandlingen?');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-lenke-fare">Slett</button>
-                                    </form>
-                                </span>
-                            </span>
-                        </li>
-                    }
-                </ul>
-            }
-        </section>
-    </div>
-
+    @* Registreringen forst, historikken etter. Pa mobil ligger kolonnene
+       under hverandre, og det man kommer hit for a gjore, skal ikke ligge
+       under en lang liste. Samme rekkefolge som vektsiden. *@
     <div class="kolonne">
         <section class="kort" id="skjema">
             <div class="kort-hode">
@@ -237,6 +148,99 @@
             </div>
         </section>
     </div>
+
+    <div class="kolonne">
+        <section class="kort">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
+                <h2>Historikk</h2>
+                @if (Model.Historikk.Count > 0)
+                {
+                    <span class="antall">@Model.Historikk.Count</span>
+                }
+            </div>
+
+            @if (Model.Historikk.Count == 0)
+            {
+                <div class="tomt">Ingen behandlinger registrert ennå.</div>
+            }
+            else
+            {
+                <ul class="rad-liste">
+                    @foreach (var rad in Model.Historikk)
+                    {
+                        var redigeres = Model.RedigerId == rad.Id;
+
+                        <li class="@(redigeres ? "redigeres" : null)"
+                            aria-current="@(redigeres ? "true" : null)">
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="tittel">
+                                    @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat)
+                                </span>
+                                <span class="under d-block">
+                                    @($"{rad.Dato:d. MMMM yyyy}")
+                                    @if (rad.Notat is not null)
+                                    {
+                                        <span class="d-block">@rad.Notat</span>
+                                    }
+                                </span>
+                            </span>
+                            <span class="hoyre">
+                                @if (rad.NesteDato is { } neste)
+                                {
+                                    @if (neste < idag)
+                                    {
+                                        <span class="merkelapp forfalt">forfalt</span>
+                                    }
+                                    <span class="d-block">neste @($"{neste:d. MMM yyyy}")</span>
+                                }
+                                <span class="radhandlinger">
+                                    @* Kun pa raden som fortsatt venter, og som
+                                       ble gitt for i dag. Apner dialogen der
+                                       neste gang kan endres for noe lagres.
+                                       Lenke, ikke knapp: href-en apner skjemaet
+                                       som egen side hvis skriptet ikke lastes. *@
+                                    @if (rad.KanKrysseAv(idag))
+                                    {
+                                        <a class="btn btn-primary btn-sm"
+                                           asp-action="Gittdialog"
+                                           asp-route-dyrId="@Model.DyrId"
+                                           asp-route-behandlingId="@rad.Id"
+                                           hx-get="@Url.Action("Gittdialog", new { dyrId = Model.DyrId, behandlingId = rad.Id })"
+                                           hx-target="#dpdialog-innhold" hx-swap="innerHTML">
+                                            Gitt i dag
+                                        </a>
+                                    }
+                                    @* Lenke, ikke knapp: endringen skjer i
+                                       skjemaet ved siden av, og historikken
+                                       skal sta synlig mens man retter.
+                                       Fragmentet tar deg til skjemaet pa en
+                                       skjerm der kolonnene ligger under
+                                       hverandre. *@
+                                    @if (!redigeres)
+                                    {
+                                        <a class="btn-lenke"
+                                           asp-action="Index"
+                                           asp-route-dyrId="@Model.DyrId"
+                                           asp-route-rediger="@rad.Id"
+                                           asp-fragment="skjema">Rediger</a>
+                                    }
+                                    <form method="post" asp-action="Slett"
+                                          asp-route-dyrId="@Model.DyrId"
+                                          asp-route-behandlingId="@rad.Id"
+                                          onsubmit="return confirm('Slette denne behandlingen?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-lenke-fare">Slett</button>
+                                    </form>
+                                </span>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
 </div>
 
 @section Skript {

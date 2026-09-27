@@ -14,6 +14,13 @@ public static class Utskriftsformat
             .Where(d => d is not (Utskriftsdel.Ingen or Utskriftsdel.Alle))
             .ToList();
 
+    /// <summary>
+    /// Alt som handler om ett dyr - det "Skriv ut informasjon" pa dyrets kort
+    /// tar med. Fellesnotatene er utelatt: de horer ikke til dyret.
+    /// </summary>
+    public static IReadOnlyList<Utskriftsdel> DelerForEttDyr { get; } =
+        Deler.Where(d => d != Utskriftsdel.FellesNotater).ToList();
+
     public static string Navn(Utskriftsdel del) => del switch
     {
         Utskriftsdel.OmDyret => "Om dyret",

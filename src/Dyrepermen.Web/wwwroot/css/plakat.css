@@ -10,10 +10,14 @@
     margin: 0;
 }
 
+/* stretch, ikke center: med center kan ikke bildets width: 100% regnes ut,
+   og bildet fikk sin naturlige bredde - begrenset bare av max-width. Pa en
+   smal telefon ble siden da bredere enn skjermen. Bildet og faktalisten
+   sentreres hver for seg under. */
 .savnet {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     text-align: center;
 }
 
@@ -34,7 +38,7 @@
     max-width: 22rem;
     height: auto;
     aspect-ratio: 1;
-    margin-bottom: 1rem;
+    margin: 0 auto 1rem;
     border-radius: .5rem;
     font-size: 6rem;
 }
@@ -56,7 +60,7 @@
     grid-template-columns: max-content 1fr;
     gap: .35rem 1rem;
     max-width: 32rem;
-    margin: 0 0 1.5rem;
+    margin: 0 auto 1.5rem;
     text-align: left;
     font-size: 1.1rem;
 }
@@ -111,7 +115,10 @@
         print-color-adjust: exact;
     }
 
+    /* Pa arket bestemmer hoyden bredden (kvadrat), sa bildet skal ikke
+       strekkes i bredden - det ville gjort det til et avlangt utsnitt. */
     .profilbilde.plakat {
+        align-self: center;
         flex: 1 1 0;
         min-height: 60mm;
         max-height: 150mm;
@@ -134,6 +141,7 @@
     }
 
     .savnet-fakta {
+        align-self: center;
         max-width: none;
         margin: 0 0 6mm;
         gap: 2mm 6mm;

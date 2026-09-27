@@ -25,7 +25,25 @@
                     @Html.AntiForgeryToken()
                     <input class="form-control form-control-sm mb-2" type="file" name="bilde"
                            accept="image/*" aria-label="Velg bilde av @Model.Navn"
-                           data-skaler-bilder="1200" required />
+                           data-beskjaer="800" data-beskjaer-redigerer="beskjaer" required />
+
+                    @* Vises nar et bilde er valgt. Sirkelen er utsnittet slik
+                       det blir seende ut pa oversikten; det som lastes opp, er
+                       kvadratet rundt den. Skjult uten skript - da lastes
+                       originalen opp som den er. *@
+                    <div id="beskjaer" class="beskjaer mb-2" hidden>
+                        <div class="beskjaer-flate">
+                            <canvas tabindex="0"
+                                    aria-label="Utsnitt av bildet. Dra for å flytte. Piltastene flytter, pluss og minus zoomer."></canvas>
+                            <span class="beskjaer-sirkel" aria-hidden="true"></span>
+                        </div>
+                        <label class="form-label small mb-0 mt-2" for="beskjaer-zoom">Zoom</label>
+                        <input type="range" class="form-range" id="beskjaer-zoom"
+                               min="1" max="4" step="0.01" value="1" />
+                        <div class="form-text mt-0">
+                            Dra bildet og zoom til @Model.Navn fyller sirkelen.
+                        </div>
+                    </div>
                     <button type="submit" class="btn btn-primary btn-sm">
                         @(Model.ProfilbildeId is null ? "Last opp bilde" : "Bytt bilde")
                     </button>
@@ -114,5 +132,5 @@
 
 @section Skript {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/bildeskalering.js" asp-append-version="true"></script>
+    <script src="~/js/beskjaering.js" asp-append-version="true"></script>
 }

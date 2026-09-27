@@ -12,6 +12,85 @@
 <partial name="_Dyrhode" model='new DyrhodeVm("Medisin", Model.DyrId, Model.DyrNavn)' />
 
 <div class="dp-kolonner">
+    @* Registreringen forst, historikken etter. Pa mobil ligger kolonnene
+       under hverandre, og det man kommer hit for a gjore, skal ikke ligge
+       under en lang liste. Samme rekkefolge som vektsiden. *@
+    <div class="kolonne">
+        @* id-en er malet for "Registrer medisin" pa dyrets side. Pa smal
+           skjerm ligger skjemaet under listen, og lenken skal lande her. *@
+        <section class="kort" id="skjema">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true">
+                    <use href="@(Model.RedigerId is null ? "#i-pluss" : "#i-medisin")" />
+                </svg>
+                <h2>@(Model.RedigerId is null ? "Ny medisin" : "Endre medisin")</h2>
+            </div>
+            <div class="kort-kropp">
+                @if (Model.RedigerId is not null)
+                {
+                    <p class="form-text mt-0">
+                        Endringen gjelder fra nå av. Doseloggen står som den er.
+                    </p>
+                }
+
+                <form method="post" asp-route-dyrId="@Model.DyrId"
+                      asp-action="@(Model.RedigerId is null ? "Ny" : "Rediger")"
+                      asp-route-medisinId="@Model.RedigerId">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Navn" class="form-label"></label>
+                        <input asp-for="Ny.Navn" class="form-control" />
+                        <span asp-validation-for="Ny.Navn" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Dose" class="form-label"></label>
+                        <input asp-for="Ny.Dose" class="form-control"
+                               placeholder="1/2 tablett" />
+                        <span asp-validation-for="Ny.Dose" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.IntervallTimer" class="form-label"></label>
+                        <input asp-for="Ny.IntervallTimer" class="form-control"
+                               inputmode="numeric" placeholder="For eksempel «12»" />
+                        <span asp-validation-for="Ny.IntervallTimer" class="text-danger small"></span>
+                        <div class="form-text">Tomt eller 0 betyr ved behov.</div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6 mb-3">
+                            <label asp-for="Ny.StartDato" class="form-label"></label>
+                            <input asp-for="Ny.StartDato" class="form-control" />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label asp-for="Ny.SluttDato" class="form-label"></label>
+                            <input asp-for="Ny.SluttDato" class="form-control" />
+                        </div>
+                    </div>
+
+                    <span asp-validation-for="Ny.SluttDato" class="text-danger small d-block mb-2"></span>
+
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            @(Model.RedigerId is null ? "Lagre" : "Lagre endringer")
+                        </button>
+                        @if (Model.RedigerId is not null)
+                        {
+                            <a class="btn btn-outline-secondary btn-sm"
+                               asp-action="Index" asp-route-dyrId="@Model.DyrId">
+                                Avbryt
+                            </a>
+                        }
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+
     <div class="kolonne">
         <section class="kort">
             <div class="kort-hode">
@@ -119,7 +198,7 @@
                                        - en feil dato skal kunne rettes. *@
                                     @if (!redigeres)
                                     {
-                                        <a class="btn btn-link btn-sm p-0"
+                                        <a class="btn-lenke"
                                            asp-action="Index"
                                            asp-route-dyrId="@Model.DyrId"
                                            asp-route-rediger="@m.Id"
@@ -148,81 +227,6 @@
         </section>
     </div>
 
-    <div class="kolonne">
-        @* id-en er malet for "Registrer medisin" pa dyrets side. Pa smal
-           skjerm ligger skjemaet under listen, og lenken skal lande her. *@
-        <section class="kort" id="skjema">
-            <div class="kort-hode">
-                <svg class="ikon ikon-lg" aria-hidden="true">
-                    <use href="@(Model.RedigerId is null ? "#i-pluss" : "#i-medisin")" />
-                </svg>
-                <h2>@(Model.RedigerId is null ? "Ny medisin" : "Endre medisin")</h2>
-            </div>
-            <div class="kort-kropp">
-                @if (Model.RedigerId is not null)
-                {
-                    <p class="form-text mt-0">
-                        Endringen gjelder fra nå av. Doseloggen står som den er.
-                    </p>
-                }
-
-                <form method="post" asp-route-dyrId="@Model.DyrId"
-                      asp-action="@(Model.RedigerId is null ? "Ny" : "Rediger")"
-                      asp-route-medisinId="@Model.RedigerId">
-                    @Html.AntiForgeryToken()
-
-                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
-
-                    <div class="mb-2">
-                        <label asp-for="Ny.Navn" class="form-label"></label>
-                        <input asp-for="Ny.Navn" class="form-control" />
-                        <span asp-validation-for="Ny.Navn" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-2">
-                        <label asp-for="Ny.Dose" class="form-label"></label>
-                        <input asp-for="Ny.Dose" class="form-control"
-                               placeholder="1/2 tablett" />
-                        <span asp-validation-for="Ny.Dose" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-2">
-                        <label asp-for="Ny.IntervallTimer" class="form-label"></label>
-                        <input asp-for="Ny.IntervallTimer" class="form-control"
-                               inputmode="numeric" placeholder="For eksempel «12»" />
-                        <span asp-validation-for="Ny.IntervallTimer" class="text-danger small"></span>
-                        <div class="form-text">Tomt eller 0 betyr ved behov.</div>
-                    </div>
-
-                    <div class="row g-2">
-                        <div class="col-6 mb-3">
-                            <label asp-for="Ny.StartDato" class="form-label"></label>
-                            <input asp-for="Ny.StartDato" class="form-control" />
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label asp-for="Ny.SluttDato" class="form-label"></label>
-                            <input asp-for="Ny.SluttDato" class="form-control" />
-                        </div>
-                    </div>
-
-                    <span asp-validation-for="Ny.SluttDato" class="text-danger small d-block mb-2"></span>
-
-                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            @(Model.RedigerId is null ? "Lagre" : "Lagre endringer")
-                        </button>
-                        @if (Model.RedigerId is not null)
-                        {
-                            <a class="btn btn-outline-secondary btn-sm"
-                               asp-action="Index" asp-route-dyrId="@Model.DyrId">
-                                Avbryt
-                            </a>
-                        }
-                    </div>
-                </form>
-            </div>
-        </section>
-    </div>
 </div>
 
 @section Skript {
