@@ -145,8 +145,212 @@ public sealed class UtskriftTester : IAsyncLifetime
         var html = await (await klient.Hent("/informasjon"))
             .Content.ReadAsStringAsync();
 
-        Assert.Contains("/informasjon/utskrift", html);
-        Assert.Contains("Lagre informasjon som PDF", html);
+        // Knappen gar til valgsiden, ikke rett til utskriften.
+        Assert.Contains("/informasjon/utskrift/velg", html);
+        Assert.Contains("Lagre som PDF", html);
+    }
+
+    // --- Utvalg ----------------------------------------------------------
+
+    [Fact]
+    public async Task Valgsiden_har_alle_dyr_og_alle_deler_krysset_av()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var luna = await Testoppsett.NyttDyr(klient, "Luna");
+        var tiger = await Testoppsett.NyttDyr(klient, "Tiger");
+
+        var svar = await klient.Hent("/informasjon/utskrift/velg");
+        Assert.Equal(HttpStatusCode.OK, svar.StatusCode);
+        var html = await svar.Content.ReadAsStringAsync();
+
+        Assert.Matches($"""name="dyr" value="{luna}"[^>]*checked""", html);
+        Assert.Matches($"""name="dyr" value="{tiger}"[^>]*checked""", html);
+
+        foreach (var del in new[]
+        {
+            "OmDyret", "Forplan", "Vekt", "Behandlinger", "Medisiner",
+            "Forsikring", "Notater", "FellesNotater"
+        })
+        {
+            Assert.Matches($"""name="del" value="{del}"[^>]*checked""", html);
+        }
+
+        Assert.Contains("Lag PDF", html);
+    }
+
+    [Fact]
+    public async Task Bare_de_valgte_dyrene_blir_med()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var luna = await Testoppsett.NyttDyr(klient, "Luna");
+        await Testoppsett.NyttDyr(klient, "Tiger");
+
+        var html = await Side(klient, $"valgt=true&dyr={luna}&del=OmDyret");
+
+        Assert.Contains("Luna", html);
+        Assert.DoesNotContain("Tiger", html);
+        Assert.Equal(1, Antall(html, "utskrift-dyr"));
+    }
+
+    [Fact]
+    public async Task Bare_de_valgte_delene_blir_med()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient, "Luna");
+
+        await klient.Post($"/dyr/{dyrId}/vekt", new Dictionary<string, string>
+        {
+            ["Kilo"] = "12,5",
+            ["Dato"] = DateOnly.FromDateTime(DateTime.Now).ToString("yyyy-MM-dd")
+        });
+        await klient.Post($"/dyr/{dyrId}/behandling", new Dictionary<string, string>
+        {
+            ["Type"] = "Ormekur",
+            ["Preparat"] = "Milbemax",
+            ["Dato"] = "2026-08-01"
+        });
+
+        var html = await Side(klient, $"valgt=true&dyr={dyrId}&del=Behandlinger");
+
+        Assert.Contains("<h3>Behandlinger</h3>", html);
+        Assert.Contains("Milbemax", html);
+        Assert.DoesNotContain("<h3>Vekt</h3>", html);
+        Assert.DoesNotContain("12,50 kg", html);
+        Assert.DoesNotContain("<h3>Om dyret</h3>", html);
+    }
+
+    [Fact]
+    public async Task Uten_deler_star_valgsiden_igjen_med_en_feilmelding()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient, "Luna");
+
+        var svar = await klient.Hent($"/informasjon/utskrift?valgt=true&dyr={dyrId}");
+        Assert.Equal(HttpStatusCode.OK, svar.StatusCode);
+        var html = await svar.Content.ReadAsStringAsync();
+
+        // Dynamisk tekst HTML-kodes: "én" star som "&#xE9;n" i kilden.
+        Assert.Contains("Velg minst én del som skal med.", WebUtility.HtmlDecode(html));
+        // Dyret er fortsatt krysset av - valget skal ikke ga tapt.
+        Assert.Matches($"""name="dyr" value="{dyrId}"[^>]*checked""", html);
+    }
+
+    [Fact]
+    public async Task Uten_dyr_star_valgsiden_igjen_med_en_feilmelding()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        await Testoppsett.NyttDyr(klient, "Luna");
+
+        var html = await (await klient.Hent("/informasjon/utskrift?valgt=true&del=Vekt"))
+            .Content.ReadAsStringAsync();
+
+        Assert.Contains("Velg minst ett dyr.", html);
+    }
+
+    [Fact]
+    public async Task En_annen_husstands_dyr_kan_ikke_velges_inn()
+    {
+        var minKlient = await Testoppsett.InnloggetKlient(_app);
+        var mittDyr = await Testoppsett.NyttDyr(minKlient, "MittDyr");
+
+        var annenKlient = await Testoppsett.InnloggetKlient(_app);
+        var annetDyr = await Testoppsett.NyttDyr(annenKlient, "AnnetDyr");
+
+        var html = await Side(
+            annenKlient, $"valgt=true&dyr={mittDyr}&dyr={annetDyr}&del=OmDyret");
+
+        Assert.Contains("AnnetDyr", html);
+        Assert.DoesNotContain("MittDyr", html);
+    }
+
+    /// <summary>
+    /// Utskriften er en forhandsvisning. Dialogen apnes med knappen, ikke av
+    /// seg selv, og utvalget kan endres derfra.
+    /// </summary>
+    [Fact]
+    public async Task Utskriften_apner_ikke_dialogen_av_seg_selv()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient, "Luna");
+
+        var html = await Side(klient, $"valgt=true&dyr={dyrId}&del=Vekt");
+
+        Assert.DoesNotContain("addEventListener('load'", html);
+        Assert.Contains("onclick=\"window.print()\"", html);
+        Assert.Contains("Skriv ut / lagre som PDF", html);
+        Assert.Contains(
+            $"/informasjon/utskrift/velg?valgt=true&amp;dyr={dyrId}&amp;del=Vekt", html);
+    }
+
+    /// <summary>
+    /// En ormekur som er fulgt opp av en nyere, skal ikke sende leseren til
+    /// dyrlegen pa en dato som ikke gjelder lenger. Se ADR 0016.
+    /// </summary>
+    [Fact]
+    public async Task Fulgt_opp_behandling_viser_ikke_neste_dato()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient, "Luna");
+
+        foreach (var (dato, neste) in new[]
+        {
+            ("2026-02-01", "2026-05-01"),
+            ("2026-05-03", "2026-08-03")
+        })
+        {
+            await klient.Post($"/dyr/{dyrId}/behandling", new Dictionary<string, string>
+            {
+                ["Type"] = "Ormekur",
+                ["Preparat"] = "Milbemax",
+                ["Dato"] = dato,
+                ["NesteDato"] = neste
+            });
+        }
+
+        var html = await Side(klient, $"valgt=true&dyr={dyrId}&del=Behandlinger");
+
+        Assert.Contains("3. august 2026", html);
+        Assert.DoesNotContain("1. mai 2026", html);
+    }
+
+    /// <summary>
+    /// Knappen pa hvert dyr pa informasjonssiden: bare det dyret, alle delene
+    /// om det, uten fellesnotatene - og uten a ga via valgsiden.
+    /// </summary>
+    [Fact]
+    public async Task Skriv_ut_informasjon_pa_ett_dyr_tar_bare_med_det_dyret()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var luna = await Testoppsett.NyttDyr(klient, "Luna");
+        await Testoppsett.NyttDyr(klient, "Tiger");
+
+        await klient.Post("/informasjon", new Dictionary<string, string>
+        {
+            ["Ny.Tittel"] = "Portkode",
+            ["Ny.Tekst"] = "1234"
+        });
+
+        var side = await (await klient.Hent("/informasjon")).Content.ReadAsStringAsync();
+        var lenke = System.Text.RegularExpressions.Regex.Match(
+            side, $"""href="(/informasjon/utskrift\?valgt=true&amp;dyr={luna}[^"]*)""");
+        Assert.True(lenke.Success, "Fant ikke «Skriv ut informasjon» pa Luna.");
+
+        var utskrift = await (await klient.Hent(WebUtility.HtmlDecode(lenke.Groups[1].Value)))
+            .Content.ReadAsStringAsync();
+
+        Assert.Contains("Luna", utskrift);
+        Assert.DoesNotContain("Tiger", utskrift);
+        Assert.Contains("<h3>Om dyret</h3>", utskrift);
+        Assert.Contains("<h3>Vekt</h3>", utskrift);
+        // Fellesnotatene horer ikke til dyret.
+        Assert.DoesNotContain("Portkode", utskrift);
+    }
+
+    private static async Task<string> Side(Skjemaklient klient, string sporring)
+    {
+        var svar = await klient.Hent($"/informasjon/utskrift?{sporring}");
+        Assert.Equal(HttpStatusCode.OK, svar.StatusCode);
+        return await svar.Content.ReadAsStringAsync();
     }
 
     [Fact]

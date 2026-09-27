@@ -24,8 +24,18 @@ public sealed class Medisin : IHusstandsbundet
 
     public DateOnly StartDato { get; set; }
 
-    /// <summary>Null betyr pagaende.</summary>
+    /// <summary>
+    /// Planlagt siste dag, til og med. Null betyr pagaende.
+    /// </summary>
     public DateOnly? SluttDato { get; set; }
+
+    /// <summary>
+    /// Nar noen trykket "Avslutt". Satt betyr avsluttet med en gang, uansett
+    /// <see cref="SluttDato"/>. Egen kolonne fordi sluttdatoen er til og med:
+    /// en kur "til 30. september" skal gis hele den dagen, mens en medisin
+    /// som avsluttes i dag, ikke skal gis mer i dag. Se ADR 0017.
+    /// </summary>
+    public DateTimeOffset? AvsluttetTid { get; set; }
 
     public ICollection<Dose> Doser { get; set; } = new List<Dose>();
 }

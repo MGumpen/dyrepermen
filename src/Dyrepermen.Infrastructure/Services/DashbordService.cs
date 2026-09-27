@@ -27,12 +27,14 @@ public sealed class DashbordService : IDashbordService
     {
         // Dagens dato i Norge, ikke i UTC. Torrformengden i en blandingsplan
         // folger alderen i hele uker, og en dags avvik flytter hele ukeskiftet.
-        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
+        var naa = DateTimeOffset.UtcNow;
+        var idag = Tidssone.Idag(naa);
+        var aktivMedisin = Medisinfilter.Aktiv(idag);
         var grense = idag.AddDays(Varselvindu);
 
         // Midnatt i Norge, ikke i UTC. Ellers nullstilles maltidstelleren
         // klokka to om natten - etter at kvelden er over.
-        var dagStart = Tidssone.DagStart(DateTimeOffset.UtcNow);
+        var dagStart = Tidssone.DagStart(naa);
 
         // Sporring 1. Siste vekt, aktiv forplan, neste behandling og aktive
         // medisiner hentes som korrelerte undersporringer inne i Select.
@@ -49,10 +51,16 @@ public sealed class DashbordService : IDashbordService
                 d.Id,
                 d.Navn,
                 d.Art,
-                d.BildeFilnavn,
                 d.Fodselsdato,
                 d.ForingsloggAktiv,
                 d.ForplanAktiv,
+
+                // Id-en, ikke bildet. Selve filen hentes av nettleseren via
+                // /dokument/{id}, og koster ingenting i denne rundturen.
+                ProfilbildeId = d.Dokumenter
+                    .Where(x => x.Kategori == DokumentKategori.Profilbilde)
+                    .Select(x => (int?)x.Id)
+                    .FirstOrDefault(),
 
                 SisteVekt = d.Vekter
                     .OrderByDescending(v => v.Dato)
@@ -75,16 +83,34 @@ public sealed class DashbordService : IDashbordService
                     })
                     .FirstOrDefault(),
 
+                // Kun paminnelser som ikke er fulgt opp. Uten filteret sto
+                // forrige ormekur som "neste" lenge etter at den nye var gitt.
                 Neste = d.Behandlinger
-                    .Where(b => b.NesteDato != null)
+                    .AsQueryable()
+                    .Where(Behandlingsfilter.ApenPaminnelse)
                     .OrderBy(b => b.NesteDato)
                     .Select(b => new { b.Type, b.Preparat, Dato = b.NesteDato!.Value })
                     .FirstOrDefault(),
 
+                // Med intervall og siste dose, slik at dosene som forfaller i
+                // dag kan bygges herfra. Det sparer en egen rundtur for
+                // "Forfaller snart".
                 Medisiner = d.Medisiner
-                    .Where(m => m.SluttDato == null || m.SluttDato >= idag)
+                    .AsQueryable()
+                    .Where(aktivMedisin)
                     .OrderBy(m => m.Navn)
-                    .Select(m => m.Navn)
+                    .Select(m => new AktivMedisin(
+                        d.Id,
+                        d.Navn,
+                        m.Id,
+                        m.Navn,
+                        m.Dose,
+                        m.IntervallTimer,
+                        m.StartDato,
+                        m.Doser
+                            .OrderByDescending(x => x.GittTid)
+                            .Select(x => (DateTimeOffset?)x.GittTid)
+                            .FirstOrDefault()))
                     .ToList(),
 
                 // Korrelert undersporring - siste foring i samme rundtur.
@@ -148,7 +174,7 @@ public sealed class DashbordService : IDashbordService
                 d.Id,
                 d.Navn,
                 d.Art,
-                d.BildeFilnavn,
+                d.ProfilbildeId,
                 d.Fodselsdato,
                 d.ForingsloggAktiv,
                 d.SisteVekt?.VektGram,
@@ -156,7 +182,7 @@ public sealed class DashbordService : IDashbordService
                 Forplantekst(mengde),
                 d.Neste is null ? null : TypeTekst(d.Neste.Type, d.Neste.Preparat),
                 d.Neste?.Dato,
-                d.Medisiner,
+                d.Medisiner.Select(m => m.Navn).ToList(),
                 // Kortet vises kun nar bryteren er pa for dyret. Er den av,
                 // skal "sist matet" ikke dukke opp i det hele tatt.
                 d.ForingsloggAktiv && d.SisteForing is not null
@@ -184,16 +210,20 @@ public sealed class DashbordService : IDashbordService
                 d.ForingsloggAktiv ? d.GodbiterIDag : 0);
         }).ToList();
 
-        // Sporring 2. Behandlinger som forfaller innen vinduet.
+        // Sporring 2. Behandlinger som forfaller innen vinduet, og som ikke
+        // er fulgt opp av en nyere behandling av samme slag. Se ADR 0016.
         //
-        // Medisiner (gjentas per time, ikke per dato) og forsikring kommer i
-        // fase 3 og 5. Kilde-typen dekker dem allerede, sa de kan legges til
-        // uten a endre grensesnittet.
+        // Medisiner kommer ikke herfra. De gjentas per time, ikke per dato,
+        // og hentes allerede med dyrene i sporring 1.
         var forfallerRaa = await _db.Behandling
-            .Where(b => b.NesteDato != null && b.NesteDato <= grense)
+            .Where(Behandlingsfilter.ApenPaminnelse)
+            .Where(b => b.NesteDato <= grense)
             .OrderBy(b => b.NesteDato)
             .Select(b => new
             {
+                b.Id,
+                b.DyrId,
+                GittDato = b.Dato,
                 DyreNavn = b.Dyr.Navn,
                 b.Type,
                 b.Preparat,
@@ -207,6 +237,8 @@ public sealed class DashbordService : IDashbordService
             .OrderBy(f => f.FornyesDato)
             .Select(f => new
             {
+                f.Id,
+                f.DyrId,
                 DyreNavn = f.Dyr.Navn,
                 f.Selskap,
                 Dato = f.FornyesDato!.Value
@@ -224,6 +256,8 @@ public sealed class DashbordService : IDashbordService
                          && v.NesteKontrollDato <= grense))
             .Select(v => new
             {
+                v.Id,
+                v.DyrId,
                 DyreNavn = v.Dyr.Navn,
                 v.Dato,
                 v.Klokkeslett,
@@ -237,22 +271,32 @@ public sealed class DashbordService : IDashbordService
         // ikke oversette til SQL, og det er unodvendig a prove.
         var forfaller = forfallerRaa
             .Select(b => new Paminnelse(
+                b.DyrId,
                 b.DyreNavn,
                 Kilde.Behandling,
+                b.Id,
                 TypeTekst(b.Type, b.Preparat),
-                b.Dato))
+                b.Dato,
+                // Gitt i dag betyr ingen "gitt"-knapp. Paminnelsen star, men
+                // den er ikke noe a krysse av for i morgen.
+                KanFolgesOpp: Behandlingsintervall.KanGisIgjen(b.GittDato, idag)))
             .Concat(forsikringer.Select(f => new Paminnelse(
+                f.DyrId,
                 f.DyreNavn,
                 Kilde.Forsikring,
+                f.Id,
                 $"Fornyelse {f.Selskap}",
                 f.Dato)))
+            .Concat(Doser(raa.SelectMany(d => d.Medisiner), naa))
             // Selve timen. Klokkeslettet tas med nar det finnes - "torsdag"
             // er ubrukelig hvis timen er 08:15 og du ma ta fri.
             .Concat(vetbesok
                 .Where(v => v.Dato >= idag && v.Dato <= grense)
                 .Select(v => new Paminnelse(
+                    v.DyrId,
                     v.DyreNavn,
                     Kilde.Vetbesok,
+                    v.Id,
                     v.Klokkeslett is { } kl
                         ? $"Vet. kl. {kl:HH}:{kl:mm} – {v.Arsak}"
                         : $"Veterinær – {v.Arsak}",
@@ -263,12 +307,16 @@ public sealed class DashbordService : IDashbordService
                 .Where(v => v.NesteKontrollDato is { } d
                             && d >= idag && d <= grense)
                 .Select(v => new Paminnelse(
+                    v.DyrId,
                     v.DyreNavn,
-                    Kilde.Vetbesok,
+                    Kilde.Vetkontroll,
+                    v.Id,
                     $"Kontroll{(v.Sted is null ? "" : $" hos {v.Sted}")}",
                     v.NesteKontrollDato!.Value)))
-            // Sortert stigende gir forfalte forst - de har eldst dato.
+            // Sortert stigende gir forfalte forst - de har eldst dato. Doser
+            // som er over tiden i dag, legges foran resten av dagen.
             .OrderBy(p => p.Dato)
+            .ThenByDescending(p => p.Overtid)
             .ToList();
 
         // Sporring 5. De fem oeverste aktive punktene pa handlelisten.
@@ -341,6 +389,53 @@ public sealed class DashbordService : IDashbordService
         return new Dashbord(
             dyr, forfaller, handleliste, godbit,
             gjeldendeForsikringer, veterinarer);
+    }
+
+    /// <summary>
+    /// En aktiv medisin slik sporring 1 henter den, med det som trengs for a
+    /// avgjore om en dose forfaller i dag.
+    /// </summary>
+    private sealed record AktivMedisin(
+        int DyrId,
+        string DyreNavn,
+        int Id,
+        string Navn,
+        string Dose,
+        int IntervallTimer,
+        DateOnly StartDato,
+        DateTimeOffset? SisteDose);
+
+    /// <summary>
+    /// Medisindosene som forfaller i dag, en rad per medisin. Medisinene er
+    /// allerede aktive - Medisinfilter i sporringen - og regelen for hva som
+    /// forfaller ligger i <see cref="Dosevarsel"/>.
+    /// </summary>
+    private static IEnumerable<Paminnelse> Doser(
+        IEnumerable<AktivMedisin> medisiner, DateTimeOffset naa)
+    {
+        foreach (var m in medisiner)
+        {
+            if (Dosevarsel.NesteDose(m.IntervallTimer, m.StartDato, m.SisteDose, naa)
+                is not { } neste)
+            {
+                continue;
+            }
+
+            var nar = m.SisteDose is null
+                ? "ingen doser gitt ennå"
+                : neste <= naa
+                    ? $"skulle vært gitt {Tidssone.NaerTid(neste, naa)}"
+                    : $"neste dose kl. {Tidssone.Klokke(neste)}";
+
+            yield return new Paminnelse(
+                m.DyrId,
+                m.DyreNavn,
+                Kilde.Medisin,
+                m.Id,
+                $"{m.Navn} · {m.Dose} – {nar}",
+                Tidssone.Idag(neste),
+                Overtid: neste <= naa);
+        }
     }
 
     private static string TypeTekst(BehandlingType type, string? preparat)

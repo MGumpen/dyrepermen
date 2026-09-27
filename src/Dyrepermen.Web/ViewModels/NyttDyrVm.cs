@@ -38,6 +38,14 @@ public class NyttDyrVm : IValidatableObject
     [Display(Name = "Kastrert")]
     public bool Kastrert { get; set; }
 
+    [StringLength(100, ErrorMessage = "Fargen kan være høyst 100 tegn.")]
+    [Display(Name = "Farge og pels")]
+    public string? Farge { get; set; }
+
+    [StringLength(500, ErrorMessage = "Kjennetegnene kan være høyst 500 tegn.")]
+    [Display(Name = "Kjennetegn")]
+    public string? Kjennetegn { get; set; }
+
     /// <summary>
     /// NKK-registeret er Norsk Kennel Klub - det gjelder hund. En katt kan
     /// ikke ha regnummer derfra, og feltet skjules for katter i skjemaet.

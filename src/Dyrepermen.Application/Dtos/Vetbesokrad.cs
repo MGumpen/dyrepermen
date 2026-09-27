@@ -16,7 +16,10 @@ public sealed record Vetbesokrad(
     bool ForsikringKrevd,
     int? RefundertKr,
     DateOnly? NesteKontrollDato,
-    string? Notat)
+    string? Notat,
+
+    /// <summary>Kvitteringer og andre filer lagt ved, eldste forst.</summary>
+    IReadOnlyList<Vedleggsrad> Vedlegg)
 {
     /// <summary>
     /// Navnet fra listen nar besoket peker dit, ellers friteksten. Ett sted

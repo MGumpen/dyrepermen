@@ -113,6 +113,9 @@ public static class Demomal
             Rase = "Labrador retriever",
             Kjonn = Kjonn.Tispe,
             Fodselsdato = idag.AddYears(-4).AddMonths(-3),
+            // Savnet-plakaten skal ha noe a vise i demoen.
+            Farge = "Gul, korthåret",
+            Kjennetegn = "Hvit flekk på brystet, rødt halsbånd med navneskilt",
             ForingsloggAktiv = true,
             Forplaner =
             {
@@ -231,6 +234,7 @@ public static class Demomal
             Art = Art.Katt,
             Rase = "Norsk skogkatt",
             Kjonn = Kjonn.Hann,
+            Farge = "Grå tabby, langhåret",
             Fodselsdato = idag.AddYears(-2).AddMonths(-7),
             Kastrert = true,
             // Uten foringslogg. Oversikt viser porsjonen, men ingen knapper for

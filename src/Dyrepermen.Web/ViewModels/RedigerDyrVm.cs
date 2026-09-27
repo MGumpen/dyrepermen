@@ -11,6 +11,12 @@ public sealed class RedigerDyrVm : NyttDyrVm
 {
     public int Id { get; set; }
 
+    /// <summary>
+    /// Kun til visning. Bildet lastes opp og fjernes med egne handlinger, ikke
+    /// med dette skjemaet - sa en valideringsfeil i navnet ikke koster bildet.
+    /// </summary>
+    public int? ProfilbildeId { get; set; }
+
     [Display(Name = "Før fôringslogg for dette dyret")]
     public bool ForingsloggAktiv { get; set; }
 

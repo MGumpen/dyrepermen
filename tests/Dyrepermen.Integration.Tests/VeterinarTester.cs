@@ -107,7 +107,7 @@ public sealed class VeterinarTester
         await t.Opprett(Sted("Gamle klinikken", Veterinartype.Fast), default);
         var stedId = (await t.Hent(default)).Single().Id;
 
-        Assert.True(await t.OpprettBesok(new NyttVetbesok(
+        Assert.NotNull(await t.OpprettBesok(new NyttVetbesok(
             dyrId, stedId, null, new DateOnly(2026, 3, 4), null,
             "Vaksine", null, 1450, false, null, null, null), default));
 
@@ -139,7 +139,7 @@ public sealed class VeterinarTester
         await using var fremmed = _fixture.LagContext(b);
         var dyrId = await NyttDyr(fremmed, b);
 
-        Assert.False(await Tjeneste(fremmed, b).OpprettBesok(new NyttVetbesok(
+        Assert.Null(await Tjeneste(fremmed, b).OpprettBesok(new NyttVetbesok(
             dyrId, stedId, null, new DateOnly(2026, 5, 1), null,
             "Forsøk", null, null, false, null, null, null), default));
     }
@@ -158,7 +158,7 @@ public sealed class VeterinarTester
 
         await using var fremmed = _fixture.LagContext(b);
 
-        Assert.False(await Tjeneste(fremmed, b).OpprettBesok(new NyttVetbesok(
+        Assert.Null(await Tjeneste(fremmed, b).OpprettBesok(new NyttVetbesok(
             dyrId, null, null, new DateOnly(2026, 5, 1), null,
             "Forsøk", null, null, false, null, null, null), default));
     }
@@ -173,7 +173,7 @@ public sealed class VeterinarTester
         var t = Tjeneste(db, h);
         var dyrId = await NyttDyr(db, h);
 
-        Assert.True(await t.OpprettBesok(new NyttVetbesok(
+        Assert.NotNull(await t.OpprettBesok(new NyttVetbesok(
             dyrId, null, "Et sted", new DateOnly(2026, 2, 2), null,
             "Kontroll", null, 900,
             ForsikringKrevd: false, RefundertKr: 700,
@@ -246,7 +246,7 @@ public sealed class VeterinarTester
             new NyVeterinar("   ", Veterinartype.Fast,
                 null, null, null, null, Apningstider.Tom, null), default));
 
-        Assert.False(await t.OpprettBesok(new NyttVetbesok(
+        Assert.Null(await t.OpprettBesok(new NyttVetbesok(
             dyrId, null, null, new DateOnly(2026, 1, 1), null,
             "  ", null, null, false, null, null, null), default));
     }
@@ -276,7 +276,9 @@ public sealed class VeterinarTester
             db, new HandlelisteService(db,
                 new Husstandskontekst { HusstandId = h })).Hent(default);
 
-        var fra = dashbord.Forfaller.Where(p => p.Kilde == Kilde.Vetbesok).ToList();
+        var fra = dashbord.Forfaller
+            .Where(p => p.Kilde is Kilde.Vetbesok or Kilde.Vetkontroll)
+            .ToList();
 
         Assert.Equal(2, fra.Count);
 
@@ -284,5 +286,10 @@ public sealed class VeterinarTester
         Assert.Equal(idag.AddDays(3), fra[0].Dato);
         Assert.Contains("09:30", fra[0].Tekst);
         Assert.Contains("Kontroll", fra[1].Tekst);
+
+        // Hver sin kilde, fordi de folges opp hver sin vei: timen rettes,
+        // kontrollen bestilles som en ny time.
+        Assert.Equal(Kilde.Vetbesok, fra[0].Kilde);
+        Assert.Equal(Kilde.Vetkontroll, fra[1].Kilde);
     }
 }

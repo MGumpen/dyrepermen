@@ -14,11 +14,141 @@
     var typer = Enum.GetValues<BehandlingType>()
         .Select(t => new SelectListItem(Behandlingsformat.Navn(t), t.ToString()))
         .ToList();
+
+    // Preparatene husstanden har brukt for, til forslagslisten i feltet.
+    var preparater = Model.Forslag
+        .Select(f => f.Preparat)
+        .OfType<string>()
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
 }
 
 <partial name="_Dyrhode" model='new DyrhodeVm("Behandlinger", Model.DyrId, Model.DyrNavn)' />
 
 <div class="dp-kolonner">
+    @* Registreringen forst, historikken etter. Pa mobil ligger kolonnene
+       under hverandre, og det man kommer hit for a gjore, skal ikke ligge
+       under en lang liste. Samme rekkefolge som vektsiden. *@
+    <div class="kolonne">
+        <section class="kort" id="skjema">
+            <div class="kort-hode">
+                <svg class="ikon ikon-lg" aria-hidden="true">
+                    <use href="@(Model.RedigerId is null ? "#i-pluss" : "#i-behandling")" />
+                </svg>
+                <h2>
+                    @(Model.RedigerId is null
+                        ? "Registrer behandling" : "Endre behandling")
+                </h2>
+            </div>
+            <div class="kort-kropp">
+                @if (Model.RedigerId is not null)
+                {
+                    <p class="form-text mt-0">
+                        Du retter en behandling som allerede står i
+                        historikken. «Neste gang» kan flyttes uten at
+                        behandlingen må registreres på nytt.
+                    </p>
+                }
+                else if (Model.Forslag.Count > 0)
+                {
+                    @* Lenker, ikke skript: skjemaet fylles pa serveren, pa
+                       samme mate som rediger. Da virker det uten JavaScript,
+                       og intervallet til neste gang regnes ett sted. *@
+                    <div class="mb-3">
+                        <div class="form-label">Gitt før</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var f in Model.Forslag)
+                            {
+                                <a class="btn btn-outline-secondary btn-sm"
+                                   asp-action="Index"
+                                   asp-route-dyrId="@Model.DyrId"
+                                   asp-route-gjenta="@f.Id"
+                                   asp-fragment="skjema">@Behandlingsformat.MedPreparat(f.Type, f.Preparat)</a>
+                            }
+                        </div>
+                        <div class="form-text">
+                            Trykk på en for å fylle ut skjemaet slik det var sist.
+                        </div>
+                    </div>
+                }
+
+                @if (Model.FraForslag)
+                {
+                    <p class="alert alert-info py-2 small">
+                        Fylt ut slik det var sist, med dagens dato. Sjekk
+                        «neste gang» før du lagrer.
+                    </p>
+                }
+
+                <form method="post" asp-route-dyrId="@Model.DyrId"
+                      asp-action="@(Model.RedigerId is null ? "Ny" : "Rediger")"
+                      asp-route-behandlingId="@Model.RedigerId">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Type" class="form-label"></label>
+                        <select asp-for="Ny.Type" class="form-select" asp-items="typer"></select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Preparat" class="form-label"></label>
+                        <input asp-for="Ny.Preparat" class="form-control"
+                               placeholder="For eksempel «Milbemax»"
+                               list="preparatforslag" autocomplete="off" />
+                        @* En datalist foreslar uten a begrense - et nytt
+                           preparat skrives inn som for. *@
+                        <datalist id="preparatforslag">
+                            @foreach (var preparat in preparater)
+                            {
+                                <option value="@preparat"></option>
+                            }
+                        </datalist>
+                        <span asp-validation-for="Ny.Preparat" class="text-danger small"></span>
+                        <div class="form-text">
+                            Velger du «Annet», skriver du her hva behandlingen var.
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.Dato" class="form-label"></label>
+                            <input asp-for="Ny.Dato" class="form-control" />
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.NesteDato" class="form-label"></label>
+                            <input asp-for="Ny.NesteDato" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="form-text mb-2">
+                        Settes «neste gang», dukker behandlingen opp på
+                        oversikten 14 dager før forfall.
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Ny.Notat" class="form-label"></label>
+                        <textarea asp-for="Ny.Notat" class="form-control" rows="2"></textarea>
+                        <span asp-validation-for="Ny.Notat" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            @(Model.RedigerId is null ? "Lagre" : "Lagre endringer")
+                        </button>
+                        @if (Model.RedigerId is not null)
+                        {
+                            <a class="btn btn-outline-secondary btn-sm"
+                               asp-action="Index" asp-route-dyrId="@Model.DyrId">
+                                Avbryt
+                            </a>
+                        }
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+
     <div class="kolonne">
         <section class="kort">
             <div class="kort-hode">
@@ -65,6 +195,22 @@
                                     <span class="d-block">neste @($"{neste:d. MMM yyyy}")</span>
                                 }
                                 <span class="radhandlinger">
+                                    @* Kun pa raden som fortsatt venter, og som
+                                       ble gitt for i dag. Apner dialogen der
+                                       neste gang kan endres for noe lagres.
+                                       Lenke, ikke knapp: href-en apner skjemaet
+                                       som egen side hvis skriptet ikke lastes. *@
+                                    @if (rad.KanKrysseAv(idag))
+                                    {
+                                        <a class="btn btn-primary btn-sm"
+                                           asp-action="Gittdialog"
+                                           asp-route-dyrId="@Model.DyrId"
+                                           asp-route-behandlingId="@rad.Id"
+                                           hx-get="@Url.Action("Gittdialog", new { dyrId = Model.DyrId, behandlingId = rad.Id })"
+                                           hx-target="#dpdialog-innhold" hx-swap="innerHTML">
+                                            Gitt i dag
+                                        </a>
+                                    }
                                     @* Lenke, ikke knapp: endringen skjer i
                                        skjemaet ved siden av, og historikken
                                        skal sta synlig mens man retter.
@@ -95,86 +241,6 @@
         </section>
     </div>
 
-    <div class="kolonne">
-        <section class="kort" id="skjema">
-            <div class="kort-hode">
-                <svg class="ikon ikon-lg" aria-hidden="true">
-                    <use href="@(Model.RedigerId is null ? "#i-pluss" : "#i-behandling")" />
-                </svg>
-                <h2>
-                    @(Model.RedigerId is null
-                        ? "Registrer behandling" : "Endre behandling")
-                </h2>
-            </div>
-            <div class="kort-kropp">
-                @if (Model.RedigerId is not null)
-                {
-                    <p class="form-text mt-0">
-                        Du retter en behandling som allerede står i
-                        historikken. «Neste gang» kan flyttes uten at
-                        behandlingen må registreres på nytt.
-                    </p>
-                }
-
-                <form method="post" asp-route-dyrId="@Model.DyrId"
-                      asp-action="@(Model.RedigerId is null ? "Ny" : "Rediger")"
-                      asp-route-behandlingId="@Model.RedigerId">
-                    @Html.AntiForgeryToken()
-
-                    <div asp-validation-summary="All" class="alert alert-danger py-2" role="alert"></div>
-
-                    <div class="mb-2">
-                        <label asp-for="Ny.Type" class="form-label"></label>
-                        <select asp-for="Ny.Type" class="form-select" asp-items="typer"></select>
-                    </div>
-
-                    <div class="mb-2">
-                        <label asp-for="Ny.Preparat" class="form-label"></label>
-                        <input asp-for="Ny.Preparat" class="form-control"
-                               placeholder="For eksempel «Milbemax»" />
-                        <span asp-validation-for="Ny.Preparat" class="text-danger small"></span>
-                        <div class="form-text">
-                            Velger du «Annet», skriver du her hva behandlingen var.
-                        </div>
-                    </div>
-
-                    <div class="row g-2">
-                        <div class="col-6 mb-2">
-                            <label asp-for="Ny.Dato" class="form-label"></label>
-                            <input asp-for="Ny.Dato" class="form-control" />
-                        </div>
-                        <div class="col-6 mb-2">
-                            <label asp-for="Ny.NesteDato" class="form-label"></label>
-                            <input asp-for="Ny.NesteDato" class="form-control" />
-                        </div>
-                    </div>
-                    <div class="form-text mb-2">
-                        Settes «neste gang», dukker behandlingen opp på
-                        oversikten 14 dager før forfall.
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Ny.Notat" class="form-label"></label>
-                        <textarea asp-for="Ny.Notat" class="form-control" rows="2"></textarea>
-                        <span asp-validation-for="Ny.Notat" class="text-danger small"></span>
-                    </div>
-
-                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            @(Model.RedigerId is null ? "Lagre" : "Lagre endringer")
-                        </button>
-                        @if (Model.RedigerId is not null)
-                        {
-                            <a class="btn btn-outline-secondary btn-sm"
-                               asp-action="Index" asp-route-dyrId="@Model.DyrId">
-                                Avbryt
-                            </a>
-                        }
-                    </div>
-                </form>
-            </div>
-        </section>
-    </div>
 </div>
 
 @section Skript {

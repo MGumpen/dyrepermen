@@ -1,0 +1,98 @@
+@using Dyrepermen.Application.Extensions
+@using Dyrepermen.Domain.Enums
+@model SavnetVm
+@{
+    var d = Model.Dyr;
+    ViewData["Tittel"] = $"Savnet: {d.Navn}";
+    Layout = "_Utskriftslayout";
+    var idag = DateOnly.FromDateTime(DateTime.Now);
+
+    // "Hund · Labrador retriever · tispe · 3 år". Det man ser fra avstand.
+    var beskrivelse = string.Join(" · ", new[]
+    {
+        d.Art.ToString(),
+        d.Rase,
+        d.Kjonn == Kjonn.Tispe ? "tispe" : "hann",
+        d.Fodselsdato is { } f ? Alderformat.Tekst(f, idag) : null
+    }.Where(t => !string.IsNullOrWhiteSpace(t)));
+}
+
+@section Stil {
+    <link rel="stylesheet" href="~/css/plakat.css" asp-append-version="true" />
+}
+
+@section Tittel {
+    @* Tom på arket. Plakaten har sin egen overskrift, og knappene til høyre
+       i hodet skjules ved utskrift. *@
+    <div class="d-print-none">
+        <h1 class="h5 mb-0">Savnet-plakat</h1>
+        <p class="utskrift-undertittel">Sjekk kontaktfeltene under før du skriver ut.</p>
+    </div>
+}
+
+@* Kontakten kan endres her uten at noe lagres. Feltene vises bare på
+   skjermen - på arket står bare det de fylte inn i plakaten. *@
+<section class="kort d-print-none mb-4">
+    <div class="kort-kropp">
+        <div class="row g-2">
+            <div class="col-sm-6">
+                <label class="form-label" for="plakat-navn">Kontaktperson</label>
+                <input class="form-control form-control-sm" id="plakat-navn"
+                       value="@Model.Kontaktnavn" data-plakat-kilde="navn" />
+            </div>
+            <div class="col-sm-6">
+                <label class="form-label" for="plakat-telefon">Telefon</label>
+                <input class="form-control form-control-sm" id="plakat-telefon" type="tel"
+                       value="@Model.Telefon" data-plakat-kilde="telefon" />
+            </div>
+        </div>
+        @if (Model.Telefon is null)
+        {
+            <p class="form-text mb-0 mt-2">
+                Du har ikke lagt inn telefonnummer. Legg det inn under
+                <a asp-controller="MinKonto" asp-action="Index">Min konto</a>,
+                så står det her neste gang.
+            </p>
+        }
+    </div>
+</section>
+
+<article class="savnet">
+    <p class="savnet-overskrift">SAVNET</p>
+
+    <partial name="_Profilbilde" model='new ProfilbildeVm(d.ProfilbildeId, d.Navn, "plakat")' />
+
+    <h2 class="savnet-navn">@d.Navn</h2>
+    <p class="savnet-beskrivelse">@beskrivelse</p>
+
+    <dl class="savnet-fakta">
+        @if (d.Farge is { } farge)
+        {
+            <dt>Farge og pels</dt><dd>@farge</dd>
+        }
+        @if (d.Kjennetegn is { } kjennetegn)
+        {
+            <dt>Kjennetegn</dt><dd>@kjennetegn</dd>
+        }
+        @if (d.ChipNr is { } chip)
+        {
+            <dt>ID-merket</dt><dd>Chip @chip</dd>
+        }
+        <dt>Kastrert</dt><dd>@(d.Kastrert ? "Ja" : "Nei")</dd>
+    </dl>
+
+    <p class="savnet-kontakt">
+        Har du sett @d.Navn? Ring
+        <span data-plakat="navn">@Model.Kontaktnavn</span>
+        <span class="savnet-telefon" data-plakat="telefon">@Model.Telefon</span>
+    </p>
+</article>
+
+<script>
+    // Kopierer kontaktfeltene inn i plakaten mens man skriver. Uten skript
+    // står verdiene fra serveren der, og plakaten er like brukbar.
+    document.querySelectorAll('[data-plakat-kilde]').forEach(function (felt) {
+        var mal = document.querySelector('[data-plakat="' + felt.dataset.plakatKilde + '"]');
+        felt.addEventListener('input', function () { mal.textContent = felt.value; });
+    });
+</script>

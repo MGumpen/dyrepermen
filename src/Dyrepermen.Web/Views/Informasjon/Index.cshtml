@@ -117,6 +117,23 @@
                         }
                     </ul>
                 }
+
+                @* «Skriv ut informasjon» gar rett til utskriften med dette dyret
+                   og alt om det - samme adresse som valgsiden ville laget, sa
+                   «Endre utvalg» der tar deg til valgsiden med dette krysset
+                   av. Savnet-plakaten er en egen utskrift, ikke en del av
+                   permen: plakaten skal henge ute, permen ligger hjemme. *@
+                <div class="kort-handlinger">
+                    <a class="btn btn-primary btn-sm"
+                       href="@(Url.Action("Utskrift") + $"?valgt=true&dyr={d.Id}"
+                               + string.Concat(Utskriftsformat.DelerForEttDyr.Select(del => $"&del={del}")))">
+                        Skriv ut informasjon
+                    </a>
+                    <a class="btn btn-outline-secondary btn-sm"
+                       asp-action="Savnet" asp-route-dyrId="@d.Id">
+                        Savnet-plakat
+                    </a>
+                </div>
             </section>
         }
 
@@ -218,14 +235,14 @@
 
             <div class="kort-kropp">
                 <p class="form-text mt-0">
-                    Alt om alle dyrene på ett dokument: opplysninger, fôrplan,
-                    vekt med graf, behandlinger, medisiner, forsikring og
-                    notater. Hvert dyr starter på en ny side.
+                    Opplysninger, fôrplan, vekt med graf, behandlinger,
+                    medisiner, forsikring og notater på ett dokument. Du velger
+                    selv hvilke dyr og hva som skal med.
                 </p>
 
-                <a asp-action="Utskrift" class="btn btn-primary btn-sm">
+                <a asp-action="Velg" class="btn btn-primary btn-sm">
                     <svg class="ikon" aria-hidden="true"><use href="#i-informasjon" /></svg>
-                    Lagre informasjon som PDF
+                    Lagre som PDF
                 </a>
             </div>
         </section>

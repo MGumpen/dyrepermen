@@ -13,15 +13,151 @@ public sealed class BehandlingService : IBehandlingService
 
     public BehandlingService(DyrepermenDbContext db) => _db = db;
 
+    /// <summary>
+    /// Hvor mange tidligere behandlinger forslagene bygges av. Nok til a
+    /// dekke flere ar med ormekur og vaksiner for et helt kobbel, uten at en
+    /// husstand med lang historikk henter alt hver gang skjemaet apnes.
+    /// </summary>
+    private const int ForslagGrunnlag = 200;
+
+    private const int AntallForslag = 12;
+
     public async Task<IReadOnlyList<BehandlingRad>> HentFor(
         int dyrId, CancellationToken ct)
-        => await _db.Behandling
+    {
+        var rader = await _db.Behandling
             .Where(b => b.DyrId == dyrId)
             .OrderByDescending(b => b.Dato)
             .ThenByDescending(b => b.Id)
             .Select(b => new BehandlingRad(
-                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat))
+                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat, false))
             .ToListAsync(ct);
+
+        // Egen rundtur for hvilke som er apne. Regelen er et uttrykk over
+        // entiteten og lar seg ikke bruke inne i projeksjonen over - og den
+        // skal ikke skrives en gang til i C#, for da spriker de.
+        var apne = (await _db.Behandling
+            .Where(b => b.DyrId == dyrId)
+            .Where(Behandlingsfilter.ApenPaminnelse)
+            .Select(b => b.Id)
+            .ToListAsync(ct))
+            .ToHashSet();
+
+        return rader
+            .Select(r => apne.Contains(r.Id) ? r with { ErApen = true } : r)
+            .ToList();
+    }
+
+    public async Task<Gittgrunnlag?> HentGittgrunnlag(
+        int dyrId, int behandlingId, CancellationToken ct)
+    {
+        var forrige = await _db.Behandling
+            .Where(b => b.Id == behandlingId && b.DyrId == dyrId)
+            .Select(b => new
+            {
+                b.Type,
+                b.Preparat,
+                b.Dato,
+                b.NesteDato,
+                DyreNavn = b.Dyr.Navn
+            })
+            .SingleOrDefaultAsync(ct);
+
+        if (forrige is null)
+        {
+            return null;
+        }
+
+        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
+
+        return new Gittgrunnlag(
+            dyrId,
+            behandlingId,
+            forrige.DyreNavn,
+            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat),
+            forrige.Dato,
+            forrige.NesteDato,
+            Behandlingsintervall.KanGisIgjen(forrige.Dato, idag)
+                && await ErApen(behandlingId, ct));
+    }
+
+    public async Task<GittResultat> Gitt(
+        int dyrId, int behandlingId, DateOnly? nesteDato, CancellationToken ct)
+    {
+        // Query-filteret er autorisasjonen, DyrId hindrer at en id fra et
+        // annet dyr i egen husstand treffer. Samme monster som Oppdater.
+        var forrige = await _db.Behandling
+            .Where(b => b.Id == behandlingId && b.DyrId == dyrId)
+            .Select(b => new { b.Type, b.Preparat, b.Dato })
+            .SingleOrDefaultAsync(ct);
+
+        if (forrige is null)
+        {
+            return GittResultat.FinnesIkke();
+        }
+
+        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
+
+        // Gitt i dag allerede: en ny rad ville fatt samme dato, og sett ut
+        // som ingenting skjedde. Sjekkes her og ikke bare ved knappen - en
+        // fane som har statt apen siden i gar, viser fortsatt knappen.
+        if (!Behandlingsintervall.KanGisIgjen(forrige.Dato, idag))
+        {
+            return GittResultat.GittIdag();
+        }
+
+        // En rad som allerede er fulgt opp, skal ikke gi en behandling til.
+        // Uten sjekken ville et dobbelttrykk, eller to i husstanden som
+        // krysser av samtidig fra hver sin telefon, registrert ormekuren to
+        // ganger.
+        if (!await ErApen(behandlingId, ct))
+        {
+            return GittResultat.AlleredeFulgtOpp();
+        }
+
+        _db.Behandling.Add(new Behandling
+        {
+            DyrId = dyrId,
+            Type = forrige.Type,
+            // Preparatet kopieres som det sto. Det er det som gjor at den
+            // nye raden gjenkjennes som oppfolgingen av den gamle.
+            Preparat = forrige.Preparat,
+            Dato = idag,
+            NesteDato = nesteDato
+        });
+
+        await _db.SaveChangesAsync(ct);
+
+        return GittResultat.Lagret(
+            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat), nesteDato);
+    }
+
+    private Task<bool> ErApen(int behandlingId, CancellationToken ct)
+        => _db.Behandling
+            .Where(b => b.Id == behandlingId)
+            .AnyAsync(Behandlingsfilter.ApenPaminnelse, ct);
+
+    public async Task<IReadOnlyList<Behandlingsforslag>> HentForslag(
+        CancellationToken ct)
+    {
+        var siste = await _db.Behandling
+            .OrderByDescending(b => b.Dato)
+            .ThenByDescending(b => b.Id)
+            .Take(ForslagGrunnlag)
+            .Select(b => new Behandlingsforslag(
+                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato))
+            .ToListAsync(ct);
+
+        // Grupperes i minnet. Grunnlaget er avgrenset over, og "nyeste rad
+        // per gruppe" i SQL ville vaert en vindusfunksjon for et par hundre
+        // rader. Samme nokkel som Behandlingsfilter: type og preparat uten
+        // hensyn til store og sma bokstaver.
+        return siste
+            .GroupBy(f => (f.Type, Preparat: f.Preparat?.ToLowerInvariant()))
+            .Select(g => g.First())
+            .Take(AntallForslag)
+            .ToList();
+    }
 
     public async Task<bool> Registrer(Behandlingsinnhold input, CancellationToken ct)
     {

@@ -40,7 +40,17 @@ public sealed class Dyr : IHusstandsbundet
 
     public bool Kastrert { get; set; }
 
-    public string? BildeFilnavn { get; set; }
+    /// <summary>
+    /// "Gul, korthaaret". Eget felt fordi det er det forste folk spor om nar
+    /// et dyr er borte.
+    /// </summary>
+    public string? Farge { get; set; }
+
+    /// <summary>
+    /// Saertrekk i fritekst: flekker, arr, halsband. Det som skiller dyret fra
+    /// alle andre av samme rase og farge.
+    /// </summary>
+    public string? Kjennetegn { get; set; }
 
     /// <summary>Funksjonsbryter. Arves fra husstandens standard ved opprettelse.</summary>
     public bool ForingsloggAktiv { get; set; }

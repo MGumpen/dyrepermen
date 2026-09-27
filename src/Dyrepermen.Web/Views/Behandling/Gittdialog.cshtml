@@ -1,0 +1,17 @@
+@model GittdialogVm
+@{
+    ViewData["Tittel"] = "Gitt i dag";
+}
+
+@* Uten skript apner ikke dialogen - da havner man her i stedet, pa en
+   vanlig side med samme skjema. Samme monster som foringsdialogen.
+   Valideringsfeil fra dialogen lander ogsa her. *@
+<div class="sidehode">
+    <div>
+        <h1>Gitt i dag</h1>
+    </div>
+</div>
+
+<section class="kort kort-skjema">
+    <partial name="_Gittdialog" model="Model" />
+</section>

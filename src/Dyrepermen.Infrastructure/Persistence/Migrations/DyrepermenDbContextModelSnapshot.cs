@@ -182,11 +182,11 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("dyr_id");
 
-                    b.Property<string>("Filnavn")
+                    b.Property<string>("Innholdstype")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("filnavn");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("innholdstype");
 
                     b.Property<char>("Kategori")
                         .HasColumnType("char(1)")
@@ -204,16 +204,55 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("originalnavn");
 
+                    b.Property<int>("StorrelseByte")
+                        .HasColumnType("integer")
+                        .HasColumnName("storrelse_byte");
+
+                    b.Property<int?>("VetbesokId")
+                        .HasColumnType("integer")
+                        .HasColumnName("vetbesok_id");
+
                     b.HasKey("Id")
                         .HasName("pk_dokument");
 
-                    b.HasIndex("DyrId")
+                    b.HasIndex("VetbesokId")
+                        .HasDatabaseName("ix_dokument_vetbesok_id");
+
+                    b.HasIndex(new[] { "DyrId" }, "ix_dokument_dyr_id")
                         .HasDatabaseName("ix_dokument_dyr_id");
+
+                    b.HasIndex(new[] { "DyrId" }, "ux_dokument_profilbilde")
+                        .IsUnique()
+                        .HasDatabaseName("ux_dokument_profilbilde")
+                        .HasFilter("kategori = 'P'");
 
                     b.ToTable("dokument", null, t =>
                         {
-                            t.HasCheckConstraint("ck_dokument_kategori", "kategori IN ('V','J','K','A')");
+                            t.HasCheckConstraint("ck_dokument_innholdstype", "innholdstype IN ('image/jpeg','image/png','application/pdf')");
+
+                            t.HasCheckConstraint("ck_dokument_kategori", "kategori IN ('V','J','K','A','P')");
+
+                            t.HasCheckConstraint("ck_dokument_profilbilde_er_bilde", "kategori <> 'P' OR innholdstype IN ('image/jpeg','image/png')");
+
+                            t.HasCheckConstraint("ck_dokument_storrelse", "storrelse_byte > 0");
                         });
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.DokumentInnhold", b =>
+                {
+                    b.Property<int>("DokumentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("dokument_id");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("data");
+
+                    b.HasKey("DokumentId")
+                        .HasName("pk_dokument_innhold");
+
+                    b.ToTable("dokument_innhold", (string)null);
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Dose", b =>
@@ -269,15 +308,15 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("char(1)")
                         .HasColumnName("art");
 
-                    b.Property<string>("BildeFilnavn")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("bilde_filnavn");
-
                     b.Property<string>("ChipNr")
                         .HasMaxLength(15)
                         .HasColumnType("character varying(15)")
                         .HasColumnName("chip_nr");
+
+                    b.Property<string>("Farge")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("farge");
 
                     b.Property<DateOnly?>("Fodselsdato")
                         .HasColumnType("date")
@@ -304,6 +343,11 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("kastrert");
+
+                    b.Property<string>("Kjennetegn")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("kjennetegn");
 
                     b.Property<char>("Kjonn")
                         .HasColumnType("char(1)")
@@ -890,6 +934,10 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTimeOffset?>("AvsluttetTid")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("avsluttet_tid");
+
                     b.Property<string>("Dose")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -1365,7 +1413,27 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_dokument_dyr_dyr_id");
 
+                    b.HasOne("Dyrepermen.Domain.Entities.Vetbesok", "Vetbesok")
+                        .WithMany("Vedlegg")
+                        .HasForeignKey("VetbesokId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_dokument_vetbesok_vetbesok_id");
+
                     b.Navigation("Dyr");
+
+                    b.Navigation("Vetbesok");
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.DokumentInnhold", b =>
+                {
+                    b.HasOne("Dyrepermen.Domain.Entities.Dokument", "Dokument")
+                        .WithOne("Innhold")
+                        .HasForeignKey("Dyrepermen.Domain.Entities.DokumentInnhold", "DokumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_dokument_innhold_dokument_dokument_id");
+
+                    b.Navigation("Dokument");
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Dose", b =>
@@ -1699,6 +1767,12 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.Navigation("Medlemskap");
                 });
 
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Dokument", b =>
+                {
+                    b.Navigation("Innhold")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Dyr", b =>
                 {
                     b.Navigation("Behandlinger");
@@ -1739,6 +1813,11 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Medisin", b =>
                 {
                     b.Navigation("Doser");
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Vetbesok", b =>
+                {
+                    b.Navigation("Vedlegg");
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Veterinar", b =>

@@ -12,5 +12,14 @@ public sealed record DyrDetaljer(
     string? ChipNr,
     string? RegNrNkk,
     bool Kastrert,
+    string? Farge,
+    string? Kjennetegn,
+
+    /// <summary>
+    /// Dokument-id-en til profilbildet, eller null. Bildet selv hentes via
+    /// /dokument/{id}, som verifiserer husstanden.
+    /// </summary>
+    int? ProfilbildeId,
+
     bool ForingsloggAktiv,
     bool ForplanAktiv);

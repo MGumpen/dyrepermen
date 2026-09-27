@@ -86,4 +86,45 @@ public sealed class DashbordvisningTester : IAsyncLifetime
         Assert.Contains("nr. 1 av 3", html);
         Assert.DoesNotContain("3 måltider om dagen", html);
     }
+    /// <summary>
+    /// Veterinaerkortet pa oversikten har knapper for ny time og for et
+    /// besok som allerede har vaert. Begge apner timeskjemaet, der dyr og
+    /// veterinaer velges.
+    /// </summary>
+    [Fact]
+    public async Task Veterinaerkortet_har_knapper_for_ny_time_og_besok()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient);
+
+        var oversikt = WebUtility.HtmlDecode(
+            await (await klient.Hent("/")).Content.ReadAsStringAsync());
+
+        Assert.Contains("href=\"/veterinar/time/ny\"", oversikt);
+        Assert.Contains("href=\"/veterinar/time/ny?besok=true\"", oversikt);
+
+        var skjema = WebUtility.HtmlDecode(await (await klient.Hent(
+            "/veterinar/time/ny?besok=true")).Content.ReadAsStringAsync());
+
+        Assert.Contains("<h1>Registrer besøk</h1>", skjema);
+        // Sted og dyr velges i skjemaet.
+        Assert.Contains("name=\"Ny.VeterinarId\"", skjema);
+        Assert.Contains("name=\"Ny.DyrId\"", skjema);
+
+        var svar = await klient.Post("/veterinar/time", new Dictionary<string, string>
+        {
+            ["Ny.DyrId"] = dyrId.ToString(),
+            ["Ny.Dato"] = DateOnly.FromDateTime(DateTime.Now).AddDays(-1).ToString("yyyy-MM-dd"),
+            ["Ny.Arsak"] = "Halting",
+            ["Ny.Gjennomfort"] = "true"
+        }, tokenFra: "/veterinar/time/ny?besok=true");
+
+        Assert.True(
+            Skjemaklient.GikkGjennom(svar),
+            $"Besoket ble ikke lagret: {await Skjemaklient.Feilmeldinger(svar)}");
+
+        var veterinar = WebUtility.HtmlDecode(
+            await (await klient.Hent("/veterinar")).Content.ReadAsStringAsync());
+        Assert.Contains("Halting", veterinar);
+    }
 }

@@ -11,8 +11,13 @@ public sealed record DyrSammendrag(
     DateOnly? SisteVektDato,
 
     int AntallBehandlinger,
-    string? NesteBehandlingTekst,
-    DateOnly? NesteBehandlingDato,
+
+    /// <summary>
+    /// Alle som venter pa neste gang, forste forfall forst. Ikke bare den
+    /// neste: en hund med ormekur, flattmiddel og vaksine har tre datoer a
+    /// holde styr pa, og siden skal vise alle tre.
+    /// </summary>
+    IReadOnlyList<KommendeBehandling> KommendeBehandlinger,
 
     int AntallMedisiner,
     IReadOnlyList<string> AktiveMedisiner,
