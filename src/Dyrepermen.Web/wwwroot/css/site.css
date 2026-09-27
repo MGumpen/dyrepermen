@@ -1715,3 +1715,30 @@ h1, h2, h3, h4 {
     font-size: .85rem;
     text-decoration: none;
 }
+
+/* --- Profilbilde ------------------------------------------------------- */
+
+.profilbilde {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--dp-aksent-svak);
+    color: var(--dp-aksent);
+    font-weight: 700;
+    border: 1px solid var(--dp-kant);
+}
+
+.profilbilde.liten {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.05rem;
+}
+
+.profilbilde.stor {
+    width: 4.5rem;
+    height: 4.5rem;
+    font-size: 1.8rem;
+}

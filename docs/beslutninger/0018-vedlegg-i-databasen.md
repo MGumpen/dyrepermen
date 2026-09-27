@@ -51,8 +51,24 @@ Vurdert:
 - Stengt i demo. Demoene deler databasen med ekte husstander, og 300 demoer med
   vedlegg ville fylt den.
 
-`IVedleggService` er grensen. Flyttes filene til et objektlager senere, byttes
+`IDokumentService` er grensen. Flyttes filene til et objektlager senere, byttes
 implementasjonen, og resten står.
+
+### Tillegg 27.09: profilbilde
+
+Dyrets profilbilde er et dokument med kategori `P` (Profilbilde), i samme tabeller
+og under samme grenser. I tillegg:
+
+- Høyst ett per dyr, sikret av den unike indeksen `ux_dokument_profilbilde`
+  (filtrert på `kategori = 'P'`). Tjenesten bytter det gamle ut i samme transaksjon.
+  Den vanlige indeksen på `dyr_id` er definert eksplisitt ved siden av. Uten det
+  regner EF den filtrerte indeksen som fremmednøkkelens, og lar den vanlige
+  forsvinne.
+- Må være jpeg eller png, også i databasen (`ck_dokument_profilbilde_er_bilde`).
+- Plassen det gamle bildet frigjør, teller med når det byttes, slik at en husstand
+  på grensen likevel kan bytte bilde.
+- `dyr.bilde_filnavn` fra planen er fjernet. Kolonnen var ment for filer på disk og
+  ble aldri fylt ut.
 
 ## Konsekvenser
 
@@ -65,3 +81,4 @@ implementasjonen, og resten står.
   det slik det er, innenfor grensene.
 - Et senere steg — å lese kvitteringen med AI — bygger på dette: filen finnes
   allerede når tolkningen skal gjøres.
+- Profilbilder deler husstandens 50 MB med vedleggene.

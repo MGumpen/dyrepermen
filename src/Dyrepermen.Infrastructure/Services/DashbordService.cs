@@ -51,10 +51,16 @@ public sealed class DashbordService : IDashbordService
                 d.Id,
                 d.Navn,
                 d.Art,
-                d.BildeFilnavn,
                 d.Fodselsdato,
                 d.ForingsloggAktiv,
                 d.ForplanAktiv,
+
+                // Id-en, ikke bildet. Selve filen hentes av nettleseren via
+                // /dokument/{id}, og koster ingenting i denne rundturen.
+                ProfilbildeId = d.Dokumenter
+                    .Where(x => x.Kategori == DokumentKategori.Profilbilde)
+                    .Select(x => (int?)x.Id)
+                    .FirstOrDefault(),
 
                 SisteVekt = d.Vekter
                     .OrderByDescending(v => v.Dato)
@@ -168,7 +174,7 @@ public sealed class DashbordService : IDashbordService
                 d.Id,
                 d.Navn,
                 d.Art,
-                d.BildeFilnavn,
+                d.ProfilbildeId,
                 d.Fodselsdato,
                 d.ForingsloggAktiv,
                 d.SisteVekt?.VektGram,

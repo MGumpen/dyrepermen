@@ -10,20 +10,21 @@ using Microsoft.Extensions.Logging;
 namespace Dyrepermen.Infrastructure.Services;
 
 /// <summary>
-/// Vedlegg til veterinaerbesok, lagret i databasen. Se ADR 0018.
+/// Vedlegg til veterinaerbesok og dyrenes profilbilder, lagret i databasen.
+/// Se ADR 0018.
 ///
 /// Query-filtrene gjor husstandsavgrensningen, som ellers i appen - med ett
 /// bevisst unntak: taket for hele databasen summeres pa tvers av
 /// husstandene, se <see cref="Plassfeil"/>.
 /// </summary>
-public sealed class VedleggService : IVedleggService
+public sealed class DokumentService : IDokumentService
 {
     private readonly DyrepermenDbContext _db;
     private readonly IGjeldendeBruker _meg;
-    private readonly ILogger<VedleggService> _log;
+    private readonly ILogger<DokumentService> _log;
 
-    public VedleggService(
-        DyrepermenDbContext db, IGjeldendeBruker meg, ILogger<VedleggService> log)
+    public DokumentService(
+        DyrepermenDbContext db, IGjeldendeBruker meg, ILogger<DokumentService> log)
     {
         _db = db;
         _meg = meg;
@@ -38,14 +39,8 @@ public sealed class VedleggService : IVedleggService
             return null;
         }
 
-        // Demoen deler database med ekte husstander. Tre hundre demoer med
-        // vedlegg ville fylt den - og da stopper appen for alle.
-        if (_meg.ErDemo)
-        {
-            return "Vedlegg kan ikke lastes opp i demoen.";
-        }
-
-        return Vedleggsregler.Feil(filer)
+        return Demofeil()
+            ?? Vedleggsregler.Feil(filer)
             ?? await Plassfeil(filer.Sum(f => (long)f.Data.Length), ct);
     }
 
@@ -61,7 +56,7 @@ public sealed class VedleggService : IVedleggService
 
         if (dyrId is null)
         {
-            return Vedleggsresultat.BesoketFinnesIkke();
+            return Vedleggsresultat.Mangler();
         }
 
         if (await Kontroller(filer, ct) is { } feil)
@@ -97,6 +92,63 @@ public sealed class VedleggService : IVedleggService
         return Vedleggsresultat.Lagret();
     }
 
+    public async Task<Vedleggsresultat> LagreProfilbilde(
+        int dyrId, NyttVedlegg bilde, CancellationToken ct)
+    {
+        // Query-filteret er autorisasjonen: et dyr i en annen husstand finnes
+        // ikke herfra.
+        if (!await _db.Dyr.AnyAsync(d => d.Id == dyrId, ct))
+        {
+            return Vedleggsresultat.Mangler();
+        }
+
+        var gammelt = await _db.Dokument
+            .Where(d => d.DyrId == dyrId && d.Kategori == DokumentKategori.Profilbilde)
+            .Select(d => new { d.Id, d.StorrelseByte })
+            .SingleOrDefaultAsync(ct);
+
+        // Plassen det gamle bildet frigjor, teller med. Ellers kunne en
+        // husstand pa grensen aldri bytte bilde.
+        var feil = Demofeil()
+            ?? Vedleggsregler.ProfilbildeFeil(bilde)
+            ?? await Plassfeil(bilde.Data.Length - (gammelt?.StorrelseByte ?? 0L), ct);
+
+        if (feil is not null)
+        {
+            return Vedleggsresultat.Avvist(feil);
+        }
+
+        // Det gamle ut og det nye inn i samme transaksjon. Den unike indeksen
+        // tillater ikke to profilbilder, sa rekkefolgen er ikke valgfri.
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        if (gammelt is not null)
+        {
+            await _db.Dokument.Where(d => d.Id == gammelt.Id).ExecuteDeleteAsync(ct);
+        }
+
+        _db.Dokument.Add(new Dokument
+        {
+            DyrId = dyrId,
+            Originalnavn = Vedleggsregler.Navn(bilde.Navn),
+            Innholdstype = Vedleggsregler.Innholdstype(bilde.Data)!,
+            StorrelseByte = bilde.Data.Length,
+            Kategori = DokumentKategori.Profilbilde,
+            OpplastetDato = Tidssone.Idag(DateTimeOffset.UtcNow),
+            Innhold = new DokumentInnhold { Data = bilde.Data }
+        });
+
+        await _db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+
+        return Vedleggsresultat.Lagret();
+    }
+
+    public async Task<bool> FjernProfilbilde(int dyrId, CancellationToken ct)
+        => await _db.Dokument
+            .Where(d => d.DyrId == dyrId && d.Kategori == DokumentKategori.Profilbilde)
+            .ExecuteDeleteAsync(ct) > 0;
+
     public async Task<Vedleggsfil?> Hent(int dokumentId, CancellationToken ct)
         => await _db.DokumentInnhold
             .Where(i => i.DokumentId == dokumentId)
@@ -113,6 +165,13 @@ public sealed class VedleggService : IVedleggService
 
         return slettet > 0;
     }
+
+    /// <summary>
+    /// Demoen deler database med ekte husstander. Tre hundre demoer med
+    /// vedlegg ville fylt den - og da stopper appen for alle.
+    /// </summary>
+    private string? Demofeil()
+        => _meg.ErDemo ? "Filer kan ikke lastes opp i demoen." : null;
 
     /// <summary>
     /// Er det plass til <paramref name="nyeByte"/> til? Forst husstandens

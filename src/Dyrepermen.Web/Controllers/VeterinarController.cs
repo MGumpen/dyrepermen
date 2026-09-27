@@ -1,6 +1,7 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Web.Extensions;
 using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -18,13 +19,13 @@ public sealed class VeterinarController : Controller
 {
     private readonly IVeterinarService _veterinar;
     private readonly IDyrService _dyr;
-    private readonly IVedleggService _vedlegg;
+    private readonly IDokumentService _vedlegg;
     private readonly IGjeldendeBruker _meg;
 
     public VeterinarController(
         IVeterinarService veterinar,
         IDyrService dyr,
-        IVedleggService vedlegg,
+        IDokumentService vedlegg,
         IGjeldendeBruker meg)
     {
         _veterinar = veterinar;
@@ -271,7 +272,11 @@ public sealed class VeterinarController : Controller
             return View(Timeskjema, await ByggTime(ny, ct));
         }
 
-        var filer = await LesFiler(vedlegg, ct);
+        var filer = new List<NyttVedlegg>(vedlegg.Count);
+        foreach (var fil in vedlegg)
+        {
+            filer.Add(await fil.TilVedlegg(ct));
+        }
 
         if (await _vedlegg.Kontroller(filer, ct) is { } feil)
         {
@@ -390,23 +395,4 @@ public sealed class VeterinarController : Controller
             // Skjult i demoen. Tjenesten avviser uansett.
             KanLasteOpp = !_meg.ErDemo
         };
-
-    /// <summary>
-    /// Leser filene inn i minnet. Trygt fordi hele foresporselen er avgrenset
-    /// av RequestSizeLimit - en fil pa en gigabyte kommer aldri hit.
-    /// </summary>
-    private static async Task<IReadOnlyList<NyttVedlegg>> LesFiler(
-        IReadOnlyList<IFormFile> filer, CancellationToken ct)
-    {
-        var lest = new List<NyttVedlegg>(filer.Count);
-
-        foreach (var fil in filer)
-        {
-            using var minne = new MemoryStream((int)fil.Length);
-            await fil.CopyToAsync(minne, ct);
-            lest.Add(new NyttVedlegg(fil.FileName, minne.ToArray()));
-        }
-
-        return lest;
-    }
 }

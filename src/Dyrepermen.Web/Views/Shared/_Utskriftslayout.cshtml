@@ -9,18 +9,31 @@
     <link rel="icon" href="~/img/logo.svg" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @* Stil som bare gjelder en av utskriftene - som plakatens @page-regel,
+       som ellers ville tatt margen fra den vanlige utskriften. *@
+    @await RenderSectionAsync("Stil", required: false)
 </head>
 <body class="utskrift">
     @* Egen layout uten sidemeny, brukerkort og topplinje. De hoerer til
        navigasjonen i appen, og har ingenting pa et ark a gjore. *@
     <div class="utskrift-ark">
         <header class="utskrift-hode">
-            <div>
-                <h1>@Meg.HusstandNavn</h1>
-                <p class="utskrift-undertittel">
-                    Dyrepermen · skrevet ut @DateTime.Now.ToString("d. MMMM yyyy")
-                </p>
-            </div>
+            @* Husstanden og datoen som standard. Savnet-plakaten overstyrer:
+               den skal henge pa en lyktestolpe, og husstandens navn og
+               utskriftsdatoen er ikke det forbipasserende trenger. *@
+            @if (IsSectionDefined("Tittel"))
+            {
+                @await RenderSectionAsync("Tittel")
+            }
+            else
+            {
+                <div>
+                    <h1>@Meg.HusstandNavn</h1>
+                    <p class="utskrift-undertittel">
+                        Dyrepermen · skrevet ut @DateTime.Now.ToString("d. MMMM yyyy")
+                    </p>
+                </div>
+            }
 
             @* Skjules ved utskrift. Den er til for a starte utskriften, og
                skal ikke ligge som en gra boks oeverst pa arket.
@@ -29,8 +42,11 @@
                forhandsvisning: man skal se hva som kom med, og kunne endre
                utvalget, for noe skrives ut. *@
             <div class="utskrift-knapper">
-                <a href="@(ViewData["EndreUtvalg"] as string ?? Url.Action("Velg", "Informasjon"))"
-                   class="btn btn-outline-secondary btn-sm">Endre utvalg</a>
+                @* Bare nar siden har et utvalg a endre. *@
+                @if (ViewData["EndreUtvalg"] is string endreUtvalg)
+                {
+                    <a href="@endreUtvalg" class="btn btn-outline-secondary btn-sm">Endre utvalg</a>
+                }
                 <a asp-controller="Informasjon" asp-action="Index"
                    class="btn btn-outline-secondary btn-sm">Tilbake</a>
                 <button type="button" class="btn btn-primary btn-sm"

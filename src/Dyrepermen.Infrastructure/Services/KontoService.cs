@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Dyrepermen.Application.Dtos;
+using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Domain.Entities;
 using Dyrepermen.Infrastructure.Persistence;
@@ -47,6 +48,14 @@ public sealed class KontoService : IKontoService
         var data = new
         {
             eksportert = DateTimeOffset.UtcNow,
+
+            // Brukerens egne opplysninger. Telefonnummeret star bare her, ikke
+            // under medlemmer - andre medlemmers nummer er ikke denne brukerens
+            // data a eksportere.
+            meg = await _db.Users
+                .Where(u => u.Id == brukerId)
+                .Select(u => new { u.Visningsnavn, u.Email, Telefon = u.PhoneNumber })
+                .SingleOrDefaultAsync(ct),
             husstand = await _db.Husstand
                 .Where(h => h.Id == husstandId)
                 .Select(h => new { h.Navn, h.OpprettetDato })
@@ -90,6 +99,8 @@ public sealed class KontoService : IKontoService
                     d.ChipNr,
                     d.RegNrNkk,
                     d.Kastrert,
+                    d.Farge,
+                    d.Kjennetegn,
                     d.Aktiv,
                     vekter = d.Vekter
                         .OrderBy(v => v.Dato)
@@ -165,6 +176,32 @@ public sealed class KontoService : IKontoService
             .CountAsync(d => alene.Contains(d.HusstandId), ct);
 
         return (true, dyr);
+    }
+
+    public async Task<string?> HentTelefon(int brukerId, CancellationToken ct)
+        => await _db.Users
+            .Where(u => u.Id == brukerId)
+            .Select(u => u.PhoneNumber)
+            .SingleOrDefaultAsync(ct);
+
+    public async Task<bool> LagreTelefon(
+        int brukerId, string? telefon, CancellationToken ct)
+    {
+        var bruker = await _brukere.FindByIdAsync(brukerId.ToString());
+        if (bruker is null)
+        {
+            return false;
+        }
+
+        // Gjennom UserManager, ikke rett i tabellen: den nullstiller ogsa
+        // "bekreftet"-flagget og sikkerhetsstempelet, slik Identity forventer
+        // nar nummeret endres.
+        var resultat = await _brukere.SetPhoneNumberAsync(bruker, telefon.TomTilNull());
+
+        // Bruker-ID, aldri nummeret. Se CLAUDE.md om hva som ikke logges.
+        _log.LogInformation("Telefonnummer endret for bruker {BrukerId}", brukerId);
+
+        return resultat.Succeeded;
     }
 
     public async Task<SlettResultat> SlettBruker(

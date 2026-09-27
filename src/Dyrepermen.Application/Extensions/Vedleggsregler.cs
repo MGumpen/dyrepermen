@@ -81,6 +81,22 @@ public static class Vedleggsregler
     }
 
     /// <summary>
+    /// Som <see cref="Feil"/>, men for profilbildet: det ma i tillegg vaere et
+    /// bilde. En PDF ville gitt et knust bilde pa dashbordet.
+    /// </summary>
+    public static string? ProfilbildeFeil(NyttVedlegg bilde)
+    {
+        if (Feil([bilde]) is { } feil)
+        {
+            return feil;
+        }
+
+        return Innholdstype(bilde.Data) is "image/jpeg" or "image/png"
+            ? null
+            : $"«{Navn(bilde.Navn)}» er ikke et bilde. Profilbildet må være jpg eller png.";
+    }
+
+    /// <summary>
     /// Filnavnet uten sti, trimmet og kuttet til kolonnens lengde. Enkelte
     /// nettlesere sender hele stien fra brukerens maskin, og den har ingenting
     /// i databasen a gjore.

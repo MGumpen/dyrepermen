@@ -3,10 +3,10 @@ using Dyrepermen.Application.Dtos;
 namespace Dyrepermen.Application.Interfaces;
 
 /// <summary>
-/// Filer lagt ved et veterinaerbesok - typisk kvitteringen. Filene ligger i
-/// databasen, ikke pa disk. Se ADR 0018.
+/// Opplastede filer: vedlegg til veterinaerbesok - typisk kvitteringen - og
+/// dyrets profilbilde. Filene ligger i databasen, ikke pa disk. Se ADR 0018.
 /// </summary>
-public interface IVedleggService
+public interface IDokumentService
 {
     /// <summary>
     /// Kan filene legges ved? Null betyr ja; ellers en hel setning som sier
@@ -26,7 +26,17 @@ public interface IVedleggService
     Task<Vedleggsresultat> LeggVedBesok(
         int besokId, IReadOnlyList<NyttVedlegg> filer, CancellationToken ct);
 
-    /// <summary>Null betyr at vedlegget ikke finnes i denne husstanden.</summary>
+    /// <summary>
+    /// Lagrer profilbildet til dyret, og bytter ut det gamle om det finnes.
+    /// Samme grenser som vedleggene, og i tillegg ma det vaere et bilde.
+    /// </summary>
+    Task<Vedleggsresultat> LagreProfilbilde(
+        int dyrId, NyttVedlegg bilde, CancellationToken ct);
+
+    /// <summary>False betyr at dyret ikke har profilbilde i denne husstanden.</summary>
+    Task<bool> FjernProfilbilde(int dyrId, CancellationToken ct);
+
+    /// <summary>Null betyr at dokumentet ikke finnes i denne husstanden.</summary>
     Task<Vedleggsfil?> Hent(int dokumentId, CancellationToken ct);
 
     Task<bool> Slett(int dokumentId, CancellationToken ct);

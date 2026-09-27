@@ -8,6 +8,44 @@
 <partial name="_Dyrhode" model='new DyrhodeVm("Rediger", Model.Id, Model.Navn)' />
 
 <div style="max-width: 34rem;">
+    @* Eget kort med egne skjemaer, utenfor redigeringsskjemaet: et skjema kan
+       ikke ligge i et annet, og en valideringsfeil i navnet skal ikke koste
+       bildet brukeren nettopp valgte. *@
+    <section class="kort" id="profilbilde">
+        <div class="kort-hode">
+            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-dyr" /></svg>
+            <h2>Bilde</h2>
+        </div>
+        <div class="kort-kropp d-flex gap-3 align-items-start">
+            <partial name="_Profilbilde"
+                     model='new ProfilbildeVm(Model.ProfilbildeId, Model.Navn, "stor")' />
+            <div class="flex-grow-1 min-w-0">
+                <form method="post" asp-action="LagreProfilbilde" asp-route-dyrId="@Model.Id"
+                      enctype="multipart/form-data" class="mb-2">
+                    @Html.AntiForgeryToken()
+                    <input class="form-control form-control-sm mb-2" type="file" name="bilde"
+                           accept="image/*" aria-label="Velg bilde av @Model.Navn"
+                           data-skaler-bilder="1200" required />
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        @(Model.ProfilbildeId is null ? "Last opp bilde" : "Bytt bilde")
+                    </button>
+                </form>
+                @if (Model.ProfilbildeId is not null)
+                {
+                    <form method="post" asp-action="FjernProfilbilde" asp-route-dyrId="@Model.Id"
+                          onsubmit="return confirm('Fjerne bildet av @Model.Navn?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-lenke-fare">Fjern bildet</button>
+                    </form>
+                }
+                <p class="form-text mb-0">
+                    Vises på oversikten, på siden til @Model.Navn og på
+                    savnet-plakaten. Velg et bilde der hele dyret synes.
+                </p>
+            </div>
+        </div>
+    </section>
+
     <form method="post" asp-action="Rediger" asp-route-dyrId="@Model.Id">
         @Html.AntiForgeryToken()
 
@@ -76,4 +114,5 @@
 
 @section Skript {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/bildeskalering.js" asp-append-version="true"></script>
 }

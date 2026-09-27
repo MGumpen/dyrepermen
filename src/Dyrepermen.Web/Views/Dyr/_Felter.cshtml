@@ -60,6 +60,25 @@
     <label asp-for="Kastrert" class="form-check-label"></label>
 </div>
 
+@* Det man trenger nar dyret er borte. Star pa savnet-plakaten. *@
+<div class="mb-3">
+    <label asp-for="Farge" class="form-label"></label>
+    <input asp-for="Farge" class="form-control"
+           placeholder="For eksempel «gul, korthåret»" />
+    <span asp-validation-for="Farge" class="text-danger small"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Kjennetegn" class="form-label"></label>
+    <textarea asp-for="Kjennetegn" class="form-control" rows="2"
+              placeholder="For eksempel «hvit flekk på brystet, arr på venstre øre, rødt halsbånd»"></textarea>
+    <span asp-validation-for="Kjennetegn" class="text-danger small"></span>
+    <div class="form-text">
+        Det som skiller dyret fra andre av samme rase og farge. Kommer med på
+        savnet-plakaten.
+    </div>
+</div>
+
 <script>
     // Skjuler NKK-feltet nar arten ikke er hund. Serveren nuller det ut
     // uansett, sa dette er ren opprydding i skjemaet.

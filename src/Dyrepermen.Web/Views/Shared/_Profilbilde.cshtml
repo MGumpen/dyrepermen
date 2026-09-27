@@ -1,0 +1,16 @@
+@model ProfilbildeVm
+
+@* Forbokstaven i stedet for et tomt felt: kortene skal se like ut enten
+   dyret har bilde eller ikke, og et gratt omriss ser ut som noe som ikke
+   lastet. alt="" fordi navnet alltid star ved siden av. *@
+@if (Model.DokumentId is { } id)
+{
+    <img class="profilbilde @Model.Storrelse" alt=""
+         src="@Url.Action("Vis", "Dokument", new { id })" />
+}
+else
+{
+    <span class="profilbilde @Model.Storrelse tomt-bilde" aria-hidden="true">
+        @(Model.Navn.Length > 0 ? char.ToUpper(Model.Navn[0]) : '?')
+    </span>
+}

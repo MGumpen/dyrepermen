@@ -3,14 +3,15 @@
 // par hundre KB. Vedleggene ligger i databasen, som har en fast grense - se
 // ADR 0018.
 //
-// Gjelder <input type="file" data-skaler-bilder>. PDF-er og alt som ikke er
-// bilder, sendes som de er. Feiler skaleringen, sendes originalen: serveren
-// sjekker type og storrelse uansett, sa skriptet er en forbedring og ingen
-// sperre.
+// Gjelder <input type="file" data-skaler-bilder>. Verdien er lengste side i
+// piksler (data-skaler-bilder="1200"); uten verdi brukes 1600, som holder for
+// en kvittering. PDF-er og alt som ikke er bilder, sendes som de er. Feiler
+// skaleringen, sendes originalen: serveren sjekker type og storrelse uansett,
+// sa skriptet er en forbedring og ingen sperre.
 (function () {
     'use strict';
 
-    var MAKS_SIDE = 1600;
+    var STANDARD_SIDE = 1600;
     var KVALITET = 0.8;
 
     // Mindre enn dette er allerede smatt nok. Ingen grunn til a rekomprimere.
@@ -26,9 +27,9 @@
         return createImageBitmap(fil, { imageOrientation: 'from-image' });
     }
 
-    function skaler(fil) {
+    function skaler(fil, maksSide) {
         return dekod(fil).then(function (bilde) {
-            var faktor = Math.min(1, MAKS_SIDE / Math.max(bilde.width, bilde.height));
+            var faktor = Math.min(1, maksSide / Math.max(bilde.width, bilde.height));
             var lerret = document.createElement('canvas');
             lerret.width = Math.round(bilde.width * faktor);
             lerret.height = Math.round(bilde.height * faktor);
@@ -58,6 +59,7 @@
 
     function behandle(felt) {
         var filer = Array.prototype.slice.call(felt.files);
+        var maksSide = parseInt(felt.dataset.skalerBilder, 10) || STANDARD_SIDE;
 
         if (!filer.some(skalerbar) || typeof DataTransfer === 'undefined') {
             return;
@@ -69,7 +71,7 @@
         Array.prototype.forEach.call(sperret, function (k) { k.disabled = true; });
 
         Promise.all(filer.map(function (fil) {
-            return skalerbar(fil) ? skaler(fil) : Promise.resolve(fil);
+            return skalerbar(fil) ? skaler(fil, maksSide) : Promise.resolve(fil);
         })).then(function (ferdige) {
             var overforing = new DataTransfer();
             ferdige.forEach(function (fil) { overforing.items.add(fil); });

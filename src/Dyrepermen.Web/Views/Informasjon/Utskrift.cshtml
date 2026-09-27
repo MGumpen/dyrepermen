@@ -50,6 +50,14 @@
                 {
                     <dt>Reg.nr. NKK</dt><dd>@nkk</dd>
                 }
+                @if (d.Farge is { } farge)
+                {
+                    <dt>Farge og pels</dt><dd>@farge</dd>
+                }
+                @if (d.Kjennetegn is { } kjennetegn)
+                {
+                    <dt>Kjennetegn</dt><dd>@kjennetegn</dd>
+                }
             </dl>
         </div>
         }

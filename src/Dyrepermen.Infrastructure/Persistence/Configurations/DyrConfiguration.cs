@@ -14,7 +14,8 @@ public sealed class DyrConfiguration : IEntityTypeConfiguration<Dyr>
 
         b.Property(d => d.Navn).HasMaxLength(60).IsRequired();
         b.Property(d => d.Rase).HasMaxLength(80);
-        b.Property(d => d.BildeFilnavn).HasMaxLength(120);
+        b.Property(d => d.Farge).HasMaxLength(100);
+        b.Property(d => d.Kjennetegn).HasMaxLength(500);
 
         // VARCHAR(15) med lengde-CHECK, ikke CHAR(15). PostgreSQL blank-padder
         // char(n), slik at verdien kommer tilbake med etterfolgende mellomrom

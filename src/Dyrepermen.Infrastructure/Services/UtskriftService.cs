@@ -41,10 +41,7 @@ public sealed class UtskriftService : IUtskriftService
         var dyr = await _db.Dyr
             .Where(d => ider == null || ider.Contains(d.Id))
             .OrderBy(d => d.Navn)
-            .Select(d => new DyrDetaljer(
-                d.Id, d.Navn, d.Art, d.Kjonn, d.Rase, d.Fodselsdato,
-                d.ChipNr, d.RegNrNkk, d.Kastrert,
-                d.ForingsloggAktiv, d.ForplanAktiv))
+            .Select(Dyrprojeksjon.Detaljer)
             .ToListAsync(ct);
 
         // Notatene hentes en gang og deles mellom dyrene og fellesdelen.

@@ -16,5 +16,7 @@ public sealed record RedigerDyr(
     string? ChipNr,
     string? RegNrNkk,
     bool Kastrert,
+    string? Farge,
+    string? Kjennetegn,
     bool ForingsloggAktiv,
     bool ForplanAktiv);

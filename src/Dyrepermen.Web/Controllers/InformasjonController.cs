@@ -19,13 +19,21 @@ public sealed class InformasjonController : Controller
     private readonly IInformasjonService _info;
     private readonly IDyrService _dyr;
     private readonly IUtskriftService _utskrift;
+    private readonly IKontoService _konto;
+    private readonly IGjeldendeBruker _meg;
 
     public InformasjonController(
-        IInformasjonService info, IDyrService dyr, IUtskriftService utskrift)
+        IInformasjonService info,
+        IDyrService dyr,
+        IUtskriftService utskrift,
+        IKontoService konto,
+        IGjeldendeBruker meg)
     {
         _info = info;
         _dyr = dyr;
         _utskrift = utskrift;
+        _konto = konto;
+        _meg = meg;
     }
 
     [HttpGet("")]
@@ -85,6 +93,30 @@ public sealed class InformasjonController : Controller
         ViewData["EndreUtvalg"] = Url.Action(nameof(Velg)) + Request.QueryString;
 
         return View(await _utskrift.Hent(utvalg, ct));
+    }
+
+    /// <summary>
+    /// Savnet-plakat for ett dyr: bilde, kjennetegn, chipnummer og hvem man
+    /// ringer. Egen side, ikke en del av den vanlige utskriften - den skal
+    /// henge pa en lyktestolpe, ikke ligge i permen.
+    ///
+    /// Kontakten er den innloggede brukeren, med nummeret fra Min konto. Den
+    /// kan endres pa siden for utskrift, uten at noe lagres.
+    /// </summary>
+    [HttpGet("savnet/{dyrId:int}")]
+    public async Task<IActionResult> Savnet(int dyrId, CancellationToken ct)
+    {
+        var dyr = await _dyr.HentDetaljer(dyrId, ct);
+        if (dyr is null)
+        {
+            return NotFound();
+        }
+
+        var telefon = _meg.BrukerId is { } brukerId
+            ? await _konto.HentTelefon(brukerId, ct)
+            : null;
+
+        return View(new SavnetVm(dyr, _meg.Visningsnavn, telefon));
     }
 
     private static Utskriftsvalg Valg(int[] dyr, Utskriftsdel[] del)

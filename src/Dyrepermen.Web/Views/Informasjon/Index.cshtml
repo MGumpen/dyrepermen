@@ -117,6 +117,15 @@
                         }
                     </ul>
                 }
+
+                @* Egen utskrift, ikke en del av «Lagre som PDF»: plakaten skal
+                   henge ute, permen ligger hjemme. *@
+                <div class="kort-handlinger">
+                    <a class="btn btn-outline-secondary btn-sm"
+                       asp-action="Savnet" asp-route-dyrId="@d.Id">
+                        Savnet-plakat
+                    </a>
+                </div>
             </section>
         }
 

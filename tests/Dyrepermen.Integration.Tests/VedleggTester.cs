@@ -44,11 +44,11 @@ public sealed partial class VedleggTester : IAsyncLifetime
 
     private static DateOnly Idag => Tidssone.Idag(DateTimeOffset.UtcNow);
 
-    private static VedleggService Tjeneste(
+    private static DokumentService Tjeneste(
         DyrepermenDbContext db, int husstand, bool demo = false)
         => new(db,
             new Husstandskontekst { HusstandId = husstand, ErDemo = demo },
-            NullLogger<VedleggService>.Instance);
+            NullLogger<DokumentService>.Instance);
 
     private static VeterinarService Veterinar(DyrepermenDbContext db, int husstand)
         => new(db, new Husstandskontekst { HusstandId = husstand });
@@ -241,7 +241,7 @@ public sealed partial class VedleggTester : IAsyncLifetime
             besokId, [new NyttVedlegg("kvittering.jpg", Jpeg)], default);
 
         Assert.False(resultat.Ok);
-        Assert.Equal("Vedlegg kan ikke lastes opp i demoen.", resultat.Feil);
+        Assert.Equal("Filer kan ikke lastes opp i demoen.", resultat.Feil);
         Assert.Equal(0, await db.Dokument.CountAsync());
     }
 

@@ -39,10 +39,7 @@ public sealed class DyrService : IDyrService
         // null, som controlleren gjor om til 404.
         => await _db.Dyr
             .Where(d => d.Id == dyrId)
-            .Select(d => new DyrDetaljer(
-                d.Id, d.Navn, d.Art, d.Kjonn, d.Rase, d.Fodselsdato,
-                d.ChipNr, d.RegNrNkk, d.Kastrert,
-                d.ForingsloggAktiv, d.ForplanAktiv))
+            .Select(Dyrprojeksjon.Detaljer)
             .SingleOrDefaultAsync(ct);
 
     public async Task<DyrSammendrag?> HentSammendrag(
@@ -189,6 +186,8 @@ public sealed class DyrService : IDyrService
                 ? input.RegNrNkk.TomTilNull()?.ToUpperInvariant()
                 : null,
             Kastrert = input.Kastrert,
+            Farge = input.Farge.TomTilNull(),
+            Kjennetegn = input.Kjennetegn.TomTilNull(),
             ForingsloggAktiv = std?.ForingsloggStandard ?? false,
             ForplanAktiv = std?.ForplanStandard ?? true
         };
@@ -227,6 +226,8 @@ public sealed class DyrService : IDyrService
             ? input.RegNrNkk.TomTilNull()?.ToUpperInvariant()
             : null;
         dyr.Kastrert = input.Kastrert;
+        dyr.Farge = input.Farge.TomTilNull();
+        dyr.Kjennetegn = input.Kjennetegn.TomTilNull();
         dyr.ForingsloggAktiv = input.ForingsloggAktiv;
         dyr.ForplanAktiv = input.ForplanAktiv;
 

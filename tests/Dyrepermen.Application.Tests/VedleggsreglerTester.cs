@@ -98,4 +98,24 @@ public sealed class VedleggsreglerTester
         Assert.Equal(Vedleggsregler.MaksNavnLengde,
             Vedleggsregler.Navn(new string('a', 500) + ".jpg").Length);
     }
+
+    [Fact]
+    public void Profilbildet_ma_vaere_et_bilde()
+    {
+        Assert.Null(Vedleggsregler.ProfilbildeFeil(new NyttVedlegg("luna.jpg", Jpeg)));
+        Assert.Null(Vedleggsregler.ProfilbildeFeil(new NyttVedlegg("luna.png", Png)));
+        Assert.Equal(
+            "«luna.pdf» er ikke et bilde. Profilbildet må være jpg eller png.",
+            Vedleggsregler.ProfilbildeFeil(new NyttVedlegg("luna.pdf", Pdf)));
+    }
+
+    [Fact]
+    public void Profilbildet_folger_de_vanlige_reglene_forst()
+    {
+        // En fil som ikke er noe av det godkjente, far den vanlige meldingen -
+        // ikke "ikke et bilde", som ville antydet at en PDF hadde gatt.
+        Assert.Equal(
+            "«luna.jpg» er ikke et bilde eller en PDF. Bare jpg, png og pdf kan legges ved.",
+            Vedleggsregler.ProfilbildeFeil(new NyttVedlegg("luna.jpg", [0x4D, 0x5A, 0x90, 0x00])));
+    }
 }

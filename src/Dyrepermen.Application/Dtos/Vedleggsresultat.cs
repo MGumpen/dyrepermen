@@ -1,14 +1,15 @@
 namespace Dyrepermen.Application.Dtos;
 
 /// <summary>
-/// Svaret nar filer legges ved et besok. <see cref="Feil"/> er en hel
-/// setning som kan vises til brukeren slik den er.
+/// Svaret nar filer lastes opp - vedlegg til et besok eller et profilbilde.
+/// <see cref="Feil"/> er en hel setning som kan vises til brukeren slik den er.
 /// </summary>
 public sealed record Vedleggsresultat(bool Ok, bool FinnesIkke, string? Feil)
 {
     public static Vedleggsresultat Lagret() => new(true, false, null);
 
-    public static Vedleggsresultat BesoketFinnesIkke() => new(false, true, null);
+    /// <summary>Besoket eller dyret finnes ikke i denne husstanden.</summary>
+    public static Vedleggsresultat Mangler() => new(false, true, null);
 
     public static Vedleggsresultat Avvist(string feil) => new(false, false, feil);
 }

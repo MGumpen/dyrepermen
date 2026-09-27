@@ -12,9 +12,9 @@ namespace Dyrepermen.Web.Controllers;
 [Route("dokument")]
 public sealed class DokumentController : Controller
 {
-    private readonly IVedleggService _vedlegg;
+    private readonly IDokumentService _dokumenter;
 
-    public DokumentController(IVedleggService vedlegg) => _vedlegg = vedlegg;
+    public DokumentController(IDokumentService dokumenter) => _dokumenter = dokumenter;
 
     /// <summary>
     /// Vises i nettleseren, ikke lastet ned: det er kvitteringen man vil se.
@@ -25,7 +25,7 @@ public sealed class DokumentController : Controller
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Vis(int id, CancellationToken ct)
     {
-        var fil = await _vedlegg.Hent(id, ct);
+        var fil = await _dokumenter.Hent(id, ct);
 
         if (fil is null)
         {

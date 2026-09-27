@@ -10,6 +10,7 @@
 }
 
 <div class="sidehode">
+    <partial name="_Profilbilde" model='new ProfilbildeVm(d.ProfilbildeId, d.Navn, "stor")' />
     <div>
         <h1>@d.Navn</h1>
         <div class="undertittel">
@@ -60,7 +61,13 @@
                     }
 
                     <dt class="col-5 fw-normal text-body-secondary">Kastrert</dt>
-                    <dd class="col-7 mb-0">@(d.Kastrert ? "Ja" : "Nei")</dd>
+                    <dd class="col-7">@(d.Kastrert ? "Ja" : "Nei")</dd>
+
+                    <dt class="col-5 fw-normal text-body-secondary">Farge og pels</dt>
+                    <dd class="col-7">@(d.Farge ?? "—")</dd>
+
+                    <dt class="col-5 fw-normal text-body-secondary">Kjennetegn</dt>
+                    <dd class="col-7 mb-0">@(d.Kjennetegn ?? "—")</dd>
                 </dl>
             </div>
         </section>
