@@ -175,6 +175,7 @@
                                 {
                                     <span class="under d-block">@sted</span>
                                 }
+                                <partial name="_Vedleggslenker" model="b.Vedlegg" />
                             </span>
                             <span class="hoyre">
                                 <span class="d-block">@Tid(b)</span>
@@ -236,6 +237,7 @@
                                 <span class="under d-block">
                                     @Tid(b)@(b.Sted is { } s ? $" · {s}" : "")
                                 </span>
+                                <partial name="_Vedleggslenker" model="b.Vedlegg" />
                             </span>
                             <span class="hoyre">
                                 @if (b.KostnadKr is { } kr)

@@ -41,6 +41,7 @@ public sealed class DyrepermenDbContext
     public DbSet<Veterinar> Veterinar => Set<Veterinar>();
     public DbSet<Forsikring> Forsikring => Set<Forsikring>();
     public DbSet<Dokument> Dokument => Set<Dokument>();
+    public DbSet<DokumentInnhold> DokumentInnhold => Set<DokumentInnhold>();
     public DbSet<Handleliste> Handleliste => Set<Handleliste>();
     public DbSet<Informasjon> Informasjon => Set<Informasjon>();
 
@@ -116,5 +117,10 @@ public sealed class DyrepermenDbContext
 
         b.Entity<Dokument>()
          .HasQueryFilter(x => x.Dyr.HusstandId == _husstand.HusstandId);
+
+        // Gjennom to ledd, som forplantrinnene. Innholdet leses bare via et
+        // dokument, men filteret skal ikke hvile pa at alle husker det.
+        b.Entity<DokumentInnhold>()
+         .HasQueryFilter(x => x.Dokument.Dyr.HusstandId == _husstand.HusstandId);
     }
 }

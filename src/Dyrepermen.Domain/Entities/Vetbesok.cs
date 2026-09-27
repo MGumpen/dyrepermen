@@ -64,4 +64,7 @@ public sealed class Vetbesok : IHusstandsbundet
     public DateOnly? NesteKontrollDato { get; set; }
 
     public string? Notat { get; set; }
+
+    /// <summary>Kvitteringer og andre filer lagt ved besoket.</summary>
+    public ICollection<Dokument> Vedlegg { get; set; } = new List<Dokument>();
 }

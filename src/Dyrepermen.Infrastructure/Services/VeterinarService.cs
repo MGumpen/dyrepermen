@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
@@ -151,43 +152,64 @@ public sealed class VeterinarService : IVeterinarService
         => await _db.Vetbesok
             .OrderByDescending(x => x.Dato)
             .ThenByDescending(x => x.Id)
-            .Select(x => new Vetbesokrad(
-                x.Id,
-                x.DyrId,
-                x.Dyr.Navn,
-                x.VeterinarId,
-                x.Veterinar == null ? null : x.Veterinar.Navn,
-                x.Klinikk,
-                x.Dato,
-                x.Klokkeslett,
-                x.Arsak,
-                x.Diagnose,
-                x.KostnadKr,
-                x.ForsikringKrevd,
-                x.RefundertKr,
-                x.NesteKontrollDato,
-                x.Notat))
+            .Select(TilRad)
             .ToListAsync(ct);
 
-    public async Task<bool> OpprettBesok(NyttVetbesok input, CancellationToken ct)
+    public async Task<Vetbesokrad?> HentEttBesok(int besokId, CancellationToken ct)
+        => await _db.Vetbesok
+            .Where(x => x.Id == besokId)
+            .Select(TilRad)
+            .SingleOrDefaultAsync(ct);
+
+    /// <summary>
+    /// Projeksjonen fra besok til rad, delt av listen og enkeltbesoket. To
+    /// kopier av en projeksjon med femten felter spriker ved forste endring.
+    /// </summary>
+    private static readonly Expression<Func<Vetbesok, Vetbesokrad>> TilRad =
+        x => new Vetbesokrad(
+            x.Id,
+            x.DyrId,
+            x.Dyr.Navn,
+            x.VeterinarId,
+            x.Veterinar == null ? null : x.Veterinar.Navn,
+            x.Klinikk,
+            x.Dato,
+            x.Klokkeslett,
+            x.Arsak,
+            x.Diagnose,
+            x.KostnadKr,
+            x.ForsikringKrevd,
+            x.RefundertKr,
+            x.NesteKontrollDato,
+            x.Notat,
+            // Korrelert undersporring i samme rundtur. Bare metadata - selve
+            // filene ligger i dokument_innhold og leses ikke her.
+            x.Vedlegg
+                .OrderBy(v => v.Id)
+                .Select(v => new Vedleggsrad(
+                    v.Id, v.Originalnavn, v.Innholdstype, v.StorrelseByte))
+                .ToList());
+
+    public async Task<int?> OpprettBesok(NyttVetbesok input, CancellationToken ct)
     {
         if (!await ErGyldig(input, ct))
         {
-            return false;
+            return null;
         }
 
-        _db.Vetbesok.Add(NyttBesok(input));
+        var besok = NyttBesok(input);
+        _db.Vetbesok.Add(besok);
 
         await _db.SaveChangesAsync(ct);
-        return true;
+        return besok.Id;
     }
 
-    public async Task<bool> BestillKontroll(
+    public async Task<int?> BestillKontroll(
         int fraBesokId, NyttVetbesok input, CancellationToken ct)
     {
         if (!await ErGyldig(input, ct))
         {
-            return false;
+            return null;
         }
 
         // DyrId i tillegg til query-filteret: kontrollen for Luna skal ikke
@@ -200,12 +222,13 @@ public sealed class VeterinarService : IVeterinarService
             fra.NesteKontrollDato = null;
         }
 
-        _db.Vetbesok.Add(NyttBesok(input));
+        var besok = NyttBesok(input);
+        _db.Vetbesok.Add(besok);
 
         // Ett kall: timen og fjerningen av paminnelsen lagres sammen eller
         // ikke i det hele tatt.
         await _db.SaveChangesAsync(ct);
-        return true;
+        return besok.Id;
     }
 
     private static Vetbesok NyttBesok(NyttVetbesok input) => new()

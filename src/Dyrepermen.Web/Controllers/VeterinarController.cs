@@ -1,4 +1,5 @@
 using Dyrepermen.Application.Dtos;
+using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
 using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
@@ -17,11 +18,19 @@ public sealed class VeterinarController : Controller
 {
     private readonly IVeterinarService _veterinar;
     private readonly IDyrService _dyr;
+    private readonly IVedleggService _vedlegg;
+    private readonly IGjeldendeBruker _meg;
 
-    public VeterinarController(IVeterinarService veterinar, IDyrService dyr)
+    public VeterinarController(
+        IVeterinarService veterinar,
+        IDyrService dyr,
+        IVedleggService vedlegg,
+        IGjeldendeBruker meg)
     {
         _veterinar = veterinar;
         _dyr = dyr;
+        _vedlegg = vedlegg;
+        _meg = meg;
     }
 
     [HttpGet("")]
@@ -186,7 +195,7 @@ public sealed class VeterinarController : Controller
         int? kontrollFra, bool besok, CancellationToken ct)
     {
         var fra = kontrollFra is { } fraId
-            ? (await _veterinar.HentBesok(ct)).SingleOrDefault(b => b.Id == fraId)
+            ? await _veterinar.HentEttBesok(fraId, ct)
             : null;
 
         // Er besoket borte, eller kontrollen allerede bestilt, blir skjemaet
@@ -216,7 +225,7 @@ public sealed class VeterinarController : Controller
     public async Task<IActionResult> RedigerTime(
         int id, bool gjennomfort, CancellationToken ct)
     {
-        var rad = (await _veterinar.HentBesok(ct)).SingleOrDefault(b => b.Id == id);
+        var rad = await _veterinar.HentEttBesok(id, ct);
 
         if (rad is null)
         {
@@ -242,14 +251,31 @@ public sealed class VeterinarController : Controller
         }, ct));
     }
 
+    /// <summary>
+    /// Lagrer timen, og legger ved filene som ble valgt - typisk kvitteringen.
+    ///
+    /// Filene sjekkes FOR timen lagres. Ellers kunne en for stor eller feil
+    /// fil gitt en lagret time uten den kvitteringen brukeren trodde var med,
+    /// og bare en melding i etterkant om at noe gikk galt. Se ADR 0018.
+    /// </summary>
     [HttpPost("time")]
     [KreverEier]
     [ValidateAntiForgeryToken]
+    [RequestSizeLimit(Vedleggsregler.MaksForesporselByte)]
+    [RequestFormLimits(MultipartBodyLengthLimit = Vedleggsregler.MaksForesporselByte)]
     public async Task<IActionResult> LagreTime(
-        NyttVetbesokVm ny, CancellationToken ct)
+        NyttVetbesokVm ny, List<IFormFile> vedlegg, CancellationToken ct)
     {
         if (!ModelState.IsValid)
         {
+            return View(Timeskjema, await ByggTime(ny, ct));
+        }
+
+        var filer = await LesFiler(vedlegg, ct);
+
+        if (await _vedlegg.Kontroller(filer, ct) is { } feil)
+        {
+            ModelState.AddModelError(nameof(vedlegg), feil);
             return View(Timeskjema, await ByggTime(ny, ct));
         }
 
@@ -258,16 +284,29 @@ public sealed class VeterinarController : Controller
             ny.Arsak, ny.Diagnose, ny.KostnadKr, ny.ForsikringKrevd,
             ny.RefundertKr, ny.NesteKontrollDato, ny.Notat);
 
-        var ok = (ny.Id, ny.KontrollForBesokId) switch
+        int? besokId = (ny.Id, ny.KontrollForBesokId) switch
         {
-            ({ } id, _) => await _veterinar.OppdaterBesok(id, input, ct),
+            ({ } id, _) => await _veterinar.OppdaterBesok(id, input, ct) ? id : null,
             (null, { } fraId) => await _veterinar.BestillKontroll(fraId, input, ct),
             _ => await _veterinar.OpprettBesok(input, ct)
         };
 
-        if (!ok)
+        if (besokId is null)
         {
             return NotFound();
+        }
+
+        if (filer.Count > 0)
+        {
+            var resultat = await _vedlegg.LeggVedBesok(besokId.Value, filer, ct);
+
+            // Timen er lagret, men plassen ble brukt opp i sekundene siden
+            // kontrollen over. Sjeldent, men brukeren skal vite det.
+            if (!resultat.Ok)
+            {
+                TempData["Feil"] = $"Timen er lagret, men vedleggene ble ikke med. {resultat.Feil}";
+                return RedirectToAction(nameof(RedigerTime), new { id = besokId });
+            }
         }
 
         TempData["Melding"] = ny switch
@@ -279,6 +318,21 @@ public sealed class VeterinarController : Controller
         };
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost("time/{besokId:int}/vedlegg/{dokumentId:int}/slett")]
+    [KreverEier]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SlettVedlegg(
+        int besokId, int dokumentId, CancellationToken ct)
+    {
+        if (!await _vedlegg.Slett(dokumentId, ct))
+        {
+            return NotFound();
+        }
+
+        TempData["Melding"] = "Vedlegget er slettet.";
+        return RedirectToAction(nameof(RedigerTime), new { id = besokId });
     }
 
     [HttpPost("time/{id:int}/slett")]
@@ -329,6 +383,30 @@ public sealed class VeterinarController : Controller
                 .ToList(),
             StedValg = (await _veterinar.Hent(ct))
                 .Select(v => new SelectListItem(v.Navn, v.Id.ToString()))
-                .ToList()
+                .ToList(),
+            Vedlegg = ny.Id is { } id
+                ? (await _veterinar.HentEttBesok(id, ct))?.Vedlegg ?? []
+                : [],
+            // Skjult i demoen. Tjenesten avviser uansett.
+            KanLasteOpp = !_meg.ErDemo
         };
+
+    /// <summary>
+    /// Leser filene inn i minnet. Trygt fordi hele foresporselen er avgrenset
+    /// av RequestSizeLimit - en fil pa en gigabyte kommer aldri hit.
+    /// </summary>
+    private static async Task<IReadOnlyList<NyttVedlegg>> LesFiler(
+        IReadOnlyList<IFormFile> filer, CancellationToken ct)
+    {
+        var lest = new List<NyttVedlegg>(filer.Count);
+
+        foreach (var fil in filer)
+        {
+            using var minne = new MemoryStream((int)fil.Length);
+            await fil.CopyToAsync(minne, ct);
+            lest.Add(new NyttVedlegg(fil.FileName, minne.ToArray()));
+        }
+
+        return lest;
+    }
 }

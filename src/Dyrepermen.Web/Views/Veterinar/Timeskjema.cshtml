@@ -45,7 +45,8 @@
 
 <section class="kort">
     <div class="kort-kropp">
-    <form method="post" asp-action="LagreTime">
+    @* multipart for vedleggene. Uten den sender nettleseren bare filnavnet. *@
+    <form method="post" asp-action="LagreTime" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Ny.Id" />
         <input type="hidden" asp-for="Ny.KontrollForBesokId" />
@@ -156,6 +157,24 @@
             </div>
         </div>
 
+        @if (Model.KanLasteOpp)
+        {
+            <h3 class="h6 mt-4">Kvittering og vedlegg</h3>
+            <div>
+                @* image/* og ikke bare jpeg/png: pa mobil gir det valget mellom
+                   kamera og bilder. Skriptet gjor bildet om til en nedskalert
+                   jpeg for opplasting, og serveren avviser alt som ikke er
+                   jpeg, png eller pdf uansett hva nettleseren sier. *@
+                <input class="form-control" type="file" id="vedlegg" name="vedlegg"
+                       accept="image/*,application/pdf" multiple
+                       data-skaler-bilder />
+                <div class="form-text" id="vedlegg-hjelp">
+                    Ta bilde av kvitteringen, eller velg et bilde eller en PDF.
+                    Du kan legge ved flere.
+                </div>
+            </div>
+        }
+
         <div class="d-flex gap-2 mt-4">
             <button type="submit" class="btn btn-primary btn-sm">
                 @(erNy ? "Legg inn" : "Lagre")
@@ -165,6 +184,48 @@
     </form>
     </div>
 </section>
+
+@* Utenfor skjemaet over: et skjema kan ikke ligge inne i et annet, og hvert
+   vedlegg har sin egen sletteknapp. *@
+@if (Model.Vedlegg.Count > 0)
+{
+    <section class="kort" id="vedlegg-liste">
+        <div class="kort-hode">
+            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vedlegg" /></svg>
+            <h2>Vedlegg</h2>
+            <span class="antall">@Model.Vedlegg.Count</span>
+        </div>
+        <ul class="rad-liste">
+            @foreach (var v in Model.Vedlegg)
+            {
+                <li>
+                    <a class="flex-grow-1 min-w-0 d-flex align-items-center gap-2"
+                       asp-controller="Dokument" asp-action="Vis" asp-route-id="@v.Id"
+                       target="_blank" rel="noopener">
+                        @if (v.ErBilde)
+                        {
+                            <img class="vedlegg-miniatyr" loading="lazy" alt=""
+                                 src="@Url.Action("Vis", "Dokument", new { id = v.Id })" />
+                        }
+                        else
+                        {
+                            <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-vedlegg" /></svg>
+                        }
+                        <span class="tittel text-truncate">@v.Navn</span>
+                    </a>
+                    <span class="hoyre">
+                        <form method="post" asp-action="SlettVedlegg"
+                              asp-route-besokId="@ny.Id" asp-route-dokumentId="@v.Id"
+                              onsubmit="return confirm('Slette dette vedlegget?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-lenke-fare">Slett</button>
+                        </form>
+                    </span>
+                </li>
+            }
+        </ul>
+    </section>
+}
 
 @if (!erNy)
 {
@@ -186,4 +247,5 @@
 
 @section Skript {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/bildeskalering.js" asp-append-version="true"></script>
 }

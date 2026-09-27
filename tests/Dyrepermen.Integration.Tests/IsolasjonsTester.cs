@@ -130,6 +130,50 @@ public sealed class IsolasjonsTester
     }
 
     [Fact]
+    public async Task Husstand_ser_ikke_annen_husstands_dokumenter()
+    {
+        // Innholdet filtreres gjennom to ledd - i.Dokument.Dyr.HusstandId - og
+        // det er selve kvitteringen, med navn og adresse pa. Den skal ikke
+        // kunne leses av naboen, selv om noen spor tabellen direkte.
+        var a = await _fixture.OpprettHusstand("Hjemme");
+        var b = await _fixture.OpprettHusstand("Naboen");
+
+        await using (var ctxA = _fixture.LagContext(a))
+        {
+            var dyr = new Dyr
+            {
+                HusstandId = a,
+                Navn = "Luna",
+                Art = Art.Hund,
+                Kjonn = Kjonn.Tispe
+            };
+
+            dyr.Dokumenter.Add(new Dokument
+            {
+                Originalnavn = "kvittering.jpg",
+                Innholdstype = "image/jpeg",
+                StorrelseByte = 3,
+                Kategori = DokumentKategori.Kvittering,
+                OpplastetDato = new DateOnly(2026, 9, 1),
+                Innhold = new DokumentInnhold { Data = [0xFF, 0xD8, 0xFF] }
+            });
+
+            ctxA.Dyr.Add(dyr);
+            await ctxA.SaveChangesAsync();
+        }
+
+        await using (var ctxB = _fixture.LagContext(b))
+        {
+            Assert.Empty(await ctxB.Dokument.ToListAsync());
+            Assert.Empty(await ctxB.DokumentInnhold.ToListAsync());
+        }
+
+        await using var ctxAIgjen = _fixture.LagContext(a);
+        Assert.Single(await ctxAIgjen.Dokument.ToListAsync());
+        Assert.Single(await ctxAIgjen.DokumentInnhold.ToListAsync());
+    }
+
+    [Fact]
     public async Task Uautentisert_kontekst_ser_ingenting()
     {
         // HusstandId 0 betyr "ikke satt". Fail closed - se ADR 0001.

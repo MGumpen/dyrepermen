@@ -391,7 +391,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
         var fra = Assert.Single((await Dashbord(db, h)).Forfaller,
             p => p.Kilde == Kilde.Vetkontroll);
 
-        Assert.True(await t.BestillKontroll(fra.KildeId, new NyttVetbesok(
+        Assert.NotNull(await t.BestillKontroll(fra.KildeId, new NyttVetbesok(
             dyrId, null, "Dyreklinikken", Idag.AddDays(5), new TimeOnly(10, 0),
             "Kontroll etter sårstell", null, null, false, null, null, null), default));
 
@@ -424,7 +424,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             .Select(v => v.Id).SingleAsync();
 
         // Timen for Luna lagres, men Milos kontroll star igjen.
-        Assert.True(await t.BestillKontroll(milosBesok, new NyttVetbesok(
+        Assert.NotNull(await t.BestillKontroll(milosBesok, new NyttVetbesok(
             luna, null, null, Idag.AddDays(5), null, "Kontroll",
             null, null, false, null, null, null), default));
 

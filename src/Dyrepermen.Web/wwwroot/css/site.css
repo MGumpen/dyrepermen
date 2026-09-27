@@ -1695,3 +1695,23 @@ h1, h2, h3, h4 {
         max-width: 30rem;
     }
 }
+
+/* --- Vedlegg ----------------------------------------------------------- */
+
+.vedlegg-miniatyr {
+    width: 3rem;
+    height: 3rem;
+    object-fit: cover;
+    border-radius: .35rem;
+    border: 1px solid var(--dp-kant);
+    flex-shrink: 0;
+}
+
+.vedleggslenke {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    max-width: 14rem;
+    font-size: .85rem;
+    text-decoration: none;
+}

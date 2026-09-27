@@ -12,8 +12,9 @@ public sealed class DokumentConfiguration : IEntityTypeConfiguration<Dokument>
         b.HasKey(x => x.Id);
         b.Property(x => x.Id).UseIdentityAlwaysColumn();
 
-        b.Property(x => x.Filnavn).HasMaxLength(200).IsRequired();
         b.Property(x => x.Originalnavn).HasMaxLength(200).IsRequired();
+        b.Property(x => x.Innholdstype).HasMaxLength(50).IsRequired();
+        b.Property(x => x.StorrelseByte).IsRequired();
 
         b.Property(x => x.OpplastetDato)
          .HasDefaultValueSql("CURRENT_DATE")
@@ -37,7 +38,30 @@ public sealed class DokumentConfiguration : IEntityTypeConfiguration<Dokument>
          .HasForeignKey(x => x.DyrId)
          .OnDelete(DeleteBehavior.Cascade);
 
-        b.ToTable(t => t.HasCheckConstraint(
-            "ck_dokument_kategori", "kategori IN ('V','J','K','A')"));
+        // Vedlegget horer til besoket. Slettes timen, gar kvitteringen med -
+        // en kvittering uten besok har ingen a vise den fram for.
+        b.HasOne(x => x.Vetbesok)
+         .WithMany(v => v.Vedlegg)
+         .HasForeignKey(x => x.VetbesokId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne(x => x.Innhold)
+         .WithOne(i => i.Dokument)
+         .HasForeignKey<DokumentInnhold>(i => i.DokumentId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint(
+                "ck_dokument_kategori", "kategori IN ('V','J','K','A')");
+
+            // Hvitlisten fra plan kapittel 15. Controlleren og tjenesten
+            // sjekker den ogsa, men databasen er siste skanse.
+            t.HasCheckConstraint(
+                "ck_dokument_innholdstype",
+                "innholdstype IN ('image/jpeg','image/png','application/pdf')");
+
+            t.HasCheckConstraint("ck_dokument_storrelse", "storrelse_byte > 0");
+        });
     }
 }
