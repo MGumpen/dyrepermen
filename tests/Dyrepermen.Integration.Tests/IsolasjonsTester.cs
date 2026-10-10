@@ -174,6 +174,47 @@ public sealed class IsolasjonsTester
     }
 
     [Fact]
+    public async Task Husstand_ser_ikke_annen_husstands_kurdoser()
+    {
+        // Dosene filtreres gjennom to ledd - d.Behandling.Dyr.HusstandId -
+        // som medisindosene. Hvem som ga hva og nar, er husstandens sak.
+        var a = await _fixture.OpprettHusstand("Hjemme");
+        var b = await _fixture.OpprettHusstand("Naboen");
+
+        await using (var ctxA = _fixture.LagContext(a))
+        {
+            var dyr = new Dyr
+            {
+                HusstandId = a,
+                Navn = "Luna",
+                Art = Art.Hund,
+                Kjonn = Kjonn.Tispe
+            };
+
+            var kur = new Behandling
+            {
+                Type = BehandlingType.Ormekur,
+                Dato = new DateOnly(2026, 10, 1),
+                AntallDager = 3
+            };
+            kur.Doser.Add(new BehandlingDose { GittTid = DateTimeOffset.UtcNow });
+            dyr.Behandlinger.Add(kur);
+
+            ctxA.Dyr.Add(dyr);
+            await ctxA.SaveChangesAsync();
+        }
+
+        await using (var ctxB = _fixture.LagContext(b))
+        {
+            Assert.Empty(await ctxB.BehandlingDose.ToListAsync());
+            Assert.Empty(await ctxB.Behandling.ToListAsync());
+        }
+
+        await using var ctxAIgjen = _fixture.LagContext(a);
+        Assert.Single(await ctxAIgjen.BehandlingDose.ToListAsync());
+    }
+
+    [Fact]
     public async Task Uautentisert_kontekst_ser_ingenting()
     {
         // HusstandId 0 betyr "ikke satt". Fail closed - se ADR 0001.

@@ -26,7 +26,14 @@ public sealed record Paminnelse(
     /// Raden kan folges opp herfra. False for en behandling som ble gitt i
     /// dag, der "gitt" ville gitt en kopi. Se Behandlingsintervall.KanGisIgjen.
     /// </summary>
-    bool KanFolgesOpp = true)
+    bool KanFolgesOpp = true,
+
+    /// <summary>
+    /// Satt for en kur som gar i dag. Raden tegnes da med fremdrift og en
+    /// egen "Gitt"-knapp per dose, ikke som en paminnelse om neste gang.
+    /// Se ADR 0019.
+    /// </summary>
+    Kurrad? Kur = null)
 {
     public bool ErForfalt(DateOnly idag) => Dato < idag || Overtid;
 }

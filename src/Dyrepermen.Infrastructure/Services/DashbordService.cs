@@ -30,10 +30,12 @@ public sealed class DashbordService : IDashbordService
         var naa = DateTimeOffset.UtcNow;
         var idag = Tidssone.Idag(naa);
         var aktivMedisin = Medisinfilter.Aktiv(idag);
+        var aktivKur = Behandlingsfilter.AktivKur(idag);
         var grense = idag.AddDays(Varselvindu);
 
         // Midnatt i Norge, ikke i UTC. Ellers nullstilles maltidstelleren
-        // klokka to om natten - etter at kvelden er over.
+        // klokka to om natten - etter at kvelden er over. Det samme gjelder
+        // dosene i en kur.
         var dagStart = Tidssone.DagStart(naa);
 
         // Sporring 1. Siste vekt, aktiv forplan, neste behandling og aktive
@@ -89,7 +91,10 @@ public sealed class DashbordService : IDashbordService
                     .AsQueryable()
                     .Where(Behandlingsfilter.ApenPaminnelse)
                     .OrderBy(b => b.NesteDato)
-                    .Select(b => new { b.Type, b.Preparat, Dato = b.NesteDato!.Value })
+                    .Select(b => new
+                    {
+                        b.Type, b.Preparat, b.Styrke, Dato = b.NesteDato!.Value
+                    })
                     .FirstOrDefault(),
 
                 // Med intervall og siste dose, slik at dosene som forfaller i
@@ -111,6 +116,26 @@ public sealed class DashbordService : IDashbordService
                             .OrderByDescending(x => x.GittTid)
                             .Select(x => (DateTimeOffset?)x.GittTid)
                             .FirstOrDefault()))
+                    .ToList(),
+
+                // Kurer som gar i dag, med dagens doser talt i databasen.
+                // Samme grep som medisinene: en korrelert undersporring her
+                // koster ingen ny rundtur for "Forfaller snart". Se ADR 0019.
+                Kurer = d.Behandlinger
+                    .AsQueryable()
+                    .Where(aktivKur)
+                    .OrderBy(b => b.Id)
+                    .Select(b => new AktivKur(
+                        d.Id,
+                        d.Navn,
+                        b.Id,
+                        b.Type,
+                        b.Preparat,
+                        b.Styrke,
+                        b.Dato,
+                        b.AntallDager,
+                        b.GangerPerDag,
+                        b.Doser.Count(x => x.GittTid >= dagStart)))
                     .ToList(),
 
                 // Korrelert undersporring - siste foring i samme rundtur.
@@ -180,7 +205,7 @@ public sealed class DashbordService : IDashbordService
                 d.SisteVekt?.VektGram,
                 d.SisteVekt?.Dato,
                 Forplantekst(mengde),
-                d.Neste is null ? null : TypeTekst(d.Neste.Type, d.Neste.Preparat),
+                d.Neste is null ? null : TypeTekst(d.Neste.Type, d.Neste.Preparat, d.Neste.Styrke),
                 d.Neste?.Dato,
                 d.Medisiner.Select(m => m.Navn).ToList(),
                 // Kortet vises kun nar bryteren er pa for dyret. Er den av,
@@ -227,6 +252,7 @@ public sealed class DashbordService : IDashbordService
                 DyreNavn = b.Dyr.Navn,
                 b.Type,
                 b.Preparat,
+                b.Styrke,
                 Dato = b.NesteDato!.Value
             })
             .ToListAsync(ct);
@@ -275,7 +301,7 @@ public sealed class DashbordService : IDashbordService
                 b.DyreNavn,
                 Kilde.Behandling,
                 b.Id,
-                TypeTekst(b.Type, b.Preparat),
+                TypeTekst(b.Type, b.Preparat, b.Styrke),
                 b.Dato,
                 // Gitt i dag betyr ingen "gitt"-knapp. Paminnelsen star, men
                 // den er ikke noe a krysse av for i morgen.
@@ -288,6 +314,7 @@ public sealed class DashbordService : IDashbordService
                 $"Fornyelse {f.Selskap}",
                 f.Dato)))
             .Concat(Doser(raa.SelectMany(d => d.Medisiner), naa))
+            .Concat(Kurer(raa.SelectMany(d => d.Kurer), idag))
             // Selve timen. Klokkeslettet tas med nar det finnes - "torsdag"
             // er ubrukelig hvis timen er 08:15 og du ma ta fri.
             .Concat(vetbesok
@@ -406,6 +433,54 @@ public sealed class DashbordService : IDashbordService
         DateTimeOffset? SisteDose);
 
     /// <summary>
+    /// En kur som gar i dag, slik sporring 1 henter den. Aktiv er allerede
+    /// avgjort av Behandlingsfilter.AktivKur.
+    /// </summary>
+    private sealed record AktivKur(
+        int DyrId,
+        string DyreNavn,
+        int Id,
+        BehandlingType Type,
+        string? Preparat,
+        string? Styrke,
+        DateOnly ForsteDag,
+        int AntallDager,
+        int GangerPerDag,
+        int DoserIdag);
+
+    /// <summary>
+    /// En rad per kur som gar i dag. Raden blir staende nar dagens doser er
+    /// gitt, men uten knapp - "fullfort for i dag" er ogsa svar pa
+    /// sporsmalet oversikten stiller. Datoen er i dag, sa den regnes aldri
+    /// som forfalt.
+    /// </summary>
+    private static IEnumerable<Paminnelse> Kurer(
+        IEnumerable<AktivKur> kurer, DateOnly idag)
+        => kurer.Select(k =>
+        {
+            var rad = new Kurrad(
+                k.DyrId,
+                k.DyreNavn,
+                k.Id,
+                TypeTekst(k.Type, k.Preparat, k.Styrke),
+                Behandlingskur.Dag(k.ForsteDag, idag),
+                k.AntallDager,
+                k.GangerPerDag,
+                k.DoserIdag,
+                Aktiv: true);
+
+            return new Paminnelse(
+                k.DyrId,
+                k.DyreNavn,
+                Kilde.Kur,
+                k.Id,
+                $"{rad.Beskrivelse} – {rad.Fremdrift}",
+                idag,
+                KanFolgesOpp: rad.KanGis,
+                Kur: rad);
+        });
+
+    /// <summary>
     /// Medisindosene som forfaller i dag, en rad per medisin. Medisinene er
     /// allerede aktive - Medisinfilter i sporringen - og regelen for hva som
     /// forfaller ligger i <see cref="Dosevarsel"/>.
@@ -438,8 +513,9 @@ public sealed class DashbordService : IDashbordService
         }
     }
 
-    private static string TypeTekst(BehandlingType type, string? preparat)
-        => Behandlingsformat.MedPreparat(type, preparat);
+    private static string TypeTekst(
+        BehandlingType type, string? preparat, string? styrke)
+        => Behandlingsformat.MedPreparat(type, preparat, styrke);
 
     private static string? Forplantekst(ForplanResultat? mengde) => mengde switch
     {

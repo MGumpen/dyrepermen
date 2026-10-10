@@ -63,7 +63,7 @@
                                    asp-action="Index"
                                    asp-route-dyrId="@Model.DyrId"
                                    asp-route-gjenta="@f.Id"
-                                   asp-fragment="skjema">@Behandlingsformat.MedPreparat(f.Type, f.Preparat)</a>
+                                   asp-fragment="skjema">@Behandlingsformat.MedPreparat(f.Type, f.Preparat, f.Styrke)</a>
                             }
                         </div>
                         <div class="form-text">
@@ -111,6 +111,18 @@
                         </div>
                     </div>
 
+                    <div class="mb-2">
+                        <label asp-for="Ny.Styrke" class="form-label"></label>
+                        <input asp-for="Ny.Styrke" class="form-control"
+                               placeholder="For eksempel «12,5 mg/125 mg» eller «2,5 ml»"
+                               autocomplete="off" />
+                        <span asp-validation-for="Ny.Styrke" class="text-danger small"></span>
+                        <div class="form-text">
+                            Valgfritt. Styrken står i historikken og på
+                            påminnelsen, så neste gang kan gis med samme.
+                        </div>
+                    </div>
+
                     <div class="row g-2">
                         <div class="col-6 mb-2">
                             <label asp-for="Ny.Dato" class="form-label"></label>
@@ -124,6 +136,31 @@
                     <div class="form-text mb-2">
                         Settes «neste gang», dukker behandlingen opp på
                         oversikten 14 dager før forfall.
+                    </div>
+
+                    @* Tomme felt betyr 1, og 1 star som plassholder. Samme
+                       grep som antall maltider i forplanen. *@
+                    <div class="row g-2">
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.AntallDager" class="form-label"></label>
+                            <input asp-for="Ny.AntallDager" class="form-control"
+                                   type="number" min="1" max="@NyBehandlingVm.MaksDager"
+                                   inputmode="numeric" placeholder="1" />
+                            <span asp-validation-for="Ny.AntallDager" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.GangerPerDag" class="form-label"></label>
+                            <input asp-for="Ny.GangerPerDag" class="form-control"
+                                   type="number" min="1" max="@NyBehandlingVm.MaksGangerPerDag"
+                                   inputmode="numeric" placeholder="1" />
+                            <span asp-validation-for="Ny.GangerPerDag" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="form-text mb-2">
+                        For en kur over flere dager, som ormekur én gang
+                        daglig i tre dager. Datoen er første dag, og dosene
+                        krysses av på oversikten. Med 1 og 1 regnes
+                        behandlingen som gitt når den lagres.
                     </div>
 
                     <div class="mb-3">
@@ -175,10 +212,14 @@
                             aria-current="@(redigeres ? "true" : null)">
                             <span class="flex-grow-1 min-w-0">
                                 <span class="tittel">
-                                    @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat)
+                                    @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat, rad.Styrke)
                                 </span>
                                 <span class="under d-block">
                                     @($"{rad.Dato:d. MMMM yyyy}")
+                                    @if (rad.Kurtekst is not null)
+                                    {
+                                        <text>· @rad.Kurtekst</text>
+                                    }
                                     @if (rad.Notat is not null)
                                     {
                                         <span class="d-block">@rad.Notat</span>

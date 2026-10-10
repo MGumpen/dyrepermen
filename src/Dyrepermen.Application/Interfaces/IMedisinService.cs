@@ -23,6 +23,15 @@ public interface IMedisinService
         int dyrId, int medisinId, NyMedisin input, CancellationToken ct);
 
     /// <summary>
+    /// Sletter medisinen og hele doseloggen. For en medisin som aldri skulle
+    /// vaert lagt inn - for eksempel en ormekur som horte hjemme under
+    /// behandlinger. En medisin som er ferdig, avsluttes i stedet, sa
+    /// loggen blir staende. False betyr at medisinen ikke finnes pa dette
+    /// dyret i denne husstanden.
+    /// </summary>
+    Task<bool> Slett(int dyrId, int medisinId, CancellationToken ct);
+
+    /// <summary>
     /// Sjekken mot forrige dose ligger her, ikke i controlleren.
     /// <paramref name="bekreftet"/> lar brukeren overstyre bevisst.
     /// </summary>

@@ -75,6 +75,8 @@ Razor-visninger med Bootstrap, htmx og jQuery Validation, lagt inn under `wwwroo
 - Enkle datatyper: `INT`, `VARCHAR`, `CHAR`. Enums lagres som `char(1)` med eksplisitt `HasConversion`.
 - Vekt lagres i gram som `INT`. Prosent lagres i tidels prosent som `INT`.
 - Skriv aldri `Include` etterfulgt av `.Last()` i C# — projiser i spørringen.
+- **Et tak som telles, håndheves med radlås.** «Høyst N doser per dag» kan ikke sjekkes med en vanlig `Count` før `Add` — to husstandsmedlemmer som trykker samtidig, teller begge 0. Mønsteret i `BehandlingService.LoggDose`: start en transaksjon, slå opp raden gjennom query-filteret (autorisasjonen), lås den med `SELECT 1 FROM behandling WHERE id = {id} FOR UPDATE`, tell, sett inn og commit. Lås aldri før oppslaget gjennom filteret — da kan en fremmed id holde en lås. Se ADR 0019.
+- **En behandling med `antall_dager` eller `ganger_per_dag` over 1 er en kur.** `dato` er første dag, og dosene ligger i `behandling_dose`. Med 1 og 1 regnes behandlingen som gitt ved registrering og tar ikke imot doser. Regelen for «aktiv i dag» står i `Behandlingsfilter.AktivKur` for spørringer og i `Behandlingskur` for minnet; `KurdoseTester.Regelen_i_sporringen_og_i_minnet_er_den_samme` feiler når de spriker.
 - Migrasjoner kjøres ved oppstart, i `Program.cs` rett før `app.Run()`. Dette opphever planens motsatte regel og forutsetter **én instans** — se ADR 0010. Skaleres appen ut, må kallet flyttes ut igjen.
 
 ## Sikkerhet — ufravikelig
@@ -146,13 +148,14 @@ Sentral pakkestyring i `Directory.Packages.props`. **Legg aldri `Version` i en `
 
 ### Prøvene som holder seg selv i orden
 
-Tre tester feiler når noen glemmer noe. De skal aldri «fikses» ved å legge typen inn i et unntak uten at det er et bevisst valg.
+Disse testene feiler når noen glemmer noe. De skal aldri «fikses» ved å legge typen inn i et unntak uten at det er et bevisst valg.
 
 | Prøve | Fanger |
 |---|---|
 | `FilterTester.Alle_husstandsbundne_entiteter_har_query_filter` | `IHusstandsbundet` uten query-filter i `DyrepermenDbContext` |
 | `FilterTester.Alle_husstandsbundne_typer_er_med_i_modellen` | Entitet som mangler i EF-modellen — da hjelper ikke filterprøven |
 | `RolleTester` | `POST`-handling uten `[KreverEier]` som ikke står på den bevisste gjestelisten |
+| `KurdoseTester.Samtidige_trykk_gir_aldri_flere_doser_enn_ganger_per_dag` | Radlåsen i `LoggDose` fjernet — åtte samtidige trykk gir da åtte doser |
 
 ## Arbeidsflyt
 

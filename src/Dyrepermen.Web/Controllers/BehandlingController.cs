@@ -1,6 +1,7 @@
 using Dyrepermen.Application.Dtos;
 using Dyrepermen.Application.Extensions;
 using Dyrepermen.Application.Interfaces;
+using Dyrepermen.Web.Extensions;
 using Dyrepermen.Web.Filtre;
 using Dyrepermen.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -142,7 +143,7 @@ public sealed class BehandlingController : Controller
         }
 
         var resultat = await _behandling.Gitt(
-            dyrId, behandlingId, skjema.NesteDato, ct);
+            dyrId, behandlingId, skjema.NesteDato, User.BrukerId(), ct);
 
         switch (resultat.Status)
         {
@@ -174,8 +175,10 @@ public sealed class BehandlingController : Controller
 
     private bool ErHtmx => Request.Headers.ContainsKey("HX-Request");
 
+    /// <summary>Tomme felt for kurlengden betyr 1 - en vanlig behandling.</summary>
     private static Behandlingsinnhold Innhold(int dyrId, NyBehandlingVm ny)
-        => new(dyrId, ny.Type, ny.Preparat, ny.Dato, ny.NesteDato, ny.Notat);
+        => new(dyrId, ny.Type, ny.Preparat, ny.Dato, ny.NesteDato, ny.Notat,
+            ny.AntallDager ?? 1, ny.GangerPerDag ?? 1, ny.Styrke);
 
     [HttpPost("{behandlingId:int}/slett")]
     [KreverEier]
@@ -247,9 +250,12 @@ public sealed class BehandlingController : Controller
         {
             Type = forslag.Type,
             Preparat = forslag.Preparat,
+            Styrke = forslag.Styrke,
             Dato = idag,
             NesteDato = Behandlingsintervall.NesteEtter(
-                forslag.Dato, forslag.NesteDato, idag)
+                forslag.Dato, forslag.NesteDato, idag),
+            AntallDager = Kurfelt(forslag.AntallDager),
+            GangerPerDag = Kurfelt(forslag.GangerPerDag)
         };
     }
 
@@ -260,8 +266,14 @@ public sealed class BehandlingController : Controller
             {
                 Type = rad.Type,
                 Preparat = rad.Preparat,
+                Styrke = rad.Styrke,
                 Dato = rad.Dato,
                 NesteDato = rad.NesteDato,
-                Notat = rad.Notat
+                Notat = rad.Notat,
+                AntallDager = Kurfelt(rad.AntallDager),
+                GangerPerDag = Kurfelt(rad.GangerPerDag)
             };
+
+    /// <summary>1 vises som tomt felt, slik som i et nytt skjema.</summary>
+    private static int? Kurfelt(int verdi) => verdi > 1 ? verdi : null;
 }

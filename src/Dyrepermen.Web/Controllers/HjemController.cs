@@ -20,6 +20,7 @@ namespace Dyrepermen.Web.Controllers;
 public sealed class HjemController : Controller
 {
     private readonly IDashbordService _dashbord;
+    private readonly IBehandlingService _behandling;
     private readonly IForingService _foring;
     private readonly IForplanService _forplan;
     private readonly IHandlelisteService _handleliste;
@@ -27,12 +28,14 @@ public sealed class HjemController : Controller
 
     public HjemController(
         IDashbordService dashbord,
+        IBehandlingService behandling,
         IForingService foring,
         IForplanService forplan,
         IHandlelisteService handleliste,
         IGjeldendeBruker meg)
     {
         _dashbord = dashbord;
+        _behandling = behandling;
         _foring = foring;
         _forplan = forplan;
         _handleliste = handleliste;
@@ -151,6 +154,47 @@ public sealed class HjemController : Controller
         }
 
         return PartialView("_Dyreliste", Dyreliste(await _dashbord.Hent(ct)));
+    }
+
+    /// <summary>
+    /// Registrerer en dose i en kur - ormekur dag 2 av 3. Reglene - aktiv i
+    /// dag, hoyst sa mange doser som kuren sier per dag - handheves i
+    /// tjenesten. Se ADR 0019.
+    ///
+    /// Gjesteapent med vilje, som "gi dose" pa en medisin: passer du hunden
+    /// mens kuren pagar, er det du som gir den.
+    /// </summary>
+    [HttpPost("/dashbord/kur/{dyrId:int}/{behandlingId:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GiKurdose(
+        int dyrId, int behandlingId, CancellationToken ct)
+    {
+        var status = await _behandling.LoggDose(
+            dyrId, behandlingId, _meg.BrukerId, ct);
+
+        if (status == Kurdosestatus.FinnesIkke)
+        {
+            return NotFound();
+        }
+
+        if (!ErHtmx)
+        {
+            TempData[status == Kurdosestatus.Lagret ? "Melding" : "Feil"] = status switch
+            {
+                Kurdosestatus.Lagret => "Dosen er registrert.",
+                Kurdosestatus.FullfortIdag => "Dagens doser er allerede registrert.",
+                _ => "Kuren pågår ikke i dag."
+            };
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Raden slik den star na, uansett utfall. Har noen andre i
+        // husstanden gitt dagens siste dose for et oyeblikk siden, viser
+        // raden "fullfort i dag" - og en foreldet fane retter seg selv.
+        var rad = await _behandling.HentKurrad(dyrId, behandlingId, ct);
+
+        return rad is null ? NotFound() : PartialView("_Kurrad", rad);
     }
 
     /// <summary>Veksler mellom kjopt og aktiv, som pa handlelistesiden.</summary>

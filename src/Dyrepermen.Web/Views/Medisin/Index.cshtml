@@ -84,9 +84,31 @@
                                asp-action="Index" asp-route-dyrId="@Model.DyrId">
                                 Avbryt
                             </a>
+                            @* Knappen sender skjemaet under, ikke dette. Et
+                               skjema kan ikke ligge inni et annet, og
+                               form-attributtet virker uten skript. *@
+                            <button type="submit" form="slett-medisin"
+                                    class="btn btn-outline-danger btn-sm ms-auto">
+                                Slett
+                            </button>
                         }
                     </div>
                 </form>
+
+                @if (Model.RedigerId is { } slettId)
+                {
+                    var navn = Model.Medisiner.FirstOrDefault(m => m.Id == slettId)?.Navn
+                        ?? "medisinen";
+
+                    @* Sletting tar doseloggen med seg. For en medisin som er
+                       ferdig, er Avslutt riktig - den beholder loggen. *@
+                    <form id="slett-medisin" method="post" asp-action="Slett"
+                          asp-route-dyrId="@Model.DyrId" asp-route-medisinId="@slettId"
+                          onsubmit="return confirm(this.dataset.sporsmal);"
+                          data-sporsmal="Slette @navn? Doseloggen slettes også. Er medisinen bare ferdig, bruk Avslutt i stedet.">
+                        @Html.AntiForgeryToken()
+                    </form>
+                }
             </div>
         </section>
     </div>

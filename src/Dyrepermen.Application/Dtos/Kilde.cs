@@ -15,5 +15,12 @@ public enum Kilde
     /// Avtalt oppfolging fra et besok. Egen kilde fordi den folges opp med
     /// en ny time, ikke ved a rette timen den kom fra.
     /// </summary>
-    Vetkontroll
+    Vetkontroll,
+
+    /// <summary>
+    /// En behandling som gar over flere dager eller gis flere ganger per
+    /// dag, og som gar i dag. Folges opp med en dose om gangen, ikke med
+    /// dialogen for neste gang. KildeId er behandlingen. Se ADR 0019.
+    /// </summary>
+    Kur
 }

@@ -13,6 +13,7 @@ public sealed class BehandlingConfiguration : IEntityTypeConfiguration<Behandlin
         b.Property(x => x.Id).UseIdentityAlwaysColumn();
 
         b.Property(x => x.Preparat).HasMaxLength(80);
+        b.Property(x => x.Styrke).HasMaxLength(40);
         b.Property(x => x.Notat).HasMaxLength(500);
 
         // Nostede betingelser, ikke switch. C# tillater ikke switch-uttrykk
@@ -44,7 +45,20 @@ public sealed class BehandlingConfiguration : IEntityTypeConfiguration<Behandlin
          .HasFilter("neste_dato IS NOT NULL")
          .HasDatabaseName("ix_behandling_neste");
 
-        b.ToTable(t => t.HasCheckConstraint(
-            "ck_behandling_type", "type IN ('V','O','F','K','T','A')"));
+        // Standarden i databasen er for rader som ikke kommer fra appen.
+        // Domenet setter 1 selv, sa EF sender alltid verdien - se
+        // Behandling.AntallDager.
+        b.Property(x => x.AntallDager).HasDefaultValue(1);
+        b.Property(x => x.GangerPerDag).HasDefaultValue(1);
+
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint(
+                "ck_behandling_type", "type IN ('V','O','F','K','T','A')");
+            t.HasCheckConstraint(
+                "ck_behandling_antall_dager", "antall_dager >= 1");
+            t.HasCheckConstraint(
+                "ck_behandling_ganger_per_dag", "ganger_per_dag >= 1");
+        });
     }
 }

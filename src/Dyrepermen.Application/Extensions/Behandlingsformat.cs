@@ -29,8 +29,15 @@ public static class Behandlingsformat
 
     /// <summary>
     /// Raden slik den vises i historikk og pa dashbordet:
-    /// "Ormekur – Milbemax", eller bare "Ormekur" nar preparat mangler.
+    /// "Ormekur – Milbemax 12,5 mg", "Ormekur – Milbemax", eller bare
+    /// "Ormekur" nar preparat og styrke mangler.
     /// </summary>
-    public static string MedPreparat(BehandlingType type, string? preparat)
-        => preparat is null ? Navn(type) : $"{Navn(type)} – {preparat}";
+    public static string MedPreparat(
+        BehandlingType type, string? preparat, string? styrke = null)
+    {
+        var detalj = string.Join(' ',
+            new[] { preparat, styrke }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+        return detalj.Length == 0 ? Navn(type) : $"{Navn(type)} – {detalj}";
+    }
 }

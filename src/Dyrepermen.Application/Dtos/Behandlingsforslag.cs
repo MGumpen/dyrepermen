@@ -14,5 +14,15 @@ public sealed record Behandlingsforslag(
     int Id,
     BehandlingType Type,
     string? Preparat,
+
+    /// <summary>Styrken fra sist, som utgangspunkt. Den kan ha endret seg.</summary>
+    string? Styrke,
     DateOnly Dato,
-    DateOnly? NesteDato);
+    DateOnly? NesteDato,
+
+    /// <summary>
+    /// Kurlengden folger med som intervallet: var ormekuren sist en
+    /// tredagerskur, foreslas tre dager igjen.
+    /// </summary>
+    int AntallDager,
+    int GangerPerDag);

@@ -13,4 +13,11 @@ public sealed record Behandlingsinnhold(
     string? Preparat,
     DateOnly Dato,
     DateOnly? NesteDato,
-    string? Notat);
+    string? Notat,
+
+    /// <summary>Dato er forste dag. Se ADR 0019.</summary>
+    int AntallDager = 1,
+    int GangerPerDag = 1,
+
+    /// <summary>"12,5 mg/125 mg". Se ADR 0020.</summary>
+    string? Styrke = null);

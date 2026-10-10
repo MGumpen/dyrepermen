@@ -107,6 +107,14 @@
                        stigende dato gir eldste - altsa den forfalte - forst. *@
                     @foreach (var p in Model.Forfaller)
                     {
+                        @* En kur tegnes av delvisningen, som knappen bytter
+                           ut med htmx. Se ADR 0019. *@
+                        if (p.Kur is { } kur)
+                        {
+                            <partial name="_Kurrad" model="kur" />
+                            continue;
+                        }
+
                         var forfalt = p.ErForfalt(idag);
                         <li>
                             <span class="flex-grow-1 min-w-0">

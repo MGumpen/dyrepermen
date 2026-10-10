@@ -32,4 +32,17 @@ public static class Behandlingsfilter
                 && (nyere.Preparat ?? "").ToLower() == (b.Preparat ?? "").ToLower()
                 && (nyere.Dato > b.Dato
                     || (nyere.Dato == b.Dato && nyere.Id > b.Id)));
+
+    /// <summary>
+    /// En kur som gar i dag: flere dager eller flere ganger per dag, og
+    /// <paramref name="idag"/> ligger fra og med forste til og med siste dag.
+    /// Brukes av dashbordet. Samme regel i minnet: Behandlingskur.ErAktiv og
+    /// Behandlingskur.ErKur. Se ADR 0019.
+    ///
+    /// Legg uttrykket i en lokal variabel for sporringen, som Medisinfilter.
+    /// </summary>
+    public static Expression<Func<Behandling, bool>> AktivKur(DateOnly idag)
+        => b => (b.AntallDager > 1 || b.GangerPerDag > 1)
+            && b.Dato <= idag
+            && b.Dato.AddDays(b.AntallDager) > idag;
 }

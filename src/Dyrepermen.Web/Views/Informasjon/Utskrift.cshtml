@@ -156,7 +156,9 @@
                             <tr>
                                 <td>@Dato(b.Dato)</td>
                                 <td>@Behandlingsnavn(b.Type)</td>
-                                <td>@(b.Preparat ?? "–")</td>
+                                <td>@(b.Preparat is null && b.Styrke is null
+                                    ? "–"
+                                    : string.Join(' ', new[] { b.Preparat, b.Styrke }.OfType<string>()))</td>
                                 @* Bare der neste gang fortsatt venter. En dato
                                    som er fulgt opp av en nyere behandling,
                                    sender leseren til dyrlegen for ingenting.
