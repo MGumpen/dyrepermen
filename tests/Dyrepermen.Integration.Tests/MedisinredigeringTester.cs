@@ -223,7 +223,107 @@ public sealed class MedisinredigeringTester : IAsyncLifetime
         Assert.Equal("Apoquel", await igjen.Medisin.Select(m => m.Navn).SingleAsync());
     }
 
+    // --- Slett -----------------------------------------------------------
+
+    /// <summary>
+    /// For en medisin som aldri skulle vaert lagt inn - en ormekur som horte
+    /// hjemme under behandlinger. Doseloggen gar med, og ingenting star igjen
+    /// pa dashbordet.
+    /// </summary>
+    [Fact]
+    public async Task Slett_fjerner_medisinen_og_doseloggen()
+    {
+        var h = await _fixture.OpprettHusstand("Slett medisin");
+        await using var db = _fixture.LagContext(h);
+        var dyrId = await NyttDyr(db, h);
+        var tjeneste = Tjeneste(db);
+
+        var id = await NyMedisin(db, dyrId, "Milbemax", Idag.AddDays(-1), null);
+        var beholdes = await NyMedisin(db, dyrId, "Apoquel", Idag.AddDays(-1), null);
+        Assert.True((await tjeneste.LoggDose(dyrId, id, null, true, default)).Ok);
+
+        Assert.True(await tjeneste.Slett(dyrId, id, default));
+
+        Assert.False(await db.Medisin.AnyAsync(m => m.Id == id));
+        Assert.Equal(0, await db.Dose.CountAsync(d => d.MedisinId == id));
+        Assert.Equal(beholdes, Assert.Single(await tjeneste.HentFor(dyrId, default)).Id);
+        Assert.DoesNotContain((await Dashbord(db, h)).Forfaller,
+            p => p.Kilde == Kilde.Medisin && p.KildeId == id);
+    }
+
+    [Fact]
+    public async Task Medisin_pa_et_annet_dyr_lar_seg_ikke_slette()
+    {
+        var h = await _fixture.OpprettHusstand("Slett feil dyr");
+        await using var db = _fixture.LagContext(h);
+        var luna = await NyttDyr(db, h);
+        var milo = await NyttDyr(db, h, "Milo");
+
+        var id = await NyMedisin(db, luna, "Apoquel", Idag, null);
+
+        Assert.False(await Tjeneste(db).Slett(milo, id, default));
+        Assert.True(await db.Medisin.AnyAsync(m => m.Id == id));
+    }
+
+    [Fact]
+    public async Task Medisin_i_en_annen_husstand_lar_seg_ikke_slette()
+    {
+        var a = await _fixture.OpprettHusstand("Slett A");
+        var b = await _fixture.OpprettHusstand("Slett B");
+
+        int dyrId, id;
+        await using (var eier = _fixture.LagContext(a))
+        {
+            dyrId = await NyttDyr(eier, a);
+            id = await NyMedisin(eier, dyrId, "Apoquel", Idag, null);
+        }
+
+        await using (var fremmed = _fixture.LagContext(b))
+        {
+            Assert.False(await Tjeneste(fremmed).Slett(dyrId, id, default));
+        }
+
+        await using var igjen = _fixture.LagContext(a);
+        Assert.True(await igjen.Medisin.AnyAsync(m => m.Id == id));
+    }
+
     // --- Over HTTP -------------------------------------------------------
+
+    [Fact]
+    public async Task Slett_finnes_i_endringsmodus_og_fjerner_medisinen()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient);
+        var side = $"/dyr/{dyrId}/medisin";
+
+        await klient.Post(side, new Dictionary<string, string>
+        {
+            ["Navn"] = "Milbemax",
+            ["Dose"] = "1 tablett",
+            ["StartDato"] = Idag.ToString("yyyy-MM-dd")
+        });
+
+        var liste = await (await klient.Hent(side)).Content.ReadAsStringAsync();
+        var lenke = System.Text.RegularExpressions.Regex.Match(
+            liste, $"""href="({side}\?rediger=(\d+))#skjema""");
+        Assert.True(lenke.Success, "Fant ikke Rediger-lenken.");
+
+        // Knappen finnes bare i endringsmodus, ikke pa den vanlige siden.
+        var medisinId = lenke.Groups[2].Value;
+        Assert.DoesNotContain($"{side}/{medisinId}/slett", liste);
+
+        var skjema = await (await klient.Hent(lenke.Groups[1].Value)).Content.ReadAsStringAsync();
+        Assert.Contains($"action=\"{side}/{medisinId}/slett\"", skjema);
+
+        var svar = await klient.Post(
+            $"{side}/{medisinId}/slett", [], tokenFra: lenke.Groups[1].Value);
+
+        Assert.Equal(HttpStatusCode.Redirect, svar.StatusCode);
+
+        var etter = await (await klient.Hent(side)).Content.ReadAsStringAsync();
+        Assert.Contains("Medisinen er slettet.", WebUtility.HtmlDecode(etter));
+        Assert.DoesNotContain("Milbemax", etter);
+    }
 
     [Fact]
     public async Task Rediger_fyller_skjemaet_og_lagrer_endringen()

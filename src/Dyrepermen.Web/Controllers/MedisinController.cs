@@ -138,6 +138,25 @@ public sealed class MedisinController : Controller
     }
 
     /// <summary>
+    /// Sletter medisinen med doseloggen. Nas fra endringsmodus: man retter en
+    /// feilregistrering, og det er der man star nar feilen oppdages.
+    /// </summary>
+    [HttpPost("{medisinId:int}/slett")]
+    [KreverEier]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Slett(
+        int dyrId, int medisinId, CancellationToken ct)
+    {
+        if (!await _medisin.Slett(dyrId, medisinId, ct))
+        {
+            return NotFound();
+        }
+
+        TempData["Melding"] = "Medisinen er slettet.";
+        return RedirectToAction(nameof(Index), new { dyrId });
+    }
+
+    /// <summary>
     /// <paramref name="ny"/> er null nar skjemaet ikke er sendt inn. Da
     /// fylles det fra medisinen som skal endres, eller star tomt.
     /// </summary>

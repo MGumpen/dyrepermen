@@ -98,6 +98,26 @@ public sealed class MedisinService : IMedisinService
         return true;
     }
 
+    public async Task<bool> Slett(int dyrId, int medisinId, CancellationToken ct)
+    {
+        // Query-filteret er autorisasjonen, DyrId hindrer at en id fra et
+        // annet dyr i egen husstand treffer. Samme monster som Oppdater.
+        var medisin = await _db.Medisin
+            .SingleOrDefaultAsync(m => m.Id == medisinId && m.DyrId == dyrId, ct);
+
+        if (medisin is null)
+        {
+            return false;
+        }
+
+        // Dosene folger med ved ON DELETE CASCADE i databasen.
+        _db.Medisin.Remove(medisin);
+        await _db.SaveChangesAsync(ct);
+
+        _log.LogInformation("Medisin {MedisinId} slettet", medisinId);
+        return true;
+    }
+
     public async Task<bool> Oppdater(
         int dyrId, int medisinId, NyMedisin input, CancellationToken ct)
     {
