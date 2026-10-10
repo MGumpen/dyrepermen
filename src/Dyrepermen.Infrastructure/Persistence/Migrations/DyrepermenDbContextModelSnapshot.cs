@@ -31,6 +31,12 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AntallDager")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("antall_dager");
+
                     b.Property<DateOnly>("Dato")
                         .HasColumnType("date")
                         .HasColumnName("dato");
@@ -38,6 +44,12 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.Property<int>("DyrId")
                         .HasColumnType("integer")
                         .HasColumnName("dyr_id");
+
+                    b.Property<int>("GangerPerDag")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("ganger_per_dag");
 
                     b.Property<DateOnly?>("NesteDato")
                         .HasColumnType("date")
@@ -69,8 +81,46 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
 
                     b.ToTable("behandling", null, t =>
                         {
+                            t.HasCheckConstraint("ck_behandling_antall_dager", "antall_dager >= 1");
+
+                            t.HasCheckConstraint("ck_behandling_ganger_per_dag", "ganger_per_dag >= 1");
+
                             t.HasCheckConstraint("ck_behandling_type", "type IN ('V','O','F','K','T','A')");
                         });
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.BehandlingDose", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BehandlingId")
+                        .HasColumnType("integer")
+                        .HasColumnName("behandling_id");
+
+                    b.Property<int?>("GittAvBrukerId")
+                        .HasColumnType("integer")
+                        .HasColumnName("gitt_av_bruker_id");
+
+                    b.Property<DateTimeOffset>("GittTid")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("gitt_tid");
+
+                    b.HasKey("Id")
+                        .HasName("pk_behandling_dose");
+
+                    b.HasIndex("GittAvBrukerId")
+                        .HasDatabaseName("ix_behandling_dose_gitt_av_bruker_id");
+
+                    b.HasIndex("BehandlingId", "GittTid")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_behandling_dose_behandling_tid");
+
+                    b.ToTable("behandling_dose", (string)null);
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Bruker", b =>
@@ -1404,6 +1454,26 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                     b.Navigation("Dyr");
                 });
 
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.BehandlingDose", b =>
+                {
+                    b.HasOne("Dyrepermen.Domain.Entities.Behandling", "Behandling")
+                        .WithMany("Doser")
+                        .HasForeignKey("BehandlingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_behandling_dose_behandling_behandling_id");
+
+                    b.HasOne("Dyrepermen.Domain.Entities.Bruker", "GittAv")
+                        .WithMany()
+                        .HasForeignKey("GittAvBrukerId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_behandling_dose_asp_net_users_gitt_av_bruker_id");
+
+                    b.Navigation("Behandling");
+
+                    b.Navigation("GittAv");
+                });
+
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Dokument", b =>
                 {
                     b.HasOne("Dyrepermen.Domain.Entities.Dyr", "Dyr")
@@ -1760,6 +1830,11 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
+                });
+
+            modelBuilder.Entity("Dyrepermen.Domain.Entities.Behandling", b =>
+                {
+                    b.Navigation("Doser");
                 });
 
             modelBuilder.Entity("Dyrepermen.Domain.Entities.Bruker", b =>

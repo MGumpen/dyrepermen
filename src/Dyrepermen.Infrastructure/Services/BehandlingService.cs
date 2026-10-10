@@ -30,7 +30,8 @@ public sealed class BehandlingService : IBehandlingService
             .OrderByDescending(b => b.Dato)
             .ThenByDescending(b => b.Id)
             .Select(b => new BehandlingRad(
-                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat, false))
+                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat,
+                b.AntallDager, b.GangerPerDag, false))
             .ToListAsync(ct);
 
         // Egen rundtur for hvilke som er apne. Regelen er et uttrykk over
@@ -82,13 +83,17 @@ public sealed class BehandlingService : IBehandlingService
     }
 
     public async Task<GittResultat> Gitt(
-        int dyrId, int behandlingId, DateOnly? nesteDato, CancellationToken ct)
+        int dyrId, int behandlingId, DateOnly? nesteDato, int? brukerId,
+        CancellationToken ct)
     {
         // Query-filteret er autorisasjonen, DyrId hindrer at en id fra et
         // annet dyr i egen husstand treffer. Samme monster som Oppdater.
         var forrige = await _db.Behandling
             .Where(b => b.Id == behandlingId && b.DyrId == dyrId)
-            .Select(b => new { b.Type, b.Preparat, b.Dato })
+            .Select(b => new
+            {
+                b.Type, b.Preparat, b.Dato, b.AntallDager, b.GangerPerDag
+            })
             .SingleOrDefaultAsync(ct);
 
         if (forrige is null)
@@ -115,7 +120,7 @@ public sealed class BehandlingService : IBehandlingService
             return GittResultat.AlleredeFulgtOpp();
         }
 
-        _db.Behandling.Add(new Behandling
+        var ny = new Behandling
         {
             DyrId = dyrId,
             Type = forrige.Type,
@@ -123,13 +128,130 @@ public sealed class BehandlingService : IBehandlingService
             // nye raden gjenkjennes som oppfolgingen av den gamle.
             Preparat = forrige.Preparat,
             Dato = idag,
-            NesteDato = nesteDato
-        });
+            NesteDato = nesteDato,
+            // Neste ormekur er en tredagerskur den ogsa.
+            AntallDager = forrige.AntallDager,
+            GangerPerDag = forrige.GangerPerDag
+        };
 
+        // En kur har doser, og "gitt i dag" betyr at dagens forste er gitt.
+        // Uten den ville raden statt pa oversikten med "0/1 i dag" rett
+        // etter at brukeren sa den var gitt. Ny behandling, sa ingen andre
+        // kan ha logget doser pa den - ingen las trengs.
+        if (Behandlingskur.ErKur(forrige.AntallDager, forrige.GangerPerDag))
+        {
+            ny.Doser.Add(new BehandlingDose
+            {
+                GittTid = DateTimeOffset.UtcNow,
+                GittAvBrukerId = brukerId
+            });
+        }
+
+        _db.Behandling.Add(ny);
         await _db.SaveChangesAsync(ct);
 
         return GittResultat.Lagret(
             Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat), nesteDato);
+    }
+
+    public async Task<Kurdosestatus> LoggDose(
+        int dyrId, int behandlingId, int? brukerId, CancellationToken ct)
+    {
+        var naa = DateTimeOffset.UtcNow;
+        var idag = Tidssone.Idag(naa);
+
+        // Norsk midnatt, ikke UTC. Ellers teller kveldsdosen med pa neste
+        // dag fram til klokka ett eller to om natten.
+        var dagStart = Tidssone.DagStart(naa);
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        // Query-filteret er autorisasjonen, og den skjer for raden lases -
+        // en id fra en annen husstand skal ikke kunne holde en las her.
+        var kur = await _db.Behandling
+            .Where(b => b.Id == behandlingId && b.DyrId == dyrId)
+            .Select(b => new { b.Dato, b.AntallDager, b.GangerPerDag })
+            .SingleOrDefaultAsync(ct);
+
+        if (kur is null)
+        {
+            return Kurdosestatus.FinnesIkke;
+        }
+
+        // Sjekkes her og ikke bare ved knappen. En fane som har statt apen
+        // siden i gar, viser fortsatt knappen pa siste dag.
+        if (!Behandlingskur.ErKur(kur.AntallDager, kur.GangerPerDag)
+            || !Behandlingskur.ErAktiv(kur.Dato, kur.AntallDager, idag))
+        {
+            return Kurdosestatus.IkkeAktiv;
+        }
+
+        // Las behandlingsraden for doser telles. To i husstanden som trykker
+        // samtidig, ville ellers begge telt 0 av 1 og begge lagt inn en dose.
+        // Den andre venter her til den forste har committet, og teller da
+        // dosen den forste la inn. Lasen slippes ved commit eller rollback.
+        await _db.Database.ExecuteSqlAsync(
+            $"SELECT 1 FROM behandling WHERE id = {behandlingId} FOR UPDATE", ct);
+
+        var doserIdag = await _db.BehandlingDose
+            .CountAsync(d => d.BehandlingId == behandlingId
+                          && d.GittTid >= dagStart, ct);
+
+        if (!Behandlingskur.KanGiDose(
+                kur.Dato, kur.AntallDager, kur.GangerPerDag, doserIdag, idag))
+        {
+            return Kurdosestatus.FullfortIdag;
+        }
+
+        _db.BehandlingDose.Add(new BehandlingDose
+        {
+            BehandlingId = behandlingId,
+            GittTid = naa,
+            GittAvBrukerId = brukerId
+        });
+
+        await _db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+
+        return Kurdosestatus.Lagret;
+    }
+
+    public async Task<Kurrad?> HentKurrad(
+        int dyrId, int behandlingId, CancellationToken ct)
+    {
+        var naa = DateTimeOffset.UtcNow;
+        var idag = Tidssone.Idag(naa);
+        var dagStart = Tidssone.DagStart(naa);
+
+        var kur = await _db.Behandling
+            .Where(b => b.Id == behandlingId && b.DyrId == dyrId)
+            .Select(b => new
+            {
+                b.Type,
+                b.Preparat,
+                b.Dato,
+                b.AntallDager,
+                b.GangerPerDag,
+                DyreNavn = b.Dyr.Navn,
+                DoserIdag = b.Doser.Count(d => d.GittTid >= dagStart)
+            })
+            .SingleOrDefaultAsync(ct);
+
+        if (kur is null || !Behandlingskur.ErKur(kur.AntallDager, kur.GangerPerDag))
+        {
+            return null;
+        }
+
+        return new Kurrad(
+            dyrId,
+            kur.DyreNavn,
+            behandlingId,
+            Behandlingsformat.MedPreparat(kur.Type, kur.Preparat),
+            Behandlingskur.Dag(kur.Dato, idag),
+            kur.AntallDager,
+            kur.GangerPerDag,
+            kur.DoserIdag,
+            Behandlingskur.ErAktiv(kur.Dato, kur.AntallDager, idag));
     }
 
     private Task<bool> ErApen(int behandlingId, CancellationToken ct)
@@ -145,7 +267,8 @@ public sealed class BehandlingService : IBehandlingService
             .ThenByDescending(b => b.Id)
             .Take(ForslagGrunnlag)
             .Select(b => new Behandlingsforslag(
-                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato))
+                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato,
+                b.AntallDager, b.GangerPerDag))
             .ToListAsync(ct);
 
         // Grupperes i minnet. Grunnlaget er avgrenset over, og "nyeste rad
@@ -173,7 +296,9 @@ public sealed class BehandlingService : IBehandlingService
             Preparat = input.Preparat.TomTilNull(),
             Dato = input.Dato,
             NesteDato = input.NesteDato,
-            Notat = input.Notat.TomTilNull()
+            Notat = input.Notat.TomTilNull(),
+            AntallDager = input.AntallDager,
+            GangerPerDag = input.GangerPerDag
         });
 
         await _db.SaveChangesAsync(ct);
@@ -200,6 +325,11 @@ public sealed class BehandlingService : IBehandlingService
         rad.Dato = input.Dato;
         rad.NesteDato = input.NesteDato;
         rad.Notat = input.Notat.TomTilNull();
+
+        // Doser som allerede er logget, blir staende. Kortes kuren ned,
+        // teller de bare ikke lenger - de er fortsatt det som ble gitt.
+        rad.AntallDager = input.AntallDager;
+        rad.GangerPerDag = input.GangerPerDag;
 
         await _db.SaveChangesAsync(ct);
         return true;

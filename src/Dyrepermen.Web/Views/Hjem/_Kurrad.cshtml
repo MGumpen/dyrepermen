@@ -1,0 +1,41 @@
+@using Dyrepermen.Application.Dtos
+@model Kurrad
+
+@* En kur i "Forfaller snart". Egen delvisning fordi knappen tegner raden pa
+   nytt med htmx - bare denne raden, ikke hele dashbordet. Uten skript er det
+   et vanlig skjema, og svaret er hele oversikten.
+
+   Gjesteapen, som "gi dose" pa en medisin: passer du hunden, er det nettopp
+   dette du skal gjore. Se ADR 0019. *@
+<li id="kur-@Model.BehandlingId">
+    <span class="flex-grow-1 min-w-0">
+        <span class="tittel">@Model.DyreNavn</span>
+        <span class="under d-block">@Model.Beskrivelse – @Model.Fremdrift</span>
+    </span>
+    <span class="hoyre d-flex flex-column gap-1 align-items-end">
+        @if (!Model.Aktiv)
+        {
+            <span class="under">Kuren er ferdig</span>
+        }
+        else if (Model.FullfortIdag)
+        {
+            <span class="merkelapp">fullført i dag</span>
+        }
+        else
+        {
+            <form method="post" asp-controller="Hjem" asp-action="GiKurdose"
+                  asp-route-dyrId="@Model.DyrId"
+                  asp-route-behandlingId="@Model.BehandlingId"
+                  hx-post="@Url.Action("GiKurdose", "Hjem",
+                      new { dyrId = Model.DyrId, behandlingId = Model.BehandlingId })"
+                  hx-target="#kur-@Model.BehandlingId" hx-swap="outerHTML"
+                  hx-disabled-elt="find button">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary btn-sm"
+                        aria-label="Registrer en dose @Model.Beskrivelse til @Model.DyreNavn">
+                    Gitt
+                </button>
+            </form>
+        }
+    </span>
+</li>

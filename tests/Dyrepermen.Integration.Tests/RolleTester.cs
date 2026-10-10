@@ -53,6 +53,9 @@ public sealed class RolleTester
         // dashbordvariantene noe annet enn sine opphav, ma de flyttes ut
         // herfra - de star pa listen fordi de kaller nayaktig samme tjeneste.
         $"{nameof(HjemController)}.GiMat",
+        // En dose i en kur - ormekur dag 2 av 3. Samme slags logging som
+        // "gi dose" pa en medisin. Se ADR 0019.
+        $"{nameof(HjemController)}.GiKurdose",
         $"{nameof(HjemController)}.RegistrerForing",
         $"{nameof(HjemController)}.KryssAv",
 

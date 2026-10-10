@@ -22,6 +22,25 @@ public sealed class NyBehandlingVm : IValidatableObject
     [Display(Name = "Neste gang")]
     public DateOnly? NesteDato { get; set; }
 
+    /// <summary>
+    /// Nullbar, ikke 1 - samme grep som antall maltider i forplanen. Tomt
+    /// felt tolkes som 1 i controlleren, og 1 star som plassholder, sa et
+    /// tall kan skrives inn uten at et annet ma viskes ut forst.
+    ///
+    /// Taket er ikke i databasen, som bare krever minst 1. Det er her for a
+    /// fange en tastefeil: 300 dager med 3 doser er 900 knappetrykk.
+    /// </summary>
+    [Range(1, MaksDager, ErrorMessage = "Antall dager må være mellom 1 og 365.")]
+    [Display(Name = "Antall dager")]
+    public int? AntallDager { get; set; }
+
+    [Range(1, MaksGangerPerDag, ErrorMessage = "Ganger per dag må være mellom 1 og 24.")]
+    [Display(Name = "Ganger per dag")]
+    public int? GangerPerDag { get; set; }
+
+    public const int MaksDager = 365;
+    public const int MaksGangerPerDag = 24;
+
     [StringLength(500, ErrorMessage = "Notatet kan være høyst 500 tegn.")]
     [Display(Name = "Notat")]
     public string? Notat { get; set; }

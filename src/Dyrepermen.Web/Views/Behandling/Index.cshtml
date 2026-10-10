@@ -126,6 +126,31 @@
                         oversikten 14 dager før forfall.
                     </div>
 
+                    @* Tomme felt betyr 1, og 1 star som plassholder. Samme
+                       grep som antall maltider i forplanen. *@
+                    <div class="row g-2">
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.AntallDager" class="form-label"></label>
+                            <input asp-for="Ny.AntallDager" class="form-control"
+                                   type="number" min="1" max="@NyBehandlingVm.MaksDager"
+                                   inputmode="numeric" placeholder="1" />
+                            <span asp-validation-for="Ny.AntallDager" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label asp-for="Ny.GangerPerDag" class="form-label"></label>
+                            <input asp-for="Ny.GangerPerDag" class="form-control"
+                                   type="number" min="1" max="@NyBehandlingVm.MaksGangerPerDag"
+                                   inputmode="numeric" placeholder="1" />
+                            <span asp-validation-for="Ny.GangerPerDag" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="form-text mb-2">
+                        For en kur over flere dager, som ormekur én gang
+                        daglig i tre dager. Datoen er første dag, og dosene
+                        krysses av på oversikten. Med 1 og 1 regnes
+                        behandlingen som gitt når den lagres.
+                    </div>
+
                     <div class="mb-3">
                         <label asp-for="Ny.Notat" class="form-label"></label>
                         <textarea asp-for="Ny.Notat" class="form-control" rows="2"></textarea>
@@ -179,6 +204,10 @@
                                 </span>
                                 <span class="under d-block">
                                     @($"{rad.Dato:d. MMMM yyyy}")
+                                    @if (rad.Kurtekst is not null)
+                                    {
+                                        <text>· @rad.Kurtekst</text>
+                                    }
                                     @if (rad.Notat is not null)
                                     {
                                         <span class="d-block">@rad.Notat</span>

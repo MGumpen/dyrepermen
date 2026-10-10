@@ -30,10 +30,12 @@ public sealed class DashbordService : IDashbordService
         var naa = DateTimeOffset.UtcNow;
         var idag = Tidssone.Idag(naa);
         var aktivMedisin = Medisinfilter.Aktiv(idag);
+        var aktivKur = Behandlingsfilter.AktivKur(idag);
         var grense = idag.AddDays(Varselvindu);
 
         // Midnatt i Norge, ikke i UTC. Ellers nullstilles maltidstelleren
-        // klokka to om natten - etter at kvelden er over.
+        // klokka to om natten - etter at kvelden er over. Det samme gjelder
+        // dosene i en kur.
         var dagStart = Tidssone.DagStart(naa);
 
         // Sporring 1. Siste vekt, aktiv forplan, neste behandling og aktive
@@ -111,6 +113,25 @@ public sealed class DashbordService : IDashbordService
                             .OrderByDescending(x => x.GittTid)
                             .Select(x => (DateTimeOffset?)x.GittTid)
                             .FirstOrDefault()))
+                    .ToList(),
+
+                // Kurer som gar i dag, med dagens doser talt i databasen.
+                // Samme grep som medisinene: en korrelert undersporring her
+                // koster ingen ny rundtur for "Forfaller snart". Se ADR 0019.
+                Kurer = d.Behandlinger
+                    .AsQueryable()
+                    .Where(aktivKur)
+                    .OrderBy(b => b.Id)
+                    .Select(b => new AktivKur(
+                        d.Id,
+                        d.Navn,
+                        b.Id,
+                        b.Type,
+                        b.Preparat,
+                        b.Dato,
+                        b.AntallDager,
+                        b.GangerPerDag,
+                        b.Doser.Count(x => x.GittTid >= dagStart)))
                     .ToList(),
 
                 // Korrelert undersporring - siste foring i samme rundtur.
@@ -288,6 +309,7 @@ public sealed class DashbordService : IDashbordService
                 $"Fornyelse {f.Selskap}",
                 f.Dato)))
             .Concat(Doser(raa.SelectMany(d => d.Medisiner), naa))
+            .Concat(Kurer(raa.SelectMany(d => d.Kurer), idag))
             // Selve timen. Klokkeslettet tas med nar det finnes - "torsdag"
             // er ubrukelig hvis timen er 08:15 og du ma ta fri.
             .Concat(vetbesok
@@ -404,6 +426,53 @@ public sealed class DashbordService : IDashbordService
         int IntervallTimer,
         DateOnly StartDato,
         DateTimeOffset? SisteDose);
+
+    /// <summary>
+    /// En kur som gar i dag, slik sporring 1 henter den. Aktiv er allerede
+    /// avgjort av Behandlingsfilter.AktivKur.
+    /// </summary>
+    private sealed record AktivKur(
+        int DyrId,
+        string DyreNavn,
+        int Id,
+        BehandlingType Type,
+        string? Preparat,
+        DateOnly ForsteDag,
+        int AntallDager,
+        int GangerPerDag,
+        int DoserIdag);
+
+    /// <summary>
+    /// En rad per kur som gar i dag. Raden blir staende nar dagens doser er
+    /// gitt, men uten knapp - "fullfort for i dag" er ogsa svar pa
+    /// sporsmalet oversikten stiller. Datoen er i dag, sa den regnes aldri
+    /// som forfalt.
+    /// </summary>
+    private static IEnumerable<Paminnelse> Kurer(
+        IEnumerable<AktivKur> kurer, DateOnly idag)
+        => kurer.Select(k =>
+        {
+            var rad = new Kurrad(
+                k.DyrId,
+                k.DyreNavn,
+                k.Id,
+                TypeTekst(k.Type, k.Preparat),
+                Behandlingskur.Dag(k.ForsteDag, idag),
+                k.AntallDager,
+                k.GangerPerDag,
+                k.DoserIdag,
+                Aktiv: true);
+
+            return new Paminnelse(
+                k.DyrId,
+                k.DyreNavn,
+                Kilde.Kur,
+                k.Id,
+                $"{rad.Beskrivelse} – {rad.Fremdrift}",
+                idag,
+                KanFolgesOpp: rad.KanGis,
+                Kur: rad);
+        });
 
     /// <summary>
     /// Medisindosene som forfaller i dag, en rad per medisin. Medisinene er

@@ -10,6 +10,8 @@ public sealed record BehandlingRad(
     DateOnly Dato,
     DateOnly? NesteDato,
     string? Notat,
+    int AntallDager,
+    int GangerPerDag,
 
     /// <summary>
     /// Neste gang er ikke fulgt opp enna: ingen nyere behandling av samme
@@ -24,4 +26,7 @@ public sealed record BehandlingRad(
     /// </summary>
     public bool KanKrysseAv(DateOnly idag)
         => ErApen && Behandlingsintervall.KanGisIgjen(Dato, idag);
+
+    /// <summary>"1 gang daglig i 3 dager", eller null for en vanlig behandling.</summary>
+    public string? Kurtekst => Behandlingskur.Beskrivelse(AntallDager, GangerPerDag);
 }

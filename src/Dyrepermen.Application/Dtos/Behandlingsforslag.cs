@@ -15,4 +15,11 @@ public sealed record Behandlingsforslag(
     BehandlingType Type,
     string? Preparat,
     DateOnly Dato,
-    DateOnly? NesteDato);
+    DateOnly? NesteDato,
+
+    /// <summary>
+    /// Kurlengden folger med som intervallet: var ormekuren sist en
+    /// tredagerskur, foreslas tre dager igjen.
+    /// </summary>
+    int AntallDager,
+    int GangerPerDag);

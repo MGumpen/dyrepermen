@@ -71,6 +71,27 @@ public sealed partial class Skjemaklient
     }
 
     /// <summary>
+    /// Poster slik htmx gjor det: med HX-Request, som far handlingen til a
+    /// svare med en delvisning i stedet for en omdirigering. Tokenet hentes
+    /// fra <paramref name="tokenFra"/>.
+    /// </summary>
+    public async Task<HttpResponseMessage> PostHtmx(string sti, string tokenFra)
+    {
+        var token = await HentToken(tokenFra);
+
+        using var foresporsel = new HttpRequestMessage(HttpMethod.Post, sti)
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["__RequestVerificationToken"] = token
+            })
+        };
+        foresporsel.Headers.Add("HX-Request", "true");
+
+        return await _klient.SendAsync(foresporsel);
+    }
+
+    /// <summary>
     /// Poster felter og filer som multipart, slik et skjema med
     /// enctype="multipart/form-data" gjor. Tokenet hentes fra
     /// <paramref name="tokenFra"/>, som i <see cref="Post(string, Dictionary{string, string}, string)"/>.

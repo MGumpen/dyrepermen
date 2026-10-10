@@ -40,9 +40,29 @@ public interface IBehandlingService
     /// brukeren fylte inn i dialogen, eller null for ingen ny paminnelse. Den gamle raden blir staende urort - den er
     /// historikk, og paminnelsen forsvinner fordi en nyere behandling na
     /// finnes. Se ADR 0016.
+    ///
+    /// Var forrige gang en kur, blir den nye det ogsa, og dagens forste dose
+    /// logges pa <paramref name="brukerId"/> - "gitt i dag" betyr at den er
+    /// gitt. Se ADR 0019.
     /// </summary>
     Task<GittResultat> Gitt(
-        int dyrId, int behandlingId, DateOnly? nesteDato, CancellationToken ct);
+        int dyrId, int behandlingId, DateOnly? nesteDato, int? brukerId,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Registrerer en dose i en kur som gar i dag. Hoyst
+    /// <c>GangerPerDag</c> doser per norsk kalenderdag, ogsa nar to i
+    /// husstanden trykker samtidig. Se ADR 0019.
+    /// </summary>
+    Task<Kurdosestatus> LoggDose(
+        int dyrId, int behandlingId, int? brukerId, CancellationToken ct);
+
+    /// <summary>
+    /// Raden pa oversikten for en kur, slik den star na. Null betyr at
+    /// behandlingen ikke finnes pa dette dyret i denne husstanden, eller at
+    /// den ikke er en kur.
+    /// </summary>
+    Task<Kurrad?> HentKurrad(int dyrId, int behandlingId, CancellationToken ct);
 
     /// <summary>
     /// Behandlingene husstanden har gitt for, nyeste forst, en per

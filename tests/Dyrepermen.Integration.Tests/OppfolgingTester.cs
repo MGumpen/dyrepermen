@@ -112,7 +112,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             Idag.AddMonths(-3), Idag);
 
         var resultat = await new BehandlingService(db).Gitt(
-            dyrId, forrige, Idag.AddMonths(3), default);
+            dyrId, forrige, Idag.AddMonths(3), null, default);
 
         Assert.Equal(Gittstatus.Lagret, resultat.Status);
         Assert.Equal(Idag.AddMonths(3), resultat.NesteDato);
@@ -144,7 +144,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
         Assert.Single((await Dashbord(db, h)).Forfaller,
             p => p.Kilde == Kilde.Behandling && p.KildeId == forrige);
 
-        await new BehandlingService(db).Gitt(dyrId, forrige, Idag.AddMonths(3), default);
+        await new BehandlingService(db).Gitt(dyrId, forrige, Idag.AddMonths(3), null, default);
 
         var etter = await Dashbord(db, h);
 
@@ -211,9 +211,9 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             Idag.AddMonths(-3), Idag);
 
         Assert.Equal(Gittstatus.Lagret,
-            (await tjeneste.Gitt(dyrId, forrige, null, default)).Status);
+            (await tjeneste.Gitt(dyrId, forrige, null, null, default)).Status);
         Assert.Equal(Gittstatus.AlleredeFulgtOpp,
-            (await tjeneste.Gitt(dyrId, forrige, null, default)).Status);
+            (await tjeneste.Gitt(dyrId, forrige, null, null, default)).Status);
 
         Assert.Equal(2, await db.Behandling.CountAsync(b => b.DyrId == dyrId));
     }
@@ -229,7 +229,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             Idag.AddMonths(-3), Idag.AddDays(-1));
 
         Assert.Equal(Gittstatus.Lagret,
-            (await new BehandlingService(db).Gitt(dyrId, forrige, null, default)).Status);
+            (await new BehandlingService(db).Gitt(dyrId, forrige, null, null, default)).Status);
 
         var dashbord = await Dashbord(db, h);
         Assert.DoesNotContain(dashbord.Forfaller, p => p.Kilde == Kilde.Behandling);
@@ -254,7 +254,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             Idag, Idag.AddDays(1));
 
         Assert.Equal(Gittstatus.GittIdag,
-            (await tjeneste.Gitt(dyrId, idag, Idag.AddDays(2), default)).Status);
+            (await tjeneste.Gitt(dyrId, idag, Idag.AddDays(2), null, default)).Status);
         Assert.Equal(1, await db.Behandling.CountAsync(b => b.DyrId == dyrId));
 
         // Ingen knapp noe sted: ikke i historikken, ikke pa dashbordet, og
@@ -277,7 +277,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
             Idag.AddMonths(-3), Idag);
 
         Assert.Equal(Gittstatus.FinnesIkke,
-            (await new BehandlingService(db).Gitt(milo, lunas, null, default)).Status);
+            (await new BehandlingService(db).Gitt(milo, lunas, null, null, default)).Status);
         Assert.Equal(1, await db.Behandling.CountAsync());
     }
 
@@ -298,7 +298,7 @@ public sealed partial class OppfolgingTester : IAsyncLifetime
         await using (var fremmed = _fixture.LagContext(b))
         {
             Assert.Equal(Gittstatus.FinnesIkke,
-                (await new BehandlingService(fremmed).Gitt(dyrId, behandlingId, null, default))
+                (await new BehandlingService(fremmed).Gitt(dyrId, behandlingId, null, null, default))
                     .Status);
         }
 

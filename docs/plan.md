@@ -463,9 +463,22 @@ Merk at `clients/` er utelatt her. Bygges React-klienten senere som en del av sa
 | DyrId | int | FK |
 | Type | char(1) | V, O, F, K, T |
 | Preparat | varchar(80) | f.eks. "Milbemax" |
-| Dato | date | |
+| Dato | date | første dag ved en kur |
 | NesteDato | date | nullable, driver påminnelser |
 | Notat | varchar(500) | nullable |
+| AntallDager | int | standard 1, CHECK >= 1. Kuren er aktiv `Dato` til og med `Dato + AntallDager - 1` |
+| GangerPerDag | int | standard 1, CHECK >= 1 |
+
+En behandling med `AntallDager` eller `GangerPerDag` over 1 er en **kur** — ormekur én gang daglig i tre dager. Med 1 og 1 regnes behandlingen som gitt ved registrering og tar ikke imot doser. Se ADR 0019.
+
+**BehandlingDose** — logg over doser gitt i en kur
+
+| Felt | Type | Merknad |
+|---|---|---|
+| Id | int | PK |
+| BehandlingId | int | FK, ON DELETE CASCADE |
+| GittTid | timestamptz | settes på serveren |
+| GittAvBrukerId | int | FK, nullable, ON DELETE SET NULL |
 
 **Medisin**
 
@@ -668,10 +681,24 @@ CREATE TABLE behandling (
     dato       DATE        NOT NULL,
     neste_dato DATE,
     notat      VARCHAR(500),
-    CONSTRAINT ck_behandling_type CHECK (type IN ('V','O','F','K','T'))
+    antall_dager   INT NOT NULL DEFAULT 1,
+    ganger_per_dag INT NOT NULL DEFAULT 1,
+    CONSTRAINT ck_behandling_type CHECK (type IN ('V','O','F','K','T','A')),
+    CONSTRAINT ck_behandling_antall_dager CHECK (antall_dager >= 1),
+    CONSTRAINT ck_behandling_ganger_per_dag CHECK (ganger_per_dag >= 1)
 );
 CREATE INDEX ix_behandling_neste ON behandling(neste_dato)
     WHERE neste_dato IS NOT NULL;
+
+-- Doser i en kur over flere dager eller flere ganger per dag. Se ADR 0019.
+CREATE TABLE behandling_dose (
+    id                 INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    behandling_id      INT         NOT NULL REFERENCES behandling(id) ON DELETE CASCADE,
+    gitt_tid           TIMESTAMPTZ NOT NULL,
+    gitt_av_bruker_id  INT REFERENCES asp_net_users(id) ON DELETE SET NULL
+);
+CREATE INDEX ix_behandling_dose_behandling_tid
+    ON behandling_dose(behandling_id, gitt_tid DESC);
 
 CREATE TABLE medisin (
     id              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -1397,6 +1424,13 @@ public sealed class PaminnelseService
 ```
 
 Medisiner behandles separat fordi de gjentas per time, ikke per dato: neste dose beregnes som `siste dose + intervall_timer`.
+
+**Kurer.** En behandling med `antall_dager` eller `ganger_per_dag` over 1 er en kur (ADR 0019). Påminnelsene tar med aktive kurer der dagens doser ikke er fullført: kuren er aktiv fra og med `dato` til og med `dato + antall_dager - 1`, og dosene i `behandling_dose` telles fra norsk midnatt. Bruk `Behandlingsfilter.AktivKur` — vilkåret skal ikke skrives på nytt. `neste_dato` brukes som før til påminnelsen om neste kur.
+
+På oversikten står kurene i «Forfaller snart» med fremdrift («dag 2 av 3 · 1/2 i dag») og en «Gitt»-knapp, hentet i dashbordets spørring 1 uten ny rundtur. Reglene håndheves i `IBehandlingService.LoggDose`, ikke i grensesnittet:
+
+- En dose kan bare registreres når kuren er aktiv i dag (norsk dato).
+- Høyst `ganger_per_dag` doser per norsk kalenderdag. Behandlingsraden låses med `SELECT ... FOR UPDATE` i en transaksjon før dosene telles, så to som trykker samtidig, ikke begge kommer gjennom.
 
 ### 8.4 Bakgrunnsjobb
 
@@ -2692,7 +2726,7 @@ Medisiner med doselogg og dobbeltdoseringsvarsel. Fôrplan med begge metoder, ko
 
 `PaminnelseService`, jobb-endepunkt, GitHub Actions-planlegger, e-postutsending.
 
-**Ferdig når:** `POST /jobb/paminnelser` uten gyldig nøkkel gir 401, og med gyldig nøkkel sender e-post. At `paminnelser.yml` faktisk trigger jobben på en ekte, planlagt kjøring, forutsetter en utrulling og verifiseres først i fase 8.
+**Ferdig når:** `POST /jobb/paminnelser` uten gyldig nøkkel gir 401, og med gyldig nøkkel sender e-post. Oppsummeringen tar med aktive kurer der dagens doser ikke er fullført (kapittel 8.3, ADR 0019). At `paminnelser.yml` faktisk trigger jobben på en ekte, planlagt kjøring, forutsetter en utrulling og verifiseres først i fase 8.
 
 ### Fase 5a — forsikring
 

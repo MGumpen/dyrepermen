@@ -32,6 +32,7 @@ public sealed class DyrepermenDbContext
     public DbSet<Dyr> Dyr => Set<Dyr>();
     public DbSet<Vekt> Vekt => Set<Vekt>();
     public DbSet<Behandling> Behandling => Set<Behandling>();
+    public DbSet<BehandlingDose> BehandlingDose => Set<BehandlingDose>();
     public DbSet<Medisin> Medisin => Set<Medisin>();
     public DbSet<Dose> Dose => Set<Dose>();
     public DbSet<Forplan> Forplan => Set<Forplan>();
@@ -86,6 +87,10 @@ public sealed class DyrepermenDbContext
 
         b.Entity<Behandling>()
          .HasQueryFilter(x => x.Dyr.HusstandId == _husstand.HusstandId);
+
+        // To ledd ut til husstanden, som Dose.
+        b.Entity<BehandlingDose>()
+         .HasQueryFilter(d => d.Behandling.Dyr.HusstandId == _husstand.HusstandId);
 
         b.Entity<Medisin>()
          .HasQueryFilter(m => m.Dyr.HusstandId == _husstand.HusstandId);
