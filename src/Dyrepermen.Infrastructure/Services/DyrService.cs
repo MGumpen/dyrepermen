@@ -75,6 +75,7 @@ public sealed class DyrService : IDyrService
                         b.Id,
                         b.Type,
                         b.Preparat,
+                        b.Styrke,
                         b.Dato,
                         Neste = b.NesteDato!.Value
                     })
@@ -134,7 +135,7 @@ public sealed class DyrService : IDyrService
             rad.Kommende
                 .Select(b => new KommendeBehandling(
                     b.Id,
-                    Behandlingstekst(b.Type, b.Preparat),
+                    Behandlingstekst(b.Type, b.Preparat, b.Styrke),
                     b.Neste,
                     Behandlingsintervall.KanGisIgjen(b.Dato, idag)))
                 .ToList(),
@@ -144,8 +145,9 @@ public sealed class DyrService : IDyrService
             notater);
     }
 
-    private static string Behandlingstekst(BehandlingType type, string? preparat)
-        => Behandlingsformat.MedPreparat(type, preparat);
+    private static string Behandlingstekst(
+        BehandlingType type, string? preparat, string? styrke)
+        => Behandlingsformat.MedPreparat(type, preparat, styrke);
 
     /// <summary>
     /// Torrfortabellen, kun for blandingsplaner. Andre metoder skal ikke

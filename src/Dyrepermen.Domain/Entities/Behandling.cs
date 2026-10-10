@@ -25,6 +25,14 @@ public sealed class Behandling : IHusstandsbundet
 
     public string? Preparat { get; set; }
 
+    /// <summary>
+    /// Fritekst, for eksempel "12,5 mg/125 mg" eller "2,5 ml". Ikke en del
+    /// av hva som folger opp en paminnelse - en valp far sterkere tablett
+    /// etter hvert som den vokser, men det er fortsatt samme ormekur.
+    /// Se ADR 0020.
+    /// </summary>
+    public string? Styrke { get; set; }
+
     public DateOnly Dato { get; set; }
 
     public DateOnly? NesteDato { get; set; }

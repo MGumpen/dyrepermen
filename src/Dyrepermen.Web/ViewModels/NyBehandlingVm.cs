@@ -12,6 +12,11 @@ public sealed class NyBehandlingVm : IValidatableObject
     [Display(Name = "Preparat")]
     public string? Preparat { get; set; }
 
+    /// <summary>Fritekst, valgfri. "12,5 mg/125 mg" eller "2,5 ml".</summary>
+    [StringLength(40, ErrorMessage = "Styrken kan være høyst 40 tegn.")]
+    [Display(Name = "Styrke")]
+    public string? Styrke { get; set; }
+
     [Required(ErrorMessage = "Velg en dato.")]
     [DataType(DataType.Date)]
     [Display(Name = "Dato")]

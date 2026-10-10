@@ -111,9 +111,13 @@ public sealed class KontoService : IKontoService
                         {
                             Type = b.Type.ToString(),
                             b.Preparat,
+                            b.Styrke,
                             b.Dato,
                             b.NesteDato,
-                            b.Notat
+                            b.Notat,
+                            b.AntallDager,
+                            b.GangerPerDag,
+                            doser = b.Doser.OrderBy(x => x.GittTid).Select(x => x.GittTid)
                         }),
                     medisiner = d.Medisiner
                         .OrderBy(m => m.StartDato)

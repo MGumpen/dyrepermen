@@ -14,6 +14,9 @@ public sealed record Behandlingsforslag(
     int Id,
     BehandlingType Type,
     string? Preparat,
+
+    /// <summary>Styrken fra sist, som utgangspunkt. Den kan ha endret seg.</summary>
+    string? Styrke,
     DateOnly Dato,
     DateOnly? NesteDato,
 

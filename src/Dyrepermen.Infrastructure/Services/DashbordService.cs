@@ -91,7 +91,10 @@ public sealed class DashbordService : IDashbordService
                     .AsQueryable()
                     .Where(Behandlingsfilter.ApenPaminnelse)
                     .OrderBy(b => b.NesteDato)
-                    .Select(b => new { b.Type, b.Preparat, Dato = b.NesteDato!.Value })
+                    .Select(b => new
+                    {
+                        b.Type, b.Preparat, b.Styrke, Dato = b.NesteDato!.Value
+                    })
                     .FirstOrDefault(),
 
                 // Med intervall og siste dose, slik at dosene som forfaller i
@@ -128,6 +131,7 @@ public sealed class DashbordService : IDashbordService
                         b.Id,
                         b.Type,
                         b.Preparat,
+                        b.Styrke,
                         b.Dato,
                         b.AntallDager,
                         b.GangerPerDag,
@@ -201,7 +205,7 @@ public sealed class DashbordService : IDashbordService
                 d.SisteVekt?.VektGram,
                 d.SisteVekt?.Dato,
                 Forplantekst(mengde),
-                d.Neste is null ? null : TypeTekst(d.Neste.Type, d.Neste.Preparat),
+                d.Neste is null ? null : TypeTekst(d.Neste.Type, d.Neste.Preparat, d.Neste.Styrke),
                 d.Neste?.Dato,
                 d.Medisiner.Select(m => m.Navn).ToList(),
                 // Kortet vises kun nar bryteren er pa for dyret. Er den av,
@@ -248,6 +252,7 @@ public sealed class DashbordService : IDashbordService
                 DyreNavn = b.Dyr.Navn,
                 b.Type,
                 b.Preparat,
+                b.Styrke,
                 Dato = b.NesteDato!.Value
             })
             .ToListAsync(ct);
@@ -296,7 +301,7 @@ public sealed class DashbordService : IDashbordService
                 b.DyreNavn,
                 Kilde.Behandling,
                 b.Id,
-                TypeTekst(b.Type, b.Preparat),
+                TypeTekst(b.Type, b.Preparat, b.Styrke),
                 b.Dato,
                 // Gitt i dag betyr ingen "gitt"-knapp. Paminnelsen star, men
                 // den er ikke noe a krysse av for i morgen.
@@ -437,6 +442,7 @@ public sealed class DashbordService : IDashbordService
         int Id,
         BehandlingType Type,
         string? Preparat,
+        string? Styrke,
         DateOnly ForsteDag,
         int AntallDager,
         int GangerPerDag,
@@ -456,7 +462,7 @@ public sealed class DashbordService : IDashbordService
                 k.DyrId,
                 k.DyreNavn,
                 k.Id,
-                TypeTekst(k.Type, k.Preparat),
+                TypeTekst(k.Type, k.Preparat, k.Styrke),
                 Behandlingskur.Dag(k.ForsteDag, idag),
                 k.AntallDager,
                 k.GangerPerDag,
@@ -507,8 +513,9 @@ public sealed class DashbordService : IDashbordService
         }
     }
 
-    private static string TypeTekst(BehandlingType type, string? preparat)
-        => Behandlingsformat.MedPreparat(type, preparat);
+    private static string TypeTekst(
+        BehandlingType type, string? preparat, string? styrke)
+        => Behandlingsformat.MedPreparat(type, preparat, styrke);
 
     private static string? Forplantekst(ForplanResultat? mengde) => mengde switch
     {

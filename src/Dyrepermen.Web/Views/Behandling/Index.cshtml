@@ -63,7 +63,7 @@
                                    asp-action="Index"
                                    asp-route-dyrId="@Model.DyrId"
                                    asp-route-gjenta="@f.Id"
-                                   asp-fragment="skjema">@Behandlingsformat.MedPreparat(f.Type, f.Preparat)</a>
+                                   asp-fragment="skjema">@Behandlingsformat.MedPreparat(f.Type, f.Preparat, f.Styrke)</a>
                             }
                         </div>
                         <div class="form-text">
@@ -108,6 +108,18 @@
                         <span asp-validation-for="Ny.Preparat" class="text-danger small"></span>
                         <div class="form-text">
                             Velger du «Annet», skriver du her hva behandlingen var.
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label asp-for="Ny.Styrke" class="form-label"></label>
+                        <input asp-for="Ny.Styrke" class="form-control"
+                               placeholder="For eksempel «12,5 mg/125 mg» eller «2,5 ml»"
+                               autocomplete="off" />
+                        <span asp-validation-for="Ny.Styrke" class="text-danger small"></span>
+                        <div class="form-text">
+                            Valgfritt. Styrken står i historikken og på
+                            påminnelsen, så neste gang kan gis med samme.
                         </div>
                     </div>
 
@@ -200,7 +212,7 @@
                             aria-current="@(redigeres ? "true" : null)">
                             <span class="flex-grow-1 min-w-0">
                                 <span class="tittel">
-                                    @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat)
+                                    @Behandlingsformat.MedPreparat(rad.Type, rad.Preparat, rad.Styrke)
                                 </span>
                                 <span class="under d-block">
                                     @($"{rad.Dato:d. MMMM yyyy}")

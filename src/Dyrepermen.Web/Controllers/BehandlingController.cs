@@ -178,7 +178,7 @@ public sealed class BehandlingController : Controller
     /// <summary>Tomme felt for kurlengden betyr 1 - en vanlig behandling.</summary>
     private static Behandlingsinnhold Innhold(int dyrId, NyBehandlingVm ny)
         => new(dyrId, ny.Type, ny.Preparat, ny.Dato, ny.NesteDato, ny.Notat,
-            ny.AntallDager ?? 1, ny.GangerPerDag ?? 1);
+            ny.AntallDager ?? 1, ny.GangerPerDag ?? 1, ny.Styrke);
 
     [HttpPost("{behandlingId:int}/slett")]
     [KreverEier]
@@ -250,6 +250,7 @@ public sealed class BehandlingController : Controller
         {
             Type = forslag.Type,
             Preparat = forslag.Preparat,
+            Styrke = forslag.Styrke,
             Dato = idag,
             NesteDato = Behandlingsintervall.NesteEtter(
                 forslag.Dato, forslag.NesteDato, idag),
@@ -265,6 +266,7 @@ public sealed class BehandlingController : Controller
             {
                 Type = rad.Type,
                 Preparat = rad.Preparat,
+                Styrke = rad.Styrke,
                 Dato = rad.Dato,
                 NesteDato = rad.NesteDato,
                 Notat = rad.Notat,

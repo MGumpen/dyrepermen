@@ -463,6 +463,7 @@ Merk at `clients/` er utelatt her. Bygges React-klienten senere som en del av sa
 | DyrId | int | FK |
 | Type | char(1) | V, O, F, K, T |
 | Preparat | varchar(80) | f.eks. "Milbemax" |
+| Styrke | varchar(40) | nullable, fritekst, f.eks. "12,5 mg/125 mg". Se ADR 0020 |
 | Dato | date | første dag ved en kur |
 | NesteDato | date | nullable, driver påminnelser |
 | Notat | varchar(500) | nullable |
@@ -678,6 +679,7 @@ CREATE TABLE behandling (
     dyr_id     INT         NOT NULL REFERENCES dyr(id) ON DELETE CASCADE,
     type       CHAR(1)     NOT NULL,
     preparat   VARCHAR(80),
+    styrke     VARCHAR(40),
     dato       DATE        NOT NULL,
     neste_dato DATE,
     notat      VARCHAR(500),

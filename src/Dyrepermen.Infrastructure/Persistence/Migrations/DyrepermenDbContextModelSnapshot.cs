@@ -65,6 +65,11 @@ namespace Dyrepermen.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(80)")
                         .HasColumnName("preparat");
 
+                    b.Property<string>("Styrke")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("styrke");
+
                     b.Property<char>("Type")
                         .HasColumnType("char(1)")
                         .HasColumnName("type");

@@ -7,6 +7,7 @@ public sealed record BehandlingRad(
     int Id,
     BehandlingType Type,
     string? Preparat,
+    string? Styrke,
     DateOnly Dato,
     DateOnly? NesteDato,
     string? Notat,

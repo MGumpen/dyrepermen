@@ -13,6 +13,7 @@ public sealed class BehandlingConfiguration : IEntityTypeConfiguration<Behandlin
         b.Property(x => x.Id).UseIdentityAlwaysColumn();
 
         b.Property(x => x.Preparat).HasMaxLength(80);
+        b.Property(x => x.Styrke).HasMaxLength(40);
         b.Property(x => x.Notat).HasMaxLength(500);
 
         // Nostede betingelser, ikke switch. C# tillater ikke switch-uttrykk

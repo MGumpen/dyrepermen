@@ -89,7 +89,7 @@ public sealed class UtskriftService : IUtskriftService
             {
                 b.DyrId,
                 Rad = new BehandlingRad(
-                    b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat,
+                    b.Id, b.Type, b.Preparat, b.Styrke, b.Dato, b.NesteDato, b.Notat,
                     b.AntallDager, b.GangerPerDag, false)
             })
             .ToListAsync(ct);

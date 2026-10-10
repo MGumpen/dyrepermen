@@ -30,7 +30,7 @@ public sealed class BehandlingService : IBehandlingService
             .OrderByDescending(b => b.Dato)
             .ThenByDescending(b => b.Id)
             .Select(b => new BehandlingRad(
-                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato, b.Notat,
+                b.Id, b.Type, b.Preparat, b.Styrke, b.Dato, b.NesteDato, b.Notat,
                 b.AntallDager, b.GangerPerDag, false))
             .ToListAsync(ct);
 
@@ -58,6 +58,7 @@ public sealed class BehandlingService : IBehandlingService
             {
                 b.Type,
                 b.Preparat,
+                b.Styrke,
                 b.Dato,
                 b.NesteDato,
                 DyreNavn = b.Dyr.Navn
@@ -75,7 +76,7 @@ public sealed class BehandlingService : IBehandlingService
             dyrId,
             behandlingId,
             forrige.DyreNavn,
-            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat),
+            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat, forrige.Styrke),
             forrige.Dato,
             forrige.NesteDato,
             Behandlingsintervall.KanGisIgjen(forrige.Dato, idag)
@@ -92,7 +93,7 @@ public sealed class BehandlingService : IBehandlingService
             .Where(b => b.Id == behandlingId && b.DyrId == dyrId)
             .Select(b => new
             {
-                b.Type, b.Preparat, b.Dato, b.AntallDager, b.GangerPerDag
+                b.Type, b.Preparat, b.Styrke, b.Dato, b.AntallDager, b.GangerPerDag
             })
             .SingleOrDefaultAsync(ct);
 
@@ -127,6 +128,9 @@ public sealed class BehandlingService : IBehandlingService
             // Preparatet kopieres som det sto. Det er det som gjor at den
             // nye raden gjenkjennes som oppfolgingen av den gamle.
             Preparat = forrige.Preparat,
+            // Styrken ogsa. Har den endret seg - valpen har vokst - rettes
+            // den pa behandlingssiden.
+            Styrke = forrige.Styrke,
             Dato = idag,
             NesteDato = nesteDato,
             // Neste ormekur er en tredagerskur den ogsa.
@@ -151,7 +155,8 @@ public sealed class BehandlingService : IBehandlingService
         await _db.SaveChangesAsync(ct);
 
         return GittResultat.Lagret(
-            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat), nesteDato);
+            Behandlingsformat.MedPreparat(forrige.Type, forrige.Preparat, forrige.Styrke),
+            nesteDato);
     }
 
     public async Task<Kurdosestatus> LoggDose(
@@ -229,6 +234,7 @@ public sealed class BehandlingService : IBehandlingService
             {
                 b.Type,
                 b.Preparat,
+                b.Styrke,
                 b.Dato,
                 b.AntallDager,
                 b.GangerPerDag,
@@ -246,7 +252,7 @@ public sealed class BehandlingService : IBehandlingService
             dyrId,
             kur.DyreNavn,
             behandlingId,
-            Behandlingsformat.MedPreparat(kur.Type, kur.Preparat),
+            Behandlingsformat.MedPreparat(kur.Type, kur.Preparat, kur.Styrke),
             Behandlingskur.Dag(kur.Dato, idag),
             kur.AntallDager,
             kur.GangerPerDag,
@@ -267,7 +273,7 @@ public sealed class BehandlingService : IBehandlingService
             .ThenByDescending(b => b.Id)
             .Take(ForslagGrunnlag)
             .Select(b => new Behandlingsforslag(
-                b.Id, b.Type, b.Preparat, b.Dato, b.NesteDato,
+                b.Id, b.Type, b.Preparat, b.Styrke, b.Dato, b.NesteDato,
                 b.AntallDager, b.GangerPerDag))
             .ToListAsync(ct);
 
@@ -294,6 +300,7 @@ public sealed class BehandlingService : IBehandlingService
             DyrId = input.DyrId,
             Type = input.Type,
             Preparat = input.Preparat.TomTilNull(),
+            Styrke = input.Styrke.TomTilNull(),
             Dato = input.Dato,
             NesteDato = input.NesteDato,
             Notat = input.Notat.TomTilNull(),
@@ -322,6 +329,7 @@ public sealed class BehandlingService : IBehandlingService
 
         rad.Type = input.Type;
         rad.Preparat = input.Preparat.TomTilNull();
+        rad.Styrke = input.Styrke.TomTilNull();
         rad.Dato = input.Dato;
         rad.NesteDato = input.NesteDato;
         rad.Notat = input.Notat.TomTilNull();
