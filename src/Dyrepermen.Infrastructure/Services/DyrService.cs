@@ -45,8 +45,13 @@ public sealed class DyrService : IDyrService
     public async Task<DyrSammendrag?> HentSammendrag(
         int dyrId, CancellationToken ct)
     {
-        var idag = Tidssone.Idag(DateTimeOffset.UtcNow);
+        var naa = DateTimeOffset.UtcNow;
+        var idag = Tidssone.Idag(naa);
         var aktivMedisin = Medisinfilter.Aktiv(idag);
+        var aktivKur = Behandlingsfilter.AktivKur(idag);
+
+        // Dagens doser telles fra norsk midnatt, som pa oversikten.
+        var dagStart = Tidssone.DagStart(naa);
 
         // Korrelerte undersporringer i ett Select. Npgsql oversetter dem til
         // LEFT JOIN LATERAL, sa hele sammendraget kommer i en rundtur.
@@ -80,6 +85,26 @@ public sealed class DyrService : IDyrService
                         Neste = b.NesteDato!.Value
                     })
                     .ToList(),
+
+                // Kurer som gar i dag. Samme regel og samme telling som
+                // dashbordet, i samme rundtur som resten av sammendraget.
+                Kurer = d.Behandlinger
+                    .AsQueryable()
+                    .Where(aktivKur)
+                    .OrderBy(b => b.Id)
+                    .Select(b => new
+                    {
+                        b.Id,
+                        b.Type,
+                        b.Preparat,
+                        b.Styrke,
+                        b.Dato,
+                        b.AntallDager,
+                        b.GangerPerDag,
+                        DoserIdag = b.Doser.Count(x => x.GittTid >= dagStart)
+                    })
+                    .ToList(),
+                DyreNavn = d.Navn,
 
                 AntallMedisiner = d.Medisiner.Count(),
                 Aktive = d.Medisiner
@@ -138,6 +163,18 @@ public sealed class DyrService : IDyrService
                     Behandlingstekst(b.Type, b.Preparat, b.Styrke),
                     b.Neste,
                     Behandlingsintervall.KanGisIgjen(b.Dato, idag)))
+                .ToList(),
+            rad.Kurer
+                .Select(k => new Kurrad(
+                    dyrId,
+                    rad.DyreNavn,
+                    k.Id,
+                    Behandlingstekst(k.Type, k.Preparat, k.Styrke),
+                    Behandlingskur.Dag(k.Dato, idag),
+                    k.AntallDager,
+                    k.GangerPerDag,
+                    k.DoserIdag,
+                    Aktiv: true))
                 .ToList(),
             rad.AntallMedisiner,
             rad.Aktive,

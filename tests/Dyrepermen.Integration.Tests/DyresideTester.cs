@@ -93,4 +93,41 @@ public sealed class DyresideTester : IAsyncLifetime
             .ReadAsStringAsync();
         Assert.Contains("id=\"skjema\"", medisin);
     }
+
+    /// <summary>
+    /// Registrer pa vektkortet gar rett til skjemaet, bade nar dyret ikke er
+    /// veid og nar det er det. Se alle star bare nar det finnes noe a se.
+    /// </summary>
+    [Fact]
+    public async Task Vektkortet_har_registrer_rett_til_skjemaet()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient);
+        var lenke = $"href=\"/dyr/{dyrId}/vekt#skjema\"";
+
+        var tom = WebUtility.HtmlDecode(
+            await (await klient.Hent($"/dyr/{dyrId}")).Content.ReadAsStringAsync());
+        Assert.Contains(lenke, tom);
+        Assert.Contains("Ingen vekt registrert.", tom);
+        Assert.DoesNotContain($"href=\"/dyr/{dyrId}/vekt\"", tom);
+
+        var lagret = await klient.Post($"/dyr/{dyrId}/vekt", new Dictionary<string, string>
+        {
+            ["Kilo"] = "27,4",
+            ["Dato"] = Idag.ToString("yyyy-MM-dd")
+        });
+        Assert.True(Skjemaklient.GikkGjennom(lagret),
+            $"Vekten ble ikke lagret: {await Skjemaklient.Feilmeldinger(lagret)}");
+
+        var veid = WebUtility.HtmlDecode(
+            await (await klient.Hent($"/dyr/{dyrId}")).Content.ReadAsStringAsync());
+        Assert.Contains("27,40 kg", veid);
+        Assert.Contains(lenke, veid);
+        Assert.Contains($"href=\"/dyr/{dyrId}/vekt\"", veid);
+
+        // Malet finnes pa siden lenken gar til.
+        var vekt = await (await klient.Hent($"/dyr/{dyrId}/vekt")).Content
+            .ReadAsStringAsync();
+        Assert.Contains("id=\"skjema\"", vekt);
+    }
 }

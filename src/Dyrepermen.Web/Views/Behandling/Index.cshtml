@@ -3,6 +3,7 @@
 @{
     ViewData["Tittel"] = $"Behandlinger – {Model.DyrNavn}";
     var idag = DateOnly.FromDateTime(DateTime.Now);
+    var naa = DateTimeOffset.UtcNow;
 
     // Etikettene kommer fra Behandlingsformat, ikke fra Display-attributter
     // pa enumen - domenelaget skal ikke baere presentasjonsmetadata. Listen
@@ -223,6 +224,32 @@
                                     @if (rad.Notat is not null)
                                     {
                                         <span class="d-block">@rad.Notat</span>
+                                    }
+                                    @* Hvem som krysset av hver dose, og nar.
+                                       En details-blokk, ikke en egen side:
+                                       den apnes uten skript, og listen tar
+                                       ikke plass for den som bare blar. *@
+                                    @if (rad.Doser.Count > 0)
+                                    {
+                                        <details class="mt-1">
+                                            <summary>
+                                                @(rad.Doser.Count == 1
+                                                    ? "1 dose gitt" : $"{rad.Doser.Count} doser gitt")
+                                            </summary>
+                                            <ul class="list-unstyled mb-0 mt-1">
+                                                @foreach (var dose in rad.Doser)
+                                                {
+                                                    <li>
+                                                        @Tidssone.NaerTid(dose.GittTid, naa)
+                                                        – @(dose.GittAv ?? "slettet bruker")
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </details>
+                                    }
+                                    else if (rad.Kurtekst is not null)
+                                    {
+                                        <span class="d-block">Ingen doser gitt ennå.</span>
                                     }
                                 </span>
                             </span>

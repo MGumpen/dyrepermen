@@ -19,6 +19,12 @@ public sealed record DyrSammendrag(
     /// </summary>
     IReadOnlyList<KommendeBehandling> KommendeBehandlinger,
 
+    /// <summary>
+    /// Kurer som gar i dag, med dagens doser. Samme rader som "Forfaller
+    /// snart" pa oversikten, slik at dosen kan gis herfra ogsa. Se ADR 0019.
+    /// </summary>
+    IReadOnlyList<Kurrad> AktiveKurer,
+
     int AntallMedisiner,
     IReadOnlyList<string> AktiveMedisiner,
 

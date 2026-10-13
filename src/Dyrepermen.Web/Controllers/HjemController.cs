@@ -163,11 +163,15 @@ public sealed class HjemController : Controller
     ///
     /// Gjesteapent med vilje, som "gi dose" pa en medisin: passer du hunden
     /// mens kuren pagar, er det du som gir den.
+    ///
+    /// <paramref name="fraDyr"/> betyr at knappen sto pa dyrets side. Et
+    /// flagg og ikke en fri returadresse, samme grep som fraOversikt pa
+    /// medisinen: det finnes bare to steder a lande.
     /// </summary>
     [HttpPost("/dashbord/kur/{dyrId:int}/{behandlingId:int}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> GiKurdose(
-        int dyrId, int behandlingId, CancellationToken ct)
+        int dyrId, int behandlingId, bool fraDyr, CancellationToken ct)
     {
         var status = await _behandling.LoggDose(
             dyrId, behandlingId, _meg.BrukerId, ct);
@@ -186,7 +190,9 @@ public sealed class HjemController : Controller
                 _ => "Kuren pågår ikke i dag."
             };
 
-            return RedirectToAction(nameof(Index));
+            return fraDyr
+                ? RedirectToAction(nameof(DyrController.Detaljer), "Dyr", new { dyrId })
+                : RedirectToAction(nameof(Index));
         }
 
         // Raden slik den star na, uansett utfall. Har noen andre i
@@ -194,7 +200,9 @@ public sealed class HjemController : Controller
         // raden "fullfort i dag" - og en foreldet fane retter seg selv.
         var rad = await _behandling.HentKurrad(dyrId, behandlingId, ct);
 
-        return rad is null ? NotFound() : PartialView("_Kurrad", rad);
+        return rad is null
+            ? NotFound()
+            : PartialView("_Kurrad", new KurradVm(rad, fraDyr));
     }
 
     /// <summary>Veksler mellom kjopt og aktiv, som pa handlelistesiden.</summary>
