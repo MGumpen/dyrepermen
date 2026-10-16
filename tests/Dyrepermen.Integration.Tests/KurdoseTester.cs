@@ -417,6 +417,69 @@ public sealed partial class KurdoseTester : IAsyncLifetime
             WebUtility.HtmlDecode(await igjen.Content.ReadAsStringAsync()));
     }
 
+    /// <summary>
+    /// Kuren star ogsa pa dyrets side, under "Kommende behandlinger", med
+    /// samme knapp. Raden som kommer tilbake fra htmx, er dyrets utgave -
+    /// behandlingen som tittel, ikke dyrets navn.
+    /// </summary>
+    [Fact]
+    public async Task Kuren_kan_gis_fra_dyrets_side()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient);
+        var kurId = await KurOverHttp(klient, dyrId);
+
+        var dyreside = await Side(klient, $"/dyr/{dyrId}");
+        Assert.Contains($"id=\"kur-{kurId}\"", dyreside);
+        Assert.Contains("dag 1 av 3 · 0/1 i dag", dyreside);
+        Assert.Contains($"/dashbord/kur/{dyrId}/{kurId}?fraDyr=", dyreside);
+
+        var svar = await klient.PostHtmx(
+            $"/dashbord/kur/{dyrId}/{kurId}?fraDyr=true", tokenFra: $"/dyr/{dyrId}");
+        var rad = WebUtility.HtmlDecode(await svar.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, svar.StatusCode);
+        Assert.Contains("<span class=\"tittel\">Ormekur</span>", rad);
+        Assert.Contains("fullført i dag", rad);
+
+        Assert.Contains("1/1 i dag", await Side(klient, $"/dyr/{dyrId}"));
+    }
+
+    [Fact]
+    public async Task Uten_htmx_fra_dyrets_side_landes_det_pa_dyrets_side()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient);
+        var kurId = await KurOverHttp(klient, dyrId);
+
+        var svar = await klient.Post(
+            $"/dashbord/kur/{dyrId}/{kurId}?fraDyr=true", [], tokenFra: $"/dyr/{dyrId}");
+
+        Assert.Equal(HttpStatusCode.Redirect, svar.StatusCode);
+        Assert.Equal($"/dyr/{dyrId}", svar.Headers.Location!.ToString());
+    }
+
+    /// <summary>
+    /// Historikken viser hver dose med tidspunkt og hvem som krysset av.
+    /// </summary>
+    [Fact]
+    public async Task Historikken_viser_hvem_som_ga_dosen()
+    {
+        var klient = await Testoppsett.InnloggetKlient(_app);
+        var dyrId = await Testoppsett.NyttDyr(klient);
+        var kurId = await KurOverHttp(klient, dyrId);
+
+        Assert.Contains("Ingen doser gitt ennå.",
+            await Side(klient, $"/dyr/{dyrId}/behandling"));
+
+        await klient.Post($"/dashbord/kur/{dyrId}/{kurId}", [], tokenFra: "/");
+
+        var historikk = await Side(klient, $"/dyr/{dyrId}/behandling");
+        Assert.Contains("1 dose gitt", historikk);
+        // Visningsnavnet Testoppsett registrerer brukeren med.
+        Assert.Matches(@"i dag \d{2}:\d{2}\s*– Testbruker", historikk);
+    }
+
     [Fact]
     public async Task Uten_htmx_sendes_brukeren_tilbake_til_oversikten()
     {

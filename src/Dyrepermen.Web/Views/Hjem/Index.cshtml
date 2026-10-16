@@ -111,7 +111,7 @@
                            ut med htmx. Se ADR 0019. *@
                         if (p.Kur is { } kur)
                         {
-                            <partial name="_Kurrad" model="kur" />
+                            <partial name="_Kurrad" model="new KurradVm(kur)" />
                             continue;
                         }
 

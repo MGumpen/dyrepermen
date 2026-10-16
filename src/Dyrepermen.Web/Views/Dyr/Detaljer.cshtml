@@ -80,17 +80,22 @@
                 @if (s.AntallVekter > 0)
                 {
                     <span class="antall">@s.AntallVekter</span>
+                    <a class="se-alle" asp-controller="Vekt" asp-action="Index"
+                       asp-route-dyrId="@d.Id">Se alle</a>
                 }
-                <a class="se-alle" asp-controller="Vekt" asp-action="Index"
-                   asp-route-dyrId="@d.Id">
-                    @(s.AntallVekter > 0 ? "Se alle" : "Registrer")
-                </a>
             </div>
 
-            @if (s.SisteVektGram is { } gram)
-            {
-                <div class="kort-kropp">
-                    <div class="dyrekort-tall mt-0">
+            @* Siste vekt til venstre, knappen til hoyre. Knappen gar rett til
+               skjemaet - fragmentet tar deg forbi grafen og historikken pa
+               mobil, der kortene ligger under hverandre. Gjesteapen, som
+               registreringen selv: passer du hunden, kan du veie den.
+
+               flex-wrap og ms-auto: blir raden for smal, legger knappen seg
+               under og holder seg til hoyre i stedet for a presse tallet. *@
+            <div class="kort-kropp d-flex flex-wrap align-items-center gap-2">
+                @if (s.SisteVektGram is { } gram)
+                {
+                    <div class="dyrekort-tall mt-0 min-w-0">
                         <span>
                             <span class="verdi fs-5">@Vektformat.TilKiloTekst(gram)</span>
                             <span class="etikett">
@@ -98,13 +103,20 @@
                             </span>
                         </span>
                     </div>
-                </div>
-            }
-            else
-            {
-                @* Ikke "0 kg". Et tall uten dekning er verre enn ingen tall. *@
-                <div class="tomt">Ingen vekt registrert.</div>
-            }
+                }
+                else
+                {
+                    @* Ikke "0 kg". Et tall uten dekning er verre enn ingen tall. *@
+                    <span class="tomt p-0 text-start">Ingen vekt registrert.</span>
+                }
+
+                <a class="btn btn-primary btn-sm ms-auto"
+                   asp-controller="Vekt" asp-action="Index"
+                   asp-route-dyrId="@d.Id" asp-fragment="skjema">
+                    <svg class="ikon" aria-hidden="true"><use href="#i-pluss" /></svg>
+                    Registrer
+                </a>
+            </div>
         </section>
 
         @* --- Forplan ----------------------------------------------------
@@ -225,15 +237,22 @@
             <div class="kort-hode">
                 <svg class="ikon ikon-lg" aria-hidden="true"><use href="#i-behandling" /></svg>
                 <h2>Kommende behandlinger</h2>
-                @if (s.KommendeBehandlinger.Count > 0)
+                @if (s.KommendeBehandlinger.Count + s.AktiveKurer.Count > 0)
                 {
-                    <span class="antall">@s.KommendeBehandlinger.Count</span>
+                    <span class="antall">@(s.KommendeBehandlinger.Count + s.AktiveKurer.Count)</span>
                 }
             </div>
 
-            @if (s.KommendeBehandlinger.Count > 0)
+            @if (s.KommendeBehandlinger.Count + s.AktiveKurer.Count > 0)
             {
                 <ul class="rad-liste">
+                    @* Kurer som gar i dag forst - de skal gis i dag, resten
+                       har en dato fram i tid. Samme rad og knapp som pa
+                       oversikten. Se ADR 0019. *@
+                    @foreach (var kur in s.AktiveKurer)
+                    {
+                        <partial name="_Kurrad" model="new KurradVm(kur, FraDyr: true)" />
+                    }
                     @foreach (var b in s.KommendeBehandlinger)
                     {
                         <li>
@@ -269,7 +288,7 @@
             {
                 <div class="tomt">
                     @(s.AntallBehandlinger > 0
-                        ? "Ingenting venter. Behandlinger med «neste gang» dukker opp her."
+                        ? "Ingenting venter. Kurer som pågår, og behandlinger med «neste gang» dukker opp her."
                         : "Ingen behandlinger registrert.")
                 </div>
             }

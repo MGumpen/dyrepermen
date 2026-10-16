@@ -53,6 +53,13 @@ dagens dose var gitt — eller om noen andre i husstanden allerede hadde gitt de
   bare raden ut, og svaret viser raden slik den faktisk er — også når noen andre
   har gitt dagens siste dose. Uten skript er det et vanlig skjema som sender
   brukeren tilbake til oversikten.
+- Samme rad og knapp står på dyrets side, under «Kommende behandlinger», over
+  påminnelsene om neste gang. Kurene hentes i samme spørring som resten av
+  sammendraget. Knappen sender `fraDyr=true`, så svaret er dyrets utgave av raden
+  og en innsending uten skript lander på dyrets side.
+- Historikken på behandlingssiden viser dosene i en kur, med tidspunkt og hvem
+  som krysset av («i dag 08:12 – Kari»), i en `details`-blokk som åpnes uten
+  skript. En slettet bruker vises som «slettet bruker».
 - **Handlingen er åpen for gjester**, som «gi dose» på en medisin (ADR 0009).
   Passer du hunden mens kuren pågår, er det du som gir den. Den står på
   gjestelisten i `RolleTester`. Å registrere eller rette selve kuren krever

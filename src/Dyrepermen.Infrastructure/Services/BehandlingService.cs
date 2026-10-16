@@ -31,7 +31,17 @@ public sealed class BehandlingService : IBehandlingService
             .ThenByDescending(b => b.Id)
             .Select(b => new BehandlingRad(
                 b.Id, b.Type, b.Preparat, b.Styrke, b.Dato, b.NesteDato, b.Notat,
-                b.AntallDager, b.GangerPerDag, false))
+                b.AntallDager, b.GangerPerDag, false)
+            {
+                // Hvem som krysset av, og nar. Samlingen hentes av EF i
+                // samme sporring, ikke en rundtur per behandling.
+                Doser = b.Doser
+                    .OrderBy(x => x.GittTid)
+                    .Select(x => new Kurdose(
+                        x.GittTid,
+                        x.GittAv == null ? null : x.GittAv.Visningsnavn))
+                    .ToList()
+            })
             .ToListAsync(ct);
 
         // Egen rundtur for hvilke som er apne. Regelen er et uttrykk over

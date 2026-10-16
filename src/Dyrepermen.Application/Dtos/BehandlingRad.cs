@@ -28,6 +28,13 @@ public sealed record BehandlingRad(
     public bool KanKrysseAv(DateOnly idag)
         => ErApen && Behandlingsintervall.KanGisIgjen(Dato, idag);
 
+    /// <summary>
+    /// Dosene i en kur, eldste forst, med hvem som ga dem. Tom for en vanlig
+    /// behandling. Ikke i konstruktoren: utskriften trenger dem ikke, og
+    /// historikken fyller dem i samme sporring. Se ADR 0019.
+    /// </summary>
+    public IReadOnlyList<Kurdose> Doser { get; init; } = [];
+
     /// <summary>"1 gang daglig i 3 dager", eller null for en vanlig behandling.</summary>
     public string? Kurtekst => Behandlingskur.Beskrivelse(AntallDager, GangerPerDag);
 }

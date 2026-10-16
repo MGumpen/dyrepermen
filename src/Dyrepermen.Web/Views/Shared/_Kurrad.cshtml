@@ -1,0 +1,55 @@
+@using Dyrepermen.Application.Dtos
+@model KurradVm
+@{
+    var k = Model.Rad;
+}
+
+@* En kur som gar i dag - i "Forfaller snart" pa oversikten og under
+   "Kommende behandlinger" pa dyrets side. Egen delvisning fordi knappen
+   tegner raden pa nytt med htmx - bare denne raden, ikke hele siden. Uten
+   skript er det et vanlig skjema, og svaret er hele siden.
+
+   Gjesteapen, som "gi dose" pa en medisin: passer du hunden, er det nettopp
+   dette du skal gjore. Se ADR 0019. *@
+<li id="kur-@k.BehandlingId">
+    <span class="flex-grow-1 min-w-0">
+        @if (Model.FraDyr)
+        {
+            <span class="tittel">@k.Beskrivelse</span>
+            <span class="under d-block">@k.Fremdrift</span>
+        }
+        else
+        {
+            <span class="tittel">@k.DyreNavn</span>
+            <span class="under d-block">@k.Beskrivelse – @k.Fremdrift</span>
+        }
+    </span>
+    <span class="hoyre d-flex flex-column gap-1 align-items-end">
+        @if (!k.Aktiv)
+        {
+            <span class="under">Kuren er ferdig</span>
+        }
+        else if (k.FullfortIdag)
+        {
+            <span class="merkelapp">fullført i dag</span>
+        }
+        else
+        {
+            <form method="post" asp-controller="Hjem" asp-action="GiKurdose"
+                  asp-route-dyrId="@k.DyrId"
+                  asp-route-behandlingId="@k.BehandlingId"
+                  asp-route-fraDyr="@(Model.FraDyr ? true : null)"
+                  hx-post="@Url.Action("GiKurdose", "Hjem",
+                      new { dyrId = k.DyrId, behandlingId = k.BehandlingId,
+                            fraDyr = Model.FraDyr ? true : (bool?)null })"
+                  hx-target="#kur-@k.BehandlingId" hx-swap="outerHTML"
+                  hx-disabled-elt="find button">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary btn-sm"
+                        aria-label="Registrer en dose @k.Beskrivelse til @k.DyreNavn">
+                    Gitt
+                </button>
+            </form>
+        }
+    </span>
+</li>

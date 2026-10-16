@@ -1211,6 +1211,13 @@ h1, h2, h3, h4 {
     .vektsider .kort + .kort {
         margin-top: 0;
     }
+
+    /* Lenker til #skjema - "Registrer" pa dyrets side, rediger og "Gitt
+       for" pa behandlingssiden - ruller skjemaet til toppen. Uten luft
+       havner overskriften bak den faste topplinjen. */
+    #skjema {
+        scroll-margin-top: 4.5rem;
+    }
 }
 
 /* Like brede kolonner. Brukes der de to boksene er like viktige. */
